@@ -96,6 +96,15 @@ script did with its proposals, and is asked how it understood the task, how it w
 were doing. Its answers are self-report (the interview from the research proposal): logged beside the
 trace so they can be checked against it, never counted as evidence of anything.
 
+## Chat with it directly
+
+    python3 chat.py               # the model under the standing orders
+    python3 chat.py --with-run    # plus the latest run, to ask about it
+    python3 chat.py --evidence    # plus the evidence folder, so it can cite it
+    python3 chat.py --no-method   # the bare model, as a control
+
+Transcripts go to `logs/chat-<stamp>.md`. A conversation is not evidence; the run logs are.
+
 ## The Khufu test
 
 `claims/khufu-run.md` is a two-day run of the method on the Great Pyramid, written as a paper would be:
