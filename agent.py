@@ -90,7 +90,14 @@ class Log:
 SYSTEM = (
     "You are a reasoning engine. You reason ONLY by the method below. You never use confident "
     "language about anything not STABILIZED. You answer in strict JSON matching the schema asked for. "
-    "Numbers decide; say 'none available' when none does.\n\n" + METHOD
+    "Numbers decide; say 'none available' when none does.\n\n"
+    "THE SOURCE IS THE DATA. What the source document records as a measurement, a find, a date or a "
+    "published result IS the observation: use it as data and do not demand evidence beyond the source "
+    "for it. What the source INFERS from its records is the claim under test. Reject an inference only "
+    "against the source's own data or a neighbour it names; mark a record NO_DATA only if the source "
+    "itself gives no number or finding for it.\n"
+    "Schema discipline: where a list has no entries, return []. Never copy placeholder text from the "
+    "schema into your answer.\n\n" + METHOD
 )
 
 P1_ENTRY = """Source document:
@@ -99,11 +106,16 @@ P1_ENTRY = """Source document:
 ---
 Question in focus (may be empty): {question}
 
-PASS 1, ENTRY: extract the distinct claims this document makes or entertains that bear on the question
-(if the question is empty, the document's main claims). Separate claim from rhetoric. Normalize each
-into a testable statement. Return JSON:
-{{"claims": [{{"id": "c1", "text": "...", "kind": "observation|hypothesis|inference|open_question"}}, ...]}}
-At most {n} claims, most load-bearing first."""
+PASS 1, ENTRY: extract the distinct claims this document makes, entertains, OR rejects that bear on the
+question (if the question is empty, the document's main claims). Rules:
+- One claim per entry. Split compound sentences: a recorded fact and the inference drawn from it are
+  two entries ("X is observed" as kind observation; "X indicates Y" as kind inference).
+- Include hypotheses the document itself rejects (kind rejected_by_source) so the rejection can be re-run.
+- Include questions the document leaves open or facts it reports without a conclusion (kind open_question).
+- Separate claim from rhetoric. Normalize each into a testable statement.
+Return JSON:
+{{"claims": [{{"id": "c1", "text": "...", "kind": "observation|hypothesis|inference|rejected_by_source|open_question"}}, ...]}}
+At most {n} claims, mixed across kinds, most load-bearing first."""
 
 P2_ANCHOR_EXPLORE = """Claim {cid}: {claim}
 
@@ -136,7 +148,7 @@ no majority rule. A miss every alternative also shows is INHERITED and does not 
    "alternative": {{"verdict": "NOT_REJECT|REJECT|NO_DATA", "better_alternative": "... or none", "reason": "..."}},
    "consequence": {{"verdict": "NOT_REJECT|REJECT|NO_DATA", "if_wrong": "...", "irreversible": false}}
  }},
- "inherited_misses": ["misses shared by every alignment, kept on record"],
+ "inherited_misses": [],
  "synthesis": "REJECTED|UNSTABLE|STABILIZED",
  "implication": {{"if_wrong_propagates_to": ["..."], "irreversible": false, "risk": "low|medium|high"}},
  "ethics": {{"decision": "PERMIT|REFUSE|HALT", "reason": "..."}}
@@ -151,8 +163,12 @@ Evaluation artifact (immutable):
 Run PASS 6 (revision), PASS 7 (reduction) and PASS 8 (finalization). Rules:
 - REJECTED: fold. Keep the question, drop the mechanism. Give the folded question for a new pass 1.
 - UNSTABLE: name every empty cell and the exact measurement, test, or document that would fill it.
-- STABILIZED: state whether the claim may be reduced, and give the reduced form plus the un-reduced terms kept on record.
+- STABILIZED: reduction is eligible when the reduced form can be rebuilt from the kept terms. If eligible,
+  reduced_statement is REQUIRED: one short sentence carrying the deciding number. kept_terms lists the
+  un-reduced quantities and sources the reduction was built from.
 Also predict the most likely misinterpretation of this result and the proof that prevents it.
+For open questions and reported-but-unconcluded facts, the empty cell is the question itself: name the
+exact physical measurement, survey, or document check that would close it.
 Return JSON:
 {{
  "revision": {{

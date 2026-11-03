@@ -37,11 +37,18 @@ Expect roughly 10–20 s per model call on an RTX 3060, so ~1 minute per claim; 
 
 ## The acceptance test for v0
 
-Run it on `data/khufu-test.md` and read the summary's "Empty cells" section. The run that produced the
-file named three: the unscanned bedrock under the Subterranean Chamber (radar), the coffer lid against
-the drilled granite fragments (a tape measure), and the Big Void (a borehole). If the agent names them
-without being told, it is running on the method. If it names a fourth that holds up, it is better than
-the run was.
+Run it on `data/khufu-test.md`. That file keeps the raw facts of the Khufu run but removes the
+conclusions drawn from them. Read the summary's "Empty cells" section. The run that produced the file
+turned those facts into three cells: the unscanned bedrock under the Subterranean Chamber (radar, a probe
+in the Grotto fill), the coffer lid against the drilled granite fragments (hole spacing vs the coffer's
+pin holes), and the Big Void (a borehole). If the agent names them from the facts alone, it is running
+on the method. If it names a fourth that holds up, it is better than the run was. It should also REJECT
+the hypotheses in "Trials that failed" with the number the source gives, and it should never STABILIZE an
+interpretation (the inversion, "Khufu's secret") — those are UNSTABLE or SILENCE.
+
+Run log: `logs/` holds every run. The first (2026-11-02, 10 claims, 6.4 min) sorted correctly but doubted
+the source's own records, never extracted a rejectable claim, and was given a test file with the facts
+cut out; v0.1 fixed all three in the prompts and the test file.
 
 ## What goes in the log
 
