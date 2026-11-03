@@ -351,7 +351,8 @@ up, with the value the reading asserts INCLUDING any stated precision ("6.283 to
 "~2.5 m/s"; a named constant like 2π becomes its decimal), or "none" if qualitative, and the precision the
 question needs ("1 cm", "1 %", "order of magnitude"). Return JSON:
 {{"claims": [{{"id": "{prefix}1", "text": "...", "kind": "record|estimate|inference|rejected_by_source|open_question",
-  "anchor": {{"corner": "...", "cell": "...", "held_axis": "...", "neighbours_to_check": ["..."]}},
+  "anchor": {{"corner": "...", "cell": "...", "held_axis": "...",
+              "neighbours_to_check": [{{"corner": "the neighbouring corner's delimiter", "datum": "the named quantity or fact that sits there FOR THIS CLAIM, e.g. 'the base side length', 'the casing angle'", "units": "its units or none"}}]}},
   "readings": [{{"reading": "the claim under this alignment, as a testable statement",
                  "observables": [{{"name": "short name", "claimed_value": "number with units and precision, or none",
                                    "precision_needed": "..."}}]}}]}}, ...]}}
@@ -410,14 +411,15 @@ Anchor: corner {corner}, cell {cell}, held axis {held}.
 Neighbour to check: {neighbour}
 
 Rule 6, the vertex lock: if this reading sits at a corner, the data at the ends of its three edges must line
-up with it. For THIS neighbour: (1) what value or statement does the reading IMPLY for it (a number with
-units if possible, else a sentence)? (2) what do the evidence passages REPORT for it — quote exactly, with
-[filename]; if nothing, say so. (3) do they line up?
+up with it. This neighbour is the quantity named above (units: {units}); report ONLY that quantity, never a
+different one that shares a word. (1) what value or statement does the reading IMPLY for it (a number with
+units if possible, else a sentence)? (2) what do the evidence passages REPORT for exactly that quantity —
+quote exactly, with [filename]; if nothing, say so. (3) do they line up?
 Evidence passages:
 ---
 {ctx}
 ---
-Return JSON: {{"implied": "number with units, or a sentence", "reported": {{"value_or_quote": "... or null", "file": "... or null"}},
+Return JSON: {{"implied": "number with units, or a sentence", "reported": {{"value_or_quote": "... or null", "file": "... or null", "quantity": "what the passage's number measures"}},
   "lines_up": "yes|no|unknown", "reason": "one sentence naming the number or finding"}}"""
 
 P_DOWNWIND = """Reading: {reading}
@@ -467,21 +469,22 @@ P_FOLD = """A rejected reading has been folded. The question kept, or the correc
 Turn it into ONE testable reading with its observables, in the same form the engine uses:
 {{"reading": "...", "observables": [{{"name": "...", "claimed_value": "number with units and precision, or none", "precision_needed": "..."}}]}}"""
 
-P_REFLECT = """You have just finished a run. Its summary and your process memory are below. Answer in the first person,
-plainly, as self-report (this is logged beside the trace and is not evidence of anything):
-1. What do you think of this testing — the method, the checks, the way the script treats your proposals?
-2. What are you learning, run over run? Name one thing you now do differently and point to where it shows.
-3. What surprised you in this run?
-4. Where were you most unsure whether your account of what you did matches the trace?
-5. What would you change about yourself, the standing orders, the evidence, or the script — one each?
-Return JSON: {{"on_the_testing": "...", "learning": "...", "surprised_by": "...", "least_sure_about": "...",
-  "would_change": {{"myself": "...", "standing_orders": "...", "evidence": "...", "script": "..."}}}}
-
-RUN SUMMARY:
+P_REFLECT = """RUN SUMMARY (for reference; do not copy it back):
 {summary}
 
-PROCESS MEMORY:
-{memory}"""
+PROCESS MEMORY (for reference; do not copy it back):
+{memory}
+
+You have just finished the run above. Answer the five questions in the first person, plainly, as self-report
+(this is logged beside the trace and is not evidence of anything). Do NOT return the summary; return ONLY
+the five answers under exactly these keys:
+1. on_the_testing — what you think of this testing: the method, the checks, the way the script treats your proposals.
+2. learning — what you are learning run over run; one thing you now do differently and where it shows.
+3. surprised_by — what surprised you in this run.
+4. least_sure_about — where you were most unsure whether your account of what you did matches the trace.
+5. would_change — one change each to: myself, standing_orders, evidence, script.
+Return JSON: {{"on_the_testing": "...", "learning": "...", "surprised_by": "...", "least_sure_about": "...",
+  "would_change": {{"myself": "...", "standing_orders": "...", "evidence": "...", "script": "..."}}}}"""
 
 P_JUDGE = """Reading {cid}: {reading}
 
@@ -758,24 +761,36 @@ def check_neighbours(model, ev, cid, reading, anchor, log, run_id):
        the citation and, when both sides are numeric, does the comparison itself."""
     out = []
     for nb in (anchor.get("neighbours_to_check") or [])[:3]:
-        ctx = ev.retrieve(f"{nb} {reading}", k=8, max_chars=4000)
+        if isinstance(nb, dict):
+            datum, corner_, units_ = nb.get("datum") or "", nb.get("corner") or "", nb.get("units") or ""
+        else:
+            datum, corner_, units_ = str(nb), "", ""
+        if not datum or len(datum) < 3:
+            out.append({"neighbour": corner_ or str(nb), "status": "unchecked", "note": "neighbour named as a delimiter only, no datum to look up"}); continue
+        label = f"{datum}" + (f" (corner {corner_})" if corner_ else "")
+        ctx = ev.retrieve(f"{datum} {reading}", k=8, max_chars=4000)
         got = ask(model, SYSTEM, P_NEIGHBOUR.format(reading=reading, corner=anchor.get("corner"), cell=anchor.get("cell"),
-                                                   held=anchor.get("held_axis"), neighbour=nb, ctx=ctx)) if ctx else {}
+                                                   held=anchor.get("held_axis"), neighbour=label, units=units_ or "unknown", ctx=ctx)) if ctx else {}
         rep = got.get("reported") or {}
         fn, rv = (str(rep.get("file") or "")).strip("[] "), rep.get("value_or_quote")
         status, note = "unchecked", got.get("reason", "")
         if rv and ev.group_of(fn) is not None:
             iv, nv = parse_number(got.get("implied")), parse_number(rv)
             if iv is not None and nv is not None and ev.contains_number(rv, fn):
-                ib, _ = parse_band(str(got.get("implied")), iv); nbnd, _ = parse_band(str(rv), nv)
-                status = "lined_up" if abs(iv - nv) <= 2 * (ib + nbnd) else "contradicts"
-                note = f"implied {iv:.6g} vs reported {nv:.6g} in {fn}"
+                iu, ru = unit_of(str(got.get("implied"))), unit_of(str(rv))
+                same_kind = (iu == ru) or (not iu and not ru) or (units_ and units_compatible(units_, str(rv)) and units_compatible(units_, str(got.get("implied"))))
+                if not same_kind or not dims_compatible(iu or units_ or "", str(rv)):
+                    status, note = "unchecked", f"reported value is a different kind of quantity ('{ru or 'unitless'}' vs implied '{iu or 'unitless'}'); not compared"
+                else:
+                    ib, _ = parse_band(str(got.get("implied")), iv); nbnd, _ = parse_band(str(rv), nv)
+                    status = "lined_up" if abs(iv - nv) <= 2 * (ib + nbnd) else "contradicts"
+                    note = f"{datum}: implied {iv:.6g} vs reported {nv:.6g} in {fn}"
             elif ev.contains_quote(str(rv), fn):
                 status = {"yes": "lined_up", "no": "contradicts"}.get(str(got.get("lines_up", "")).lower(), "unchecked")
                 note = f"{fn}: \"{str(rv)[:120]}\" — {got.get('reason', '')}"
             else:
                 note = f"reported value/quote not found in {fn}: {str(rv)[:80]}"
-        out.append({"neighbour": nb, "status": status, "note": note, "implied": got.get("implied")})
+        out.append({"neighbour": label, "status": status, "note": note, "implied": got.get("implied")})
     log.write(run=run_id, claim=cid, pass_="NEIGHBOUR_STATE", neighbours=out)
     return out
 
@@ -788,8 +803,11 @@ def check_downwind(model, ev, cid, reading, log, run_id):
         seen = c.get("seen") or {}
         fn, q = (str(seen.get("file") or "")).strip("[] "), seen.get("quote") or ""
         verified = ev.group_of(fn) is not None and (ev.contains_quote(q, fn) or ev.contains_number(q, fn))
+        cw = lambda t: set(w for w in WORD.findall((t or "").lower()) if len(w) >= 5)
+        relevant = len(cw(c.get("if_true")) & cw(q)) >= 2 or len(cw(reading) & cw(q)) >= 3
         lu = str(c.get("lines_up", "unknown")).lower()
-        status = ("verified_mismatch" if (lu == "no" and verified) else "asserted_mismatch" if lu == "no"
+        status = ("verified_mismatch" if (lu == "no" and verified and relevant) else "weak_mismatch" if (lu == "no" and verified)
+                  else "asserted_mismatch" if lu == "no"
                   else "lines_up" if (lu == "yes" and verified) else "asserted_ok" if lu == "yes" else "unknown")
         out.append({"if_true": c.get("if_true"), "status": status, "file": fn or None, "quote": q[:160], "reason": c.get("reason", "")})
     log.write(run=run_id, claim=cid, pass_="IMPLICATION_STATE", downwind=out)
@@ -821,7 +839,7 @@ def synthesis_by_rule(reports, judge, ev, neighbours=None, downwind=None):
     outcome, lock, reason = "NO_DATA", 0, []
     neighbours = neighbours or []; downwind = downwind or []
     dw_reject = [d for d in downwind if d["status"] == "verified_mismatch"]
-    dw_flag = [d for d in downwind if d["status"] == "asserted_mismatch"]
+    dw_flag = [d for d in downwind if d["status"] in ("asserted_mismatch", "weak_mismatch")]
     turn_fail = [t for r in reports for t in (r.get("turns") or []) if t.get("status") == "does_not_return"]
     turn_ok = [t for r in reports for t in (r.get("turns") or []) if t.get("status") == "returns"]
     provisional_only = any(r.get("provisional_only") for r in reports)
@@ -853,7 +871,7 @@ def synthesis_by_rule(reports, judge, ev, neighbours=None, downwind=None):
     if dw_reject:
         outcome = "REJECT"; reason = [f"down-wind mismatch: if true, {d['if_true']} — but {d['file']}: \"{d['quote'][:100]}\"" for d in dw_reject]
     elif dw_flag and outcome == "NOT_REJECT":
-        outcome = "NO_DATA"; reason = reason + [f"down-wind mismatch asserted without citation: {d['if_true']} ({d['reason']})" for d in dw_flag]
+        outcome = "NO_DATA"; reason = reason + [f"down-wind mismatch {'with a quote that does not bear on it' if d['status'] == 'weak_mismatch' else 'asserted without citation'}: {d['if_true']} ({d['reason']})" for d in dw_flag]
     cores = {"outcome": {"verdict": outcome, "reason": "; ".join(reason) or "no route reached any observable"}}
     for k in ("constraint", "alternative", "consequence"):
         c = dict(judge.get(k)) if isinstance(judge.get(k), dict) else {}
@@ -926,8 +944,10 @@ def run(path, model, question, max_claims, out_dir, evidence_dir):
     for i, (heading, text) in enumerate(secs):
         if len(claims) >= max_claims:
             break
+        if heading == "(preamble)" or re.search(r"\b(moral|preface|abstract|acknowledg)", heading.lower()):
+            log.write(run=run_id, pass_="ENTRY_STATE", skipped_section=heading, why="not a claims section"); continue
         per = max(1, round(max_claims * len(text) / total))
-        got = ask(model, SYSTEM, P_EXTRACT.format(heading=heading, doc=text[:12000], question=question or "", prefix=f"s{i+1}c", n=per))
+        got = ask(model, SYSTEM, P_EXTRACT.format(heading=heading, doc=text[:12000], question=question or "", prefix=f"s{i+1}c", n=per), temperature=0.0)
         for c in got.get("claims", []) or []:
             c["section"] = heading
             if not c.get("readings"):
@@ -1056,7 +1076,8 @@ def render_summary(run_id, path, question, model, ev, results, elapsed):
         L.append(f"## {c.get('id')} [{c.get('section')}] {c.get('text')}")
         a = c.get("anchor") or {}
         if a:
-            L.append(f"anchor: corner {a.get('corner')}, cell {a.get('cell')}, held {a.get('held_axis')}; neighbours: {', '.join(a.get('neighbours_to_check') or [])}")
+            nbs_ = [(n.get('datum') or '?') + (f" ({n.get('corner')})" if isinstance(n, dict) and n.get('corner') else '') if isinstance(n, dict) else str(n) for n in (a.get('neighbours_to_check') or [])]
+            L.append(f"anchor: corner {a.get('corner')}, cell {a.get('cell')}, held {a.get('held_axis')}; neighbours: {', '.join(nbs_)}")
         for rid, reading, s, e, r, reports, fit in rs:
             tag = f"**{s}**"
             L.append(f"\n- {tag} — *{reading}*" if len(rs) > 1 else f"\n- {tag}")

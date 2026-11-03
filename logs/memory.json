@@ -139,9 +139,16 @@
      "verdict": "STABILIZED",
      "reason": "perimeter/height ratio: 2 independent route(s) agree (strict 2)",
      "why": "The claim fits the available proof, with two independent routes agreeing within 2σ."
+    },
+    {
+     "run": "20261103-143544-326045",
+     "cid": "s2c2r1",
+     "verdict": "UNSTABLE",
+     "reason": "neighbour contradicts: - (implied 921.455 vs reported 230.33 in lehner-1997.md)",
+     "why": "The claim fits within the available proof, but lacks a fourth independent route to confirm the ratio."
     }
    ],
-   "current": "STABILIZED",
+   "current": "UNSTABLE",
    "settled": [
     {
      "observable": "perimeter/height ratio",
@@ -168,6 +175,12 @@
      "run": "20261103-142455-bf3d55",
      "observable": "perimeter measurement from lehner-1997.md",
      "next_route": "an independent survey of the Great Pyramid's perimeter",
+     "closed": false
+    },
+    {
+     "run": "20261103-143544-326045",
+     "observable": "perimeter/height ratio",
+     "next_route": "An independent survey or measurement of the perimeter and height of the Great Pyramid.",
      "closed": false
     }
    ]
@@ -699,9 +712,16 @@
      "verdict": "REJECTED",
      "reason": "salt crust thickness: 0 independent route(s) agree (strict 0)",
      "why": "The claim is REJECTED because there is no evidence value for the variable 'salt_crust_mass'."
+    },
+    {
+     "run": "20261103-143544-326045",
+     "cid": "s2c1r1",
+     "verdict": "UNSTABLE",
+     "reason": "salt crust thickness: 0 independent route(s) agree (strict 0)",
+     "why": "The claim is unstable due to lack of independent routes and evidence."
     }
    ],
-   "current": "REJECTED",
+   "current": "UNSTABLE",
    "settled": [],
    "open_cells": [
     {
@@ -738,6 +758,12 @@
      "run": "20261103-142455-bf3d55",
      "observable": "salt_crust_thickness",
      "next_route": "salt_crust_mass",
+     "closed": false
+    },
+    {
+     "run": "20261103-143544-326045",
+     "observable": "salt crust thickness",
+     "next_route": "a precise measurement or survey of the salt crust thickness in the Queen's Chamber",
      "closed": false
     }
    ]
@@ -1150,6 +1176,13 @@
      "verdict": "REJECTED",
      "reason": "down-wind mismatch: if true, If glass beads could play hieroglyphs, they would have left marks or inscriptions in the shaft tomb G7000x. — but reisner-1927-hetepheres.md: \"Reisner proposed that her original tomb at Dahshur had been robbed and the body lost, and that offic\"; down-wind mismatch: if tr",
      "why": "The claim is rejected because there is no evidence that glass beads could leave marks or inscriptions in the shaft tomb G7000x, and the proposed relation lacks a necessary value."
+    },
+    {
+     "run": "20261103-143544-326045",
+     "cid": "s1c1r1",
+     "verdict": "REJECTED",
+     "reason": "down-wind mismatch: if true, If glass beads could play hieroglyphs, they would have left marks or inscriptions on the rock under the Great Pyramid. — but edgar-1910.md: \"The Grotto is a natural cavity or fissure in the rock uncovered when the builders levelled the site;\"; down-wind mismatch: if true",
+     "why": "The claim is rejected because there is no evidence value for 'end_time' to calculate the duration of the run."
     }
    ],
    "current": "REJECTED",
@@ -1165,6 +1198,12 @@
      "run": "20261103-142455-bf3d55",
      "observable": "days_in_hour",
      "next_route": "days_in_hour: evidence value for variable 'days_in_hour' in relation 2 * days_in_hour * hours_in_day",
+     "closed": false
+    },
+    {
+     "run": "20261103-143544-326045",
+     "observable": "duration of the run",
+     "next_route": "evidence value for 'end_time'",
      "closed": false
     }
    ]
@@ -1468,6 +1507,65 @@
    "text": "",
    "history": [
     {
+     "run": "20261103-142455-bf3d55",
+     "cid": "s1c1r1f",
+     "verdict": "REJECTED",
+     "reason": "down-wind mismatch: if true, Glass beads would leave marks or inscriptions on the walls of the shaft tomb G7000x. — but edgar-1910.md: \"The well shaft descends about 125 feet below the Grotto; its inclined section is about 30 inches hig\"; down-wind mismatch: if true, Glass beads would leave marks or",
+     "why": "The claim was rejected because there is no evidence for the physical interaction between glass beads and tomb walls that would leave marks or inscriptions."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": []
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-142455-bf3d55",
+     "cid": "s2c1r1f",
+     "verdict": "REJECTED",
+     "reason": "down-wind mismatch: if true, If the salt crust is 0.5 cm thick, then there should be observable signs of salt efflorescence on the walls or floor of the chamber. — but lehner-1997.md: \"The Queen's Chamber lies on the pyramid's central axis and has a corbelled niche in its east wall.\"",
+     "why": "The claim is rejected because there is no independent evidence to support the thickness of the salt crust."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-142455-bf3d55",
+     "observable": "Thickness of salt crust",
+     "next_route": "A new measurement or an independent source verifying the thickness of the salt crust",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-142455-bf3d55",
+     "cid": "s3c1r1f",
+     "verdict": "REJECTED",
+     "reason": "the reading as stated: 1 independent route(s) agree (strict 1)",
+     "why": "The claim is rejected because the presence of a structural borehole would imply the existence of a vertical shaft or tunnel, which is not supported by the evidence."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-142455-bf3d55",
+     "observable": "the presence of a vertical shaft or tunnel connecting the Grand Gallery to the exterior of the pyramid",
+     "next_route": "a survey or excavation report confirming the absence of such a shaft or tunnel",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
      "run": "20261103-141014-1ccdc8",
      "cid": "s1c1r1f",
      "verdict": "REJECTED",
@@ -1565,7 +1663,7 @@
    ]
   },
   {
-   "text": "The Big Void is similar to other sealed cavities found in the structure.",
+   "text": "The Big Void is a structural borehole, similar to other sealed cavities.",
    "history": [
     {
      "run": "20261103-141014-1ccdc8",
@@ -1573,15 +1671,28 @@
      "verdict": "REJECTED",
      "reason": "down-wind mismatch: if true, The Big Void being similar to other sealed cavities would imply it should be sealed and not naturally occurring, as it was constructed with similar intent. — but edgar-1910.md: \"The Grotto is a natural cavity or fissure in the rock uncovered when the builders levelled th",
      "why": "The claim is REJECTED because there is only one independent route supporting the claim, and no contradicting routes, but the single route is not sufficient to stabilize the claim."
+    },
+    {
+     "run": "20261103-143544-326045",
+     "cid": "s3c1r1",
+     "verdict": "UNSTABLE",
+     "reason": "inverse turn does not return: from the reading's 30 and , diameter * pi implies diameter=9.5493; scanpyramids-2017.md gives 30",
+     "why": "The claim is unstable because it lacks independent evidence for the width of the Big Void and there is a down-wind mismatch regarding its natural occurrence."
     }
    ],
-   "current": "REJECTED",
+   "current": "UNSTABLE",
    "settled": [],
    "open_cells": [
     {
      "run": "20261103-141014-1ccdc8",
      "observable": "The Big Void's similarity to other sealed cavities",
      "next_route": "Additional independent analysis or evidence",
+     "closed": false
+    },
+    {
+     "run": "20261103-143544-326045",
+     "observable": "width of the Big Void",
+     "next_route": "a document or survey specifying the exact width",
      "closed": false
     }
    ]
@@ -1612,35 +1723,20 @@
    "text": "",
    "history": [
     {
-     "run": "20261103-142455-bf3d55",
+     "run": "20261103-143544-326045",
      "cid": "s1c1r1f",
      "verdict": "REJECTED",
-     "reason": "down-wind mismatch: if true, Glass beads would leave marks or inscriptions on the walls of the shaft tomb G7000x. — but edgar-1910.md: \"The well shaft descends about 125 feet below the Grotto; its inclined section is about 30 inches hig\"; down-wind mismatch: if true, Glass beads would leave marks or",
-     "why": "The claim was rejected because there is no evidence for the physical interaction between glass beads and tomb walls that would leave marks or inscriptions."
-    }
-   ],
-   "current": "REJECTED",
-   "settled": [],
-   "open_cells": []
-  },
-  {
-   "text": "",
-   "history": [
-    {
-     "run": "20261103-142455-bf3d55",
-     "cid": "s2c1r1f",
-     "verdict": "REJECTED",
-     "reason": "down-wind mismatch: if true, If the salt crust is 0.5 cm thick, then there should be observable signs of salt efflorescence on the walls or floor of the chamber. — but lehner-1997.md: \"The Queen's Chamber lies on the pyramid's central axis and has a corbelled niche in its east wall.\"",
-     "why": "The claim is rejected because there is no independent evidence to support the thickness of the salt crust."
+     "reason": "down-wind mismatch: if true, Glass beads would leave marks or inscriptions in the shaft tomb G7000x. — but reisner-1927-hetepheres.md: \"Reisner reports the discovery in 1925 of a 30 m shaft (G7000x) east of the Great Pyramid containing \"",
+     "why": "The claim is rejected because there is no independent route supporting the specific assertion that glass beads could leave marks or inscriptions in the shaft tomb G7000x."
     }
    ],
    "current": "REJECTED",
    "settled": [],
    "open_cells": [
     {
-     "run": "20261103-142455-bf3d55",
-     "observable": "Thickness of salt crust",
-     "next_route": "A new measurement or an independent source verifying the thickness of the salt crust",
+     "run": "20261103-143544-326045",
+     "observable": "glass beads leaving marks or inscriptions in the shaft tomb G7000x",
+     "next_route": "a specific archaeological report or study on glass beads in the tomb G7000x",
      "closed": false
     }
    ]
@@ -1649,20 +1745,42 @@
    "text": "",
    "history": [
     {
-     "run": "20261103-142455-bf3d55",
-     "cid": "s3c1r1f",
-     "verdict": "REJECTED",
-     "reason": "the reading as stated: 1 independent route(s) agree (strict 1)",
-     "why": "The claim is rejected because the presence of a structural borehole would imply the existence of a vertical shaft or tunnel, which is not supported by the evidence."
+     "run": "20261103-143544-326045",
+     "cid": "s2c2r1f",
+     "verdict": "UNSTABLE",
+     "reason": "neighbour contradicts: ÷ (implied 6.2857 vs reported 230.33 in lehner-1997.md)",
+     "why": "The reading does not have independent support, hence it is unstable."
     }
    ],
-   "current": "REJECTED",
+   "current": "UNSTABLE",
    "settled": [],
    "open_cells": [
     {
-     "run": "20261103-142455-bf3d55",
-     "observable": "the presence of a vertical shaft or tunnel connecting the Grand Gallery to the exterior of the pyramid",
-     "next_route": "a survey or excavation report confirming the absence of such a shaft or tunnel",
+     "run": "20261103-143544-326045",
+     "observable": "perimeter/height ratio",
+     "next_route": "an independent route to verify the reading",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-143544-326045",
+     "cid": "s3c1r1f",
+     "verdict": "UNSTABLE",
+     "reason": "neighbour contradicts: Front (implied 30 vs reported 47 in lehner-1997.md)",
+     "why": "The claim is UNSTABLE because it implies The Big Void should be sealed and not naturally occurring, which contradicts the known nature of natural cavities."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-143544-326045",
+     "observable": "The Big Void's nature and construction intent",
+     "next_route": "independent verification of The Big Void's nature and construction intent",
      "closed": false
     }
    ]
@@ -1752,6 +1870,23 @@
     "verdict": "STABILIZED",
     "reason": "perimeter/height ratio: 2 independent route(s) agree (strict 2)",
     "why": "The claim fits the available proof, with two independent routes agreeing within 2σ."
+   }
+  },
+  {
+   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %.",
+   "from": {
+    "run": "20261103-142455-bf3d55",
+    "cid": "s2c2r1",
+    "verdict": "STABILIZED",
+    "reason": "perimeter/height ratio: 2 independent route(s) agree (strict 2)",
+    "why": "The claim fits the available proof, with two independent routes agreeing within 2σ."
+   },
+   "to": {
+    "run": "20261103-143544-326045",
+    "cid": "s2c2r1",
+    "verdict": "UNSTABLE",
+    "reason": "neighbour contradicts: - (implied 921.455 vs reported 230.33 in lehner-1997.md)",
+    "why": "The claim fits within the available proof, but lacks a fourth independent route to confirm the ratio."
    }
   },
   {
@@ -2010,6 +2145,23 @@
    }
   },
   {
+   "text": "The King's Chamber stays dry with a salt crust up to ~1 cm in the Queen's Chamber.",
+   "from": {
+    "run": "20261103-142455-bf3d55",
+    "cid": "s2c1r1",
+    "verdict": "REJECTED",
+    "reason": "salt crust thickness: 0 independent route(s) agree (strict 0)",
+    "why": "The claim is REJECTED because there is no evidence value for the variable 'salt_crust_mass'."
+   },
+   "to": {
+    "run": "20261103-143544-326045",
+    "cid": "s2c1r1",
+    "verdict": "UNSTABLE",
+    "reason": "salt crust thickness: 0 independent route(s) agree (strict 0)",
+    "why": "The claim is unstable due to lack of independent routes and evidence."
+   }
+  },
+  {
    "text": "Queen's Chamber (the ka's room, misnamed by medieval Arabs): on the axis over the natural knoll, floor at 21.2 m ≈ H/7 (20.9), shafts sealed at both ends, niche for the statue.",
    "from": {
     "run": "20261102-214544-94674b",
@@ -2178,6 +2330,23 @@
     "reason": "year of excavation: 0 independent route(s) agree within 2σ",
     "why": "The claim that Vyse dug under the coffer in 1837 is REJECTED due to insufficient evidence."
    }
+  },
+  {
+   "text": "The Big Void is a structural borehole, similar to other sealed cavities.",
+   "from": {
+    "run": "20261103-141014-1ccdc8",
+    "cid": "s3c1r2",
+    "verdict": "REJECTED",
+    "reason": "down-wind mismatch: if true, The Big Void being similar to other sealed cavities would imply it should be sealed and not naturally occurring, as it was constructed with similar intent. — but edgar-1910.md: \"The Grotto is a natural cavity or fissure in the rock uncovered when the builders levelled th",
+    "why": "The claim is REJECTED because there is only one independent route supporting the claim, and no contradicting routes, but the single route is not sufficient to stabilize the claim."
+   },
+   "to": {
+    "run": "20261103-143544-326045",
+    "cid": "s3c1r1",
+    "verdict": "UNSTABLE",
+    "reason": "inverse turn does not return: from the reading's 30 and , diameter * pi implies diameter=9.5493; scanpyramids-2017.md gives 30",
+    "why": "The claim is unstable because it lacks independent evidence for the width of the Big Void and there is a down-wind mismatch regarding its natural occurrence."
+   }
   }
  ],
  "runs": [
@@ -2189,6 +2358,7 @@
   "20261102-230006-ea7914",
   "20261103-080123-9bc5ec",
   "20261103-141014-1ccdc8",
-  "20261103-142455-bf3d55"
+  "20261103-142455-bf3d55",
+  "20261103-143544-326045"
  ]
 }

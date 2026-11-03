@@ -87,6 +87,19 @@ A paper always agrees with itself, so the document under test is never allowed t
 Per reading: one call to name relations, one call per variable to gather values, one judge call, one
 revision call. Ten claims ≈ 20–30 minutes on an RTX 3060 with the 14B model. `--max-claims 6` for a quick run.
 
+## Trial 1 (v1.5 at ce1c544; 3 × 4 claims; 36 min) and v1.6
+
+Variance: readings seen in all three runs 3/9; same verdict every time 5/9; readings per run 10, 7, 7.
+The 2π claim stabilized once on two strict routes (Cole's perimeter over Lehner's height; the seked
+identity counted once as a definition) with neighbours and three down-wind consequences lined up — the
+whole method on a real claim with a real model. The Big Void held UNSTABLE three times with uncited
+mismatches correctly not counted. Four defects, visible only because of the repetition, fixed together as
+v1.6: the preamble was extracted as a claim every run (now skipped by code; extraction at temperature 0);
+neighbours were named as bare delimiters and the check compared a perimeter with a base side and called it
+a contradiction (now named data with units, and the same unit/dimension discipline as routes); a down-wind
+"verified mismatch" needed only that the quote exist, not that it bear on the consequence (now a relevance
+test; otherwise a weak mismatch that holds UNSTABLE); the reflection echoed the summary (prompt reordered).
+
 ## Trial: the same version, three times, before anything changes
 
     python3 trial.py claims/khufu-run.md --runs 3 --max-claims 4
