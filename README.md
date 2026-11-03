@@ -50,7 +50,10 @@ Kinds drive the path (v0.2). Extraction labels each claim record / estimate / in
 rejected_by_source / open_question, and the script, not the model, bounds what each may become: a record
 can only STABILIZE or be REJECTED by another record; an estimate cannot STABILIZE without a measurement;
 an inference with no measurable prediction cannot STABILIZE; an open question goes straight to naming its
-measurement. Overrides are logged (`synthesis_overridden_by_kind_rule`).
+measurement. The evaluator is blind: it never sees the kind label or any expected outcome, so its verdict is unaided.
+The script applies the kind bounds afterwards and logs both (`synthesis_blind` vs `synthesis`); the
+summary reports how often the blind verdict agreed with the rule. That agreement rate is the measure of
+whether the model is reasoning or the rule is carrying it.
 
 Run log: `logs/` holds every run. The first (2026-11-02, 10 claims, 6.4 min) sorted correctly but doubted
 the source's own records, never extracted a rejectable claim, and was given a test file with the facts

@@ -139,6 +139,7 @@ Run PASS 1 (anchor) and PASS 2 (exploration) on this claim. Nothing stabilizes h
  "provenance": ["which source passages or earlier facts each item came from"]
 }}"""
 
+# Bounds per kind, applied by the script AFTER the blind evaluation. The model never sees these.
 KIND_RULES = {
     "record": "This claim is a RECORD stated by the source. OUTCOME compares it only against other records in the "
               "source; ALTERNATIVE may NOT reject a record (a record is not an explanation); CONSTRAINT and CONSEQUENCE "
@@ -158,7 +159,6 @@ KIND_RULES = {
 }
 
 P3_EVALUATE = """Claim {cid}: {claim}
-Kind: {kind}. Rule for this kind: {kind_rule}
 
 Anchor/exploration artifact (immutable, cite it, do not edit it):
 {art}
@@ -237,10 +237,11 @@ def run(path, model, question, max_claims, out_dir):
                           elapsed=round(time.time() - t, 1), model=model)
 
         t = time.time()
-        e = ask(model, SYSTEM, P3_EVALUATE.format(cid=cid, claim=text, kind=kind, kind_rule=KIND_RULES[kind],
-                                                  art=json.dumps(a, ensure_ascii=False)))
+        # the evaluator is BLIND to the kind: it never sees the label or any expected outcome
+        e = ask(model, SYSTEM, P3_EVALUATE.format(cid=cid, claim=text, art=json.dumps(a, ensure_ascii=False)))
         synth = e.get("synthesis", "UNSTABLE")
-        # the script, not the model, enforces what each kind may become
+        e["synthesis_blind"] = synth
+        # the script, not the model, enforces what each kind may become; disagreement is logged, not hidden
         allowed = {"record": {"STABILIZED", "REJECTED"}, "estimate": {"UNSTABLE", "REJECTED"},
                    "inference": {"STABILIZED", "UNSTABLE", "REJECTED"}, "rejected_by_source": {"REJECTED", "UNSTABLE"},
                    "open_question": {"UNSTABLE"}}[kind]
@@ -290,6 +291,12 @@ def render_summary(run_id, path, question, model, results, elapsed):
     L = [f"# Run {run_id}", f"source: {os.path.basename(path)} · model: {model} · question: {question or '(none)'} · "
          f"{len(results)} claims · {elapsed/60:.1f} min", "",
          "counts: " + ", ".join(f"{k} {v}" for k, v in sorted(counts.items())), ""]
+    blind = [(e.get("synthesis_blind"), s) for _, _, s, e, _ in results if e.get("synthesis_blind")]
+    if blind:
+        agree = sum(1 for b, s in blind if b == s)
+        L.append(f"blind model verdict agreed with kind rule: {agree}/{len(blind)}  "
+                 f"(overrides: {', '.join(f'{b}→{s}' for b, s in blind if b != s) or 'none'})")
+        L.append("")
     L.append("## Empty cells (UNSTABLE) — the measurement that fills each")
     for cid, text, s, e, r in results:
         if s == "UNSTABLE":
