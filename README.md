@@ -46,9 +46,18 @@ on the method. If it names a fourth that holds up, it is better than the run was
 the hypotheses in "Trials that failed" with the number the source gives, and it should never STABILIZE an
 interpretation (the inversion, "Khufu's secret") — those are UNSTABLE or SILENCE.
 
+Kinds drive the path (v0.2). Extraction labels each claim record / estimate / inference /
+rejected_by_source / open_question, and the script, not the model, bounds what each may become: a record
+can only STABILIZE or be REJECTED by another record; an estimate cannot STABILIZE without a measurement;
+an inference with no measurable prediction cannot STABILIZE; an open question goes straight to naming its
+measurement. Overrides are logged (`synthesis_overridden_by_kind_rule`).
+
 Run log: `logs/` holds every run. The first (2026-11-02, 10 claims, 6.4 min) sorted correctly but doubted
 the source's own records, never extracted a rejectable claim, and was given a test file with the facts
-cut out; v0.1 fixed all three in the prompts and the test file.
+cut out; v0.1 fixed all three in the prompts and the test file. The second run (14 claims, 8.3 min) overshot the
+other way: it stabilized computed estimates and an interpretation, and its alternative check rejected two
+plain records with invented competitors. v0.2 moved the record/estimate/inference distinction out of the
+model's judgment and into the script's routing.
 
 ## What goes in the log
 

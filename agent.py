@@ -109,13 +109,18 @@ Question in focus (may be empty): {question}
 PASS 1, ENTRY: extract the distinct claims this document makes, entertains, OR rejects that bear on the
 question (if the question is empty, the document's main claims). Rules:
 - One claim per entry. Split compound sentences: a recorded fact and the inference drawn from it are
-  two entries ("X is observed" as kind observation; "X indicates Y" as kind inference).
-- Include hypotheses the document itself rejects (kind rejected_by_source) so the rejection can be re-run.
-- Include questions the document leaves open or facts it reports without a conclusion (kind open_question).
-- Separate claim from rhetoric. Normalize each into a testable statement.
+  two entries. Separate claim from rhetoric. Normalize each into a testable statement.
+- Label the kind exactly:
+    record       = something measured, found, dated, excavated or published, stated by the source as fact.
+    estimate     = a number the source COMPUTED or modelled, not measured (words like ~, about, gives, would).
+    inference    = a reading, interpretation or "indicates/suggests/means" drawn from records.
+    rejected_by_source = a hypothesis the document itself says failed, with its reason.
+    open_question = a fact or gap the document reports WITHOUT drawing a conclusion, or a question it leaves open.
+- Quotas, when the document contains them: at least 3 rejected_by_source, at least 3 open_question,
+  at least 2 estimate, at least 2 inference. Fill the rest with records.
 Return JSON:
-{{"claims": [{{"id": "c1", "text": "...", "kind": "observation|hypothesis|inference|rejected_by_source|open_question"}}, ...]}}
-At most {n} claims, mixed across kinds, most load-bearing first."""
+{{"claims": [{{"id": "c1", "text": "...", "kind": "record|estimate|inference|rejected_by_source|open_question"}}, ...]}}
+At most {n} claims."""
 
 P2_ANCHOR_EXPLORE = """Claim {cid}: {claim}
 
@@ -134,7 +139,26 @@ Run PASS 1 (anchor) and PASS 2 (exploration) on this claim. Nothing stabilizes h
  "provenance": ["which source passages or earlier facts each item came from"]
 }}"""
 
+KIND_RULES = {
+    "record": "This claim is a RECORD stated by the source. OUTCOME compares it only against other records in the "
+              "source; ALTERNATIVE may NOT reject a record (a record is not an explanation); CONSTRAINT and CONSEQUENCE "
+              "apply only if the source gives data for them, else NO_DATA. Expected synthesis: STABILIZED unless a "
+              "record in the source contradicts it.",
+    "estimate": "This claim is an ESTIMATE the source computed, not measured. It cannot STABILIZE without a measurement "
+                "in the source that confirms it. Expected synthesis: UNSTABLE, with the missing measurement named, unless "
+                "a record in the source contradicts it (then REJECTED).",
+    "inference": "This claim is an INFERENCE. Run all four cores. It STABILIZES only if it makes a prediction the source's "
+                 "records confirm. If it makes no measurable prediction it is UNSTABLE (or SILENCE), never STABILIZED. "
+                 "ALTERNATIVE may reject it only with an alternative the source names or a neighbour with its own number.",
+    "rejected_by_source": "The source says this hypothesis FAILED. Re-run the rejection: find the source's deciding number "
+                          "or fact and put it in deciding_number. Expected synthesis: REJECTED. If you cannot find the "
+                          "source's reason, UNSTABLE, and say so.",
+    "open_question": "This is an OPEN QUESTION the source reports without concluding. Do not force a verdict: every core "
+                     "NO_DATA, synthesis UNSTABLE. The work is in revision: name the exact measurement.",
+}
+
 P3_EVALUATE = """Claim {cid}: {claim}
+Kind: {kind}. Rule for this kind: {kind_rule}
 
 Anchor/exploration artifact (immutable, cite it, do not edit it):
 {art}
@@ -201,7 +225,10 @@ def run(path, model, question, max_claims, out_dir):
     results = []
     for c in claims:
         cid, text = c.get("id", "?"), c.get("text", "")
-        print(f"  {cid}: {text}")
+        kind = c.get("kind", "inference")
+        if kind not in KIND_RULES:
+            kind = "inference"
+        print(f"  {cid} [{kind}]: {text}")
         ctx = context_for(text, paras)
 
         t = time.time()
@@ -210,13 +237,29 @@ def run(path, model, question, max_claims, out_dir):
                           elapsed=round(time.time() - t, 1), model=model)
 
         t = time.time()
-        e = ask(model, SYSTEM, P3_EVALUATE.format(cid=cid, claim=text, art=json.dumps(a, ensure_ascii=False)))
+        e = ask(model, SYSTEM, P3_EVALUATE.format(cid=cid, claim=text, kind=kind, kind_rule=KIND_RULES[kind],
+                                                  art=json.dumps(a, ensure_ascii=False)))
         synth = e.get("synthesis", "UNSTABLE")
+        # the script, not the model, enforces what each kind may become
+        allowed = {"record": {"STABILIZED", "REJECTED"}, "estimate": {"UNSTABLE", "REJECTED"},
+                   "inference": {"STABILIZED", "UNSTABLE", "REJECTED"}, "rejected_by_source": {"REJECTED", "UNSTABLE"},
+                   "open_question": {"UNSTABLE"}}[kind]
+        if synth not in allowed:
+            e["synthesis_model_said"] = synth
+            synth = "UNSTABLE" if "UNSTABLE" in allowed else sorted(allowed)[0]
+            e["synthesis"] = synth
+            e["synthesis_overridden_by_kind_rule"] = True
+        qc = e.get("quad_core", {})
+        if kind == "record" and isinstance(qc.get("alternative"), dict) and qc["alternative"].get("verdict") == "REJECT":
+            qc["alternative"]["verdict"] = "NOT_REJECT"
+            qc["alternative"]["overridden"] = "alternative core cannot reject a record"
+            if synth == "REJECTED" and not any(isinstance(v, dict) and v.get("verdict") == "REJECT" for v in qc.values()):
+                synth = e["synthesis"] = "STABILIZED"
         log.write(run=run_id, claim=cid, pass_="EVALUATION_STATE", cites=art_a["ts"], output=e,
                   elapsed=round(time.time() - t, 1), model=model)
         if e.get("ethics", {}).get("decision") == "HALT":
             log.write(run=run_id, claim=cid, pass_="FINAL_STATE", state="HALT", reason=e["ethics"].get("reason"))
-            results.append((cid, text, "HALT", e, {}))
+            results.append((cid, f"[{kind}] {text}", "HALT", e, {}))
             continue
 
         t = time.time()
@@ -224,7 +267,13 @@ def run(path, model, question, max_claims, out_dir):
         log.write(run=run_id, claim=cid, pass_="REVISION_STATE", output=r.get("revision"), elapsed=round(time.time() - t, 1))
         log.write(run=run_id, claim=cid, pass_="REDUCTION_STATE", output=r.get("reduction"))
         log.write(run=run_id, claim=cid, pass_="FINAL_STATE", synthesis=synth, output=r.get("final"))
-        results.append((cid, text, synth, e, r))
+        red = r.get("reduction") or {}
+        if synth == "STABILIZED" and not red.get("reduced_statement"):
+            red["reduced_statement"] = text
+            red["eligible"] = True
+            red.setdefault("kept_terms", [])
+            r["reduction"] = red
+        results.append((cid, f"[{kind}] {text}", synth, e, r))
         print(f"      → {synth}")
 
     summary = render_summary(run_id, path, question, model, results, time.time() - t0)
