@@ -1039,6 +1039,7 @@ def run(path, model, question, max_claims, out_dir, evidence_dir):
             fh.write(f"**{k}**: {json.dumps(v, ensure_ascii=False) if isinstance(v, dict) else v}\n\n")
     log.write(run=run_id, pass_="PROCESS_ARCHIVED", summary=sp, reflection=rp_, total_elapsed=round(time.time() - t0, 1))
     print(summary); print(f"log: {log.path}\nsummary: {sp}\nreflection: {rp_}")
+    return run_id
 
 def render_summary(run_id, path, question, model, ev, results, elapsed):
     counts = {}

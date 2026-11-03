@@ -1,4 +1,4 @@
-# Process memory — 7 run(s): 20261102-214544-94674b, 20261102-215725-39913b, 20261102-221054-7a31bb, 20261102-224342-1990d5, 20261102-230006-ea7914, 20261103-080123-9bc5ec
+# Process memory — 8 run(s): 20261102-215725-39913b, 20261102-221054-7a31bb, 20261102-224342-1990d5, 20261102-230006-ea7914, 20261103-080123-9bc5ec, 20261103-101844-c704b6
 
 ## Changes of mind (verdict differed between runs; old and new reasons kept)
 - Sun on the south casing adds a solar-chimney term (~8 Pa, ~0.8 m/s), reversing at night.
@@ -39,15 +39,15 @@
     now REJECTED in 20261103-080123-9bc5ec: year of excavation: 0 independent route(s) agree within 2σ
 
 ## Positions held (latest verdict per claim, with how many runs saw it)
-- [STABILIZED] (7 run(s): STABILIZED→REJECTED→REJECTED→UNSTABLE→STABILIZED) The perimeter/height ratio of the Great Pyramid is 6.283 = 2π to 0.05 %.
+- [REJECTED] (8 run(s): REJECTED→REJECTED→UNSTABLE→STABILIZED→REJECTED) The perimeter/height ratio is 6.283 to 0.05 %.
 - [UNSTABLE] (5 run(s): UNSTABLE→STABILIZED→STABILIZED→UNSTABLE→UNSTABLE) The King's Chamber at r ≈ 46 m inverts to ρ²/r ≈ 470 m out along the same ray.
 - [UNSTABLE] (5 run(s): STABILIZED→STABILIZED→REJECTED→UNSTABLE→UNSTABLE) Stone chambers ring in the infrasound band: Karnak's hypostyle hall at ~1.7/3.4/8.6 Hz, the King's Chamber (10.5 × 5.2 × 5.8 m) near 16/30/3
 - [UNSTABLE] (5 run(s): STABILIZED→UNSTABLE→STABILIZED→UNSTABLE→UNSTABLE) Radiation out of a 20 cm opening at 30 Hz is ~(ka)² ≈ 0.4 %: nothing leaves the building.
 - [UNSTABLE] (5 run(s): STABILIZED→STABILIZED→REJECTED→UNSTABLE→UNSTABLE) lid lowered from the ceiling (coffer has a sliding groove and pin holes; nine beams all present)
+- [REJECTED] (4 run(s): UNSTABLE→STABILIZED→UNSTABLE→REJECTED) Khufu's name is painted in the relieving chambers.
 - [STABILIZED] (4 run(s): STABILIZED→STABILIZED→STABILIZED→STABILIZED) Hetepheres I (Snefru's queen) buried at Giza, not Dahshur, in a hidden shaft sealed with Khufu's name; sarcophagus sealed, unforced, empty; 
 - [REJECTED] (4 run(s): STABILIZED→STABILIZED→STABILIZED→REJECTED) Prevailing north wind on the north face, lee suction on the south: ~80 Pa across 120 m of 20 cm duct gives a ~2.5 m/s draft through the King
 - [UNSTABLE] (3 run(s): UNSTABLE→STABILIZED→UNSTABLE→UNSTABLE) The King's Chamber stays at ~20 °C year round.
-- [UNSTABLE] (3 run(s): UNSTABLE→STABILIZED→UNSTABLE) Khufu's name in red ochre gang marks in the five relieving chambers scores highest on effort-per-apparent-value.
 - [REJECTED] (3 run(s): STABILIZED→UNSTABLE→REJECTED) Sun on the south casing adds a solar-chimney term (~8 Pa, ~0.8 m/s), reversing at night.
 - [STABILIZED] (3 run(s): ?→STABILIZED→STABILIZED) Queen's Chamber (the ka's room, misnamed by medieval Arabs): on the axis over the natural knoll, floor at 21.2 m ≈ H/7 (20.9), shafts sealed
 - [STABILIZED] (3 run(s): STABILIZED→STABILIZED→STABILIZED) The Big Void above the Grand Gallery is at least 30 m long, reads as air by muon contrast, and has no known passage to it.
@@ -65,5 +65,5 @@
 - [UNSTABLE] (1 run(s): UNSTABLE) Khufu's identity is tied to the load-bearing stone and the survival of his name in other people's mouths, rather than his physical body.
 - [STABILIZED] (1 run(s): STABILIZED) Sphere of radius H centred at the base centre. The centre (ka's chamber, over the unmoved knoll) has no finite image: it inverts to everythi
 - [STABILIZED] (1 run(s): STABILIZED) Khafre's pyramid is 3 m shorter on 10 m higher ground.
-- [STABILIZED] (1 run(s): STABILIZED) Khufu's pyramid 
+- [STABILIZED] (1 run(s): STABILIZED) Khufu's pyramid built the census, tax, provincial rotation, scribal class and cubit that ran Egypt 
 …(memory digest truncated)

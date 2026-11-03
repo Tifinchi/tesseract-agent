@@ -87,6 +87,16 @@ A paper always agrees with itself, so the document under test is never allowed t
 Per reading: one call to name relations, one call per variable to gather values, one judge call, one
 revision call. Ten claims ≈ 20–30 minutes on an RTX 3060 with the 14B model. `--max-claims 6` for a quick run.
 
+## Trial: the same version, three times, before anything changes
+
+    python3 trial.py claims/khufu-run.md --runs 3 --max-claims 4
+
+Three normal runs of the same version on the same input, then a report (`logs/trial-<stamp>.md`, tagged
+with the git commit) matching readings across the runs and listing every verdict side by side. A reading
+whose verdict differs between identical runs is UNSTABLE BY SAMPLING: no single run of it supports a
+diagnosis, and no prompt change can be credited for changing it. This is the control that the first seven
+runs never had; the rule from here is one change, then a trial, then compare.
+
 ## Debrief: talk with it after a run
 
     python3 debrief.py            # latest run; nine fixed questions, then yours; saved to logs/run-<id>-debrief.md

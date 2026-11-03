@@ -75,7 +75,7 @@
    "open_cells": []
   },
   {
-   "text": "The perimeter/height ratio of the Great Pyramid is 6.283 = 2π to 0.05 %.",
+   "text": "The perimeter/height ratio is 6.283 to 0.05 %.",
    "history": [
     {
      "run": "20261102-212827-8cbb01",
@@ -125,9 +125,16 @@
      "verdict": "STABILIZED",
      "reason": "Perimeter/height ratio: 2 independent route(s) agree within 2σ",
      "why": "The perimeter/height ratio of the Great Pyramid is 6.283 to 0.05 %."
+    },
+    {
+     "run": "20261103-101844-c704b6",
+     "cid": "x1r1",
+     "verdict": "REJECTED",
+     "reason": "perimeter/height ratio: computed 4*b/h from b=230.364 [cole-1925.md, survey], h=230.364 [cole-1925.md, survey] → 4 vs claimed 6.283; perimeter/height ratio: computed 4*b/h from b=230.33 [lehner-1997.md, published_analysis], h=230.33 [lehner-1997.md, published_analysis] → 4 vs claimed 6.283",
+     "why": "routes agree"
     }
    ],
-   "current": "STABILIZED",
+   "current": "REJECTED",
    "settled": [],
    "open_cells": [
     {
@@ -201,7 +208,7 @@
    ]
   },
   {
-   "text": "Khufu's name in red ochre gang marks in the five relieving chambers scores highest on effort-per-apparent-value.",
+   "text": "Khufu's name is painted in the relieving chambers.",
    "history": [
     {
      "run": "20261102-212827-8cbb01",
@@ -223,9 +230,16 @@
      "verdict": "UNSTABLE",
      "reason": "The source does not provide a measurable prediction for effort-per-apparent-value for Khufu's name in the relieving chambers.",
      "why": ""
+    },
+    {
+     "run": "20261103-101844-c704b6",
+     "cid": "x1r2",
+     "verdict": "REJECTED",
+     "reason": "down-wind mismatch: if true, stone would float in air — but reference-observable-reality.md: \"Unsupported objects denser than air fall; stone, metal, wood and people do not float in air.\"",
+     "why": "routes agree"
     }
    ],
-   "current": "UNSTABLE",
+   "current": "REJECTED",
    "settled": [],
    "open_cells": [
     {
@@ -1350,11 +1364,41 @@
      "closed": false
     }
    ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-101844-c704b6",
+     "cid": "x1r1f",
+     "verdict": "REJECTED",
+     "reason": "height/perimeter ratio: computed 4*b/h from b=230.364 [cole-1925.md, survey], h=230.364 [cole-1925.md, survey] → 4 vs claimed 0.159; height/perimeter ratio: computed 4*b/h from b=230.33 [lehner-1997.md, published_analysis], h=230.33 [lehner-1997.md, published_analysis] → 4 vs claimed 0.159; height/p",
+     "why": "routes agree"
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": []
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-101844-c704b6",
+     "cid": "x1r2f",
+     "verdict": "REJECTED",
+     "reason": "height/perimeter ratio: computed 4*b/h from b=230.364 [cole-1925.md, survey], h=230.364 [cole-1925.md, survey] → 4 vs claimed 0.159; height/perimeter ratio: computed 4*b/h from b=230.33 [lehner-1997.md, published_analysis], h=230.33 [lehner-1997.md, published_analysis] → 4 vs claimed 0.159; height/p",
+     "why": "routes agree"
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": []
   }
  ],
  "changes": [
   {
-   "text": "The perimeter/height ratio of the Great Pyramid is 6.283 = 2π to 0.05 %.",
+   "text": "The perimeter/height ratio is 6.283 to 0.05 %.",
    "from": {
     "run": "20261102-215725-39913b",
     "cid": "c7",
@@ -1371,7 +1415,7 @@
    }
   },
   {
-   "text": "The perimeter/height ratio of the Great Pyramid is 6.283 = 2π to 0.05 %.",
+   "text": "The perimeter/height ratio is 6.283 to 0.05 %.",
    "from": {
     "run": "20261102-224342-1990d5",
     "cid": "s2c2",
@@ -1388,7 +1432,7 @@
    }
   },
   {
-   "text": "The perimeter/height ratio of the Great Pyramid is 6.283 = 2π to 0.05 %.",
+   "text": "The perimeter/height ratio is 6.283 to 0.05 %.",
    "from": {
     "run": "20261102-230006-ea7914",
     "cid": "s2c5",
@@ -1402,6 +1446,23 @@
     "verdict": "STABILIZED",
     "reason": "Perimeter/height ratio: 2 independent route(s) agree within 2σ",
     "why": "The perimeter/height ratio of the Great Pyramid is 6.283 to 0.05 %."
+   }
+  },
+  {
+   "text": "The perimeter/height ratio is 6.283 to 0.05 %.",
+   "from": {
+    "run": "20261103-080123-9bc5ec",
+    "cid": "s2c5",
+    "verdict": "STABILIZED",
+    "reason": "Perimeter/height ratio: 2 independent route(s) agree within 2σ",
+    "why": "The perimeter/height ratio of the Great Pyramid is 6.283 to 0.05 %."
+   },
+   "to": {
+    "run": "20261103-101844-c704b6",
+    "cid": "x1r1",
+    "verdict": "REJECTED",
+    "reason": "perimeter/height ratio: computed 4*b/h from b=230.364 [cole-1925.md, survey], h=230.364 [cole-1925.md, survey] → 4 vs claimed 6.283; perimeter/height ratio: computed 4*b/h from b=230.33 [lehner-1997.md, published_analysis], h=230.33 [lehner-1997.md, published_analysis] → 4 vs claimed 6.283",
+    "why": "routes agree"
    }
   },
   {
@@ -1439,7 +1500,7 @@
    }
   },
   {
-   "text": "Khufu's name in red ochre gang marks in the five relieving chambers scores highest on effort-per-apparent-value.",
+   "text": "Khufu's name is painted in the relieving chambers.",
    "from": {
     "run": "20261102-212827-8cbb01",
     "cid": "c7",
@@ -1456,7 +1517,7 @@
    }
   },
   {
-   "text": "Khufu's name in red ochre gang marks in the five relieving chambers scores highest on effort-per-apparent-value.",
+   "text": "Khufu's name is painted in the relieving chambers.",
    "from": {
     "run": "20261102-214544-94674b",
     "cid": "c10",
@@ -1470,6 +1531,23 @@
     "verdict": "UNSTABLE",
     "reason": "The source does not provide a measurable prediction for effort-per-apparent-value for Khufu's name in the relieving chambers.",
     "why": ""
+   }
+  },
+  {
+   "text": "Khufu's name is painted in the relieving chambers.",
+   "from": {
+    "run": "20261102-215725-39913b",
+    "cid": "c9",
+    "verdict": "UNSTABLE",
+    "reason": "The source does not provide a measurable prediction for effort-per-apparent-value for Khufu's name in the relieving chambers.",
+    "why": ""
+   },
+   "to": {
+    "run": "20261103-101844-c704b6",
+    "cid": "x1r2",
+    "verdict": "REJECTED",
+    "reason": "down-wind mismatch: if true, stone would float in air — but reference-observable-reality.md: \"Unsupported objects denser than air fall; stone, metal, wood and people do not float in air.\"",
+    "why": "routes agree"
    }
   },
   {
@@ -1786,6 +1864,7 @@
   "20261102-221054-7a31bb",
   "20261102-224342-1990d5",
   "20261102-230006-ea7914",
-  "20261103-080123-9bc5ec"
+  "20261103-080123-9bc5ec",
+  "20261103-101844-c704b6"
  ]
 }
