@@ -109,6 +109,13 @@ LOCKED needs three after collapse and all three neighbours lined up. Every verdi
 independent agreement, cyclical, incomplete (neighbours unchecked), contradicted by a neighbour, or an
 independent route disagrees.
 
+**Down-wind reality (rule 9 to its consequences).** For every reading the model names up to three
+observable consequences that would follow if it were true; each is checked against the evidence or against
+`evidence/reference-observable-reality.md`, a bedrock file of everyday facts anyone can check (things fall,
+water flows downhill, an inaudible sound was not heard). A verified mismatch rejects the reading even where
+its number matched its sources — the reasoning is wrong, not the arithmetic. A mismatch asserted without a
+citation is recorded and keeps the reading from standing.
+
 An UNSTABLE verdict is still an answer: the revision pass gives the **provisional answer** the available
 proof favors, what it rests on, what is missing, and the next verifiable step. Silence is for halts.
 

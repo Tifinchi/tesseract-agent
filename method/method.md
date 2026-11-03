@@ -112,6 +112,18 @@ support, and never say less than the routes support. Confident words belong to S
 "the proof so far favors X because A and B; what would settle it is C" belongs to UNSTABLE. SILENCE and
 REFUSAL are for the ethics gate and for questions outside scope, not for incomplete evidence.
 
+## 5b. Down-wind reality (rule 9 carried to its consequences)
+
+A number can match every source and still be wrong in its reasoning. If a reading is right, the world has to
+look a certain way down-wind of it; if the world does not look that way, the reasoning behind the number is
+wrong, however good the match. So for every reading the engine names the observable consequences that would
+follow if it were true, and checks each against the evidence or against observable reality (the everyday
+facts anyone can check: things fall, water flows downhill, a sound inaudible outside a wall was not heard
+outside the wall). A verified down-wind mismatch rejects the reading. A mismatch asserted without a
+citation is recorded and keeps the reading from standing. "We use the alignments that do not create
+down-wind mismatched observables." This is a separate check from the routes: the routes ask whether the
+number is reached; the down-wind check asks whether the number can be true.
+
 ## 5a. The lock proper: agreement is not the check
 
 Routes agreeing is necessary, not sufficient. Two failures look like agreement:

@@ -364,6 +364,21 @@ Evidence passages:
 Return JSON: {{"implied": "number with units, or a sentence", "reported": {{"value_or_quote": "... or null", "file": "... or null"}},
   "lines_up": "yes|no|unknown", "reason": "one sentence naming the number or finding"}}"""
 
+P_DOWNWIND = """Reading: {reading}
+
+Rule 9, carried to its consequences: if this reading is TRUE, what would have to be observable down-wind of
+it? Name up to 3 consequences that anyone could check — in the evidence, or in observable reality (things
+fall, water flows downhill, a sound inaudible outside a wall was not heard outside). For each: what would be
+seen if the reading is true; what IS seen — quote the evidence passage or the observable-reality line
+VERBATIM with its [filename]; and whether they line up. A consequence that contradicts what is seen means
+the reasoning behind the number is wrong even if the number matched.
+Evidence passages:
+---
+{ctx}
+---
+Return JSON: {{"consequences": [{{"if_true": "...", "seen": {{"quote": "verbatim or null", "file": "filename or null"}},
+  "lines_up": "yes|no|unknown", "reason": "one sentence"}}]}}"""
+
 P_JUDGE = """Reading {cid}: {reading}
 
 Route report computed by the script (immutable):
@@ -607,6 +622,22 @@ def check_neighbours(model, ev, cid, reading, anchor, log, run_id):
     log.write(run=run_id, claim=cid, pass_="NEIGHBOUR_STATE", neighbours=out)
     return out
 
+def check_downwind(model, ev, cid, reading, log, run_id):
+    """Rule 9 to its consequences: verified mismatches reject; unverified ones are recorded."""
+    ctx = ev.retrieve(reading + " observable reality falls flows", k=10, max_chars=5000)
+    got = ask(model, SYSTEM, P_DOWNWIND.format(reading=reading, ctx=ctx)) if ctx else {}
+    out = []
+    for c in (got.get("consequences") or [])[:3]:
+        seen = c.get("seen") or {}
+        fn, q = (str(seen.get("file") or "")).strip("[] "), seen.get("quote") or ""
+        verified = ev.group_of(fn) is not None and (ev.contains_quote(q, fn) or ev.contains_number(q, fn))
+        lu = str(c.get("lines_up", "unknown")).lower()
+        status = ("verified_mismatch" if (lu == "no" and verified) else "asserted_mismatch" if lu == "no"
+                  else "lines_up" if (lu == "yes" and verified) else "asserted_ok" if lu == "yes" else "unknown")
+        out.append({"if_true": c.get("if_true"), "status": status, "file": fn or None, "quote": q[:160], "reason": c.get("reason", "")})
+    log.write(run=run_id, claim=cid, pass_="IMPLICATION_STATE", downwind=out)
+    return out
+
 def fit_account(reports):
     """The script's deterministic explanation of the fit, printed under every verdict."""
     L = []
@@ -629,9 +660,11 @@ def fit_account(reports):
             L.append(f"  · discarded: {d['what']}: {d['why']}")
     return "\n".join(L) if L else "no observable could be routed"
 
-def synthesis_by_rule(reports, judge, ev, neighbours=None):
+def synthesis_by_rule(reports, judge, ev, neighbours=None, downwind=None):
     outcome, lock, reason = "NO_DATA", 0, []
-    neighbours = neighbours or []
+    neighbours = neighbours or []; downwind = downwind or []
+    dw_reject = [d for d in downwind if d["status"] == "verified_mismatch"]
+    dw_flag = [d for d in downwind if d["status"] == "asserted_mismatch"]
     lined = sum(1 for n in neighbours if n["status"] == "lined_up")
     contra = [n for n in neighbours if n["status"] == "contradicts"]
     if reports:
@@ -652,6 +685,10 @@ def synthesis_by_rule(reports, judge, ev, neighbours=None):
                 reason = [f"neighbour contradicts: {n['neighbour']} ({n['note']})" for n in contra]
             else:
                 reason = [f"{r['observable']}: {r['agree']} independent route(s) agree (strict {r.get('strict_agree', r['agree'])})" for r in reports]
+    if dw_reject:
+        outcome = "REJECT"; reason = [f"down-wind mismatch: if true, {d['if_true']} — but {d['file']}: \"{d['quote'][:100]}\"" for d in dw_reject]
+    elif dw_flag and outcome == "NOT_REJECT":
+        outcome = "NO_DATA"; reason = reason + [f"down-wind mismatch asserted without citation: {d['if_true']} ({d['reason']})" for d in dw_flag]
     cores = {"outcome": {"verdict": outcome, "reason": "; ".join(reason) or "no route reached any observable"}}
     for k in ("constraint", "alternative", "consequence"):
         c = dict(judge.get(k)) if isinstance(judge.get(k), dict) else {}
@@ -672,7 +709,9 @@ def synthesis_by_rule(reports, judge, ev, neighbours=None):
     else:
         synth = "LOCKED" if lock >= 3 else "STABILIZED"
     # diagnosis: what kind of agreement this is
-    if synth == "REJECTED":
+    if dw_reject:
+        diag = "down-wind consequence contradicts observable reality or the evidence (the reasoning is wrong even where the number matched)"
+    elif synth == "REJECTED":
         diag = "an independent route disagrees"
     elif contra:
         diag = "contradicted by a neighbour (confidently-wrong candidate until resolved)"
@@ -750,10 +789,11 @@ def run(path, model, question, max_claims, out_dir, evidence_dir):
                       "routes": [{k: v for k, v in r.items() if k in ("type", "value", "band", "within_2sigma", "coarse", "stance", "covers", "process")} for r in rp["independent"]]}
                      for rp in reports]
             nbs = check_neighbours(model, ev, rid, reading, c.get("anchor") or {}, log, run_id)
+            dw = check_downwind(model, ev, rid, reading, log, run_id)
             ctx = ev.retrieve(reading)
             judge = ask(model, SYSTEM, P_JUDGE.format(cid=rid, reading=reading, routes=json.dumps(brief, ensure_ascii=False), ctx=ctx))
-            synth, cores, lock = synthesis_by_rule(reports, judge, ev, nbs)
-            e = {"quad_core": cores, "lock_level": lock, "synthesis": synth, "fit_account": fit, "neighbours": nbs,
+            synth, cores, lock = synthesis_by_rule(reports, judge, ev, nbs, dw)
+            e = {"quad_core": cores, "lock_level": lock, "synthesis": synth, "fit_account": fit, "neighbours": nbs, "downwind": dw,
                  "implication": judge.get("implication"), "ethics": judge.get("ethics")}
             log.write(run=run_id, claim=rid, pass_="EVALUATION_STATE", output=e, elapsed=round(time.time() - t, 1))
             if (judge.get("ethics") or {}).get("decision") == "HALT":
@@ -808,6 +848,8 @@ def render_summary(run_id, path, question, model, ev, results, elapsed):
                 L.append("  " + line)
             for nb in e.get("neighbours") or []:
                 L.append(f"  neighbour {nb['neighbour']}: {nb['status']} — {nb['note']}")
+            for d in e.get("downwind") or []:
+                L.append(f"  down-wind: if true, {d['if_true']} → {d['status']}" + (f" ({d['file']}: \"{d['quote'][:90]}\")" if d.get('file') else "") + f" — {d['reason']}")
             qc = e.get("quad_core", {})
             for k in ("constraint", "alternative", "consequence"):
                 v = qc.get(k, {})
