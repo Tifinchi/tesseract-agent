@@ -96,6 +96,16 @@ script did with its proposals, and is asked how it understood the task, how it w
 were doing. Its answers are self-report (the interview from the research proposal): logged beside the
 trace so they can be checked against it, never counted as evidence of anything.
 
+## Process memory (PRF section 12)
+
+`memory.py` reads every run log, debrief and chat in `logs/` and builds `logs/memory.md`: the latest
+verdict on each claim (matched across runs by wording), every change of mind with the old and new reasons
+side by side, and what the model said about itself in debriefs and chats. The engine rebuilds it at the
+start of every run; after each verdict is fixed by rule (never before, so memory cannot bias the judging)
+the revision pass is shown its previous position and must say what changed and why. Changes appear in the
+summary as CHANGED MIND and in the log as REGRESSION_STATE. The chat and the debrief load the digest too
+(`--no-memory` to omit). Run `python3 memory.py` to print it.
+
 ## Chat with it directly
 
     python3 chat.py               # the model under the standing orders

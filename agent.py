@@ -22,6 +22,7 @@ Every pass writes one immutable JSON line to logs/run-<stamp>.jsonl; a summary g
 """
 import argparse, ast, datetime, json, math, operator, os, re, sys, time, uuid
 import requests
+import memory as process_memory
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 METHOD = "\n\n".join(open(os.path.join(HERE, "method", f), encoding="utf-8").read()
@@ -361,6 +362,8 @@ Return JSON:
 P_REVISE = """Reading {cid}: {reading}
 Synthesis (by rule, from the cores): {synth}
 Script's account of the fit: {fit}
+Your previous position on a claim like this one (from process memory; the verdict above was fixed by rule before
+you saw this): {previous}
 
 PASS 6–8. If REJECTED: fold — keep the question, drop the mechanism; give the folded question.
 If UNSTABLE: for each observable with fewer than two independent routes, name the exact measurement,
@@ -368,11 +371,13 @@ survey, document or experiment that would supply the NEXT independent route (not
 If STABILIZED or LOCKED: give the reduced statement carrying the agreed number, and the kept terms.
 Also: one sentence on WHY this reading fits or does not, in plain words a reader could check against the
 account above; and the likely misinterpretation and the proof against it.
+If your previous position differs from this verdict, say in one sentence what changed and why (new evidence,
+a corrected route, a discarded citation, a different reading) — never hide a change of mind.
 Return JSON:
 {{"folded_question": "... or null",
   "empty_cells": [{{"observable": "...", "next_route": "..."}}],
   "reduced_statement": "... or null", "kept_terms": ["..."],
-  "why": "...", "likely_misinterpretation": "...", "proof_against_it": "...",
+  "why": "...", "change_of_mind": "... or null", "likely_misinterpretation": "...", "proof_against_it": "...",
   "final": {{"state": "OUTPUT|REFUSAL|SILENCE", "statement": "one sentence; confident words only if STABILIZED or LOCKED"}}}}"""
 
 # ----------------------------------------------------------------------------- helpers
@@ -595,8 +600,10 @@ def run(path, model, question, max_claims, out_dir, evidence_dir):
     run_id = f"{stamp}-{uuid.uuid4().hex[:6]}"
     os.makedirs(out_dir, exist_ok=True)
     log = Log(os.path.join(out_dir, f"run-{run_id}.jsonl"))
+    mem = process_memory.build()
     log.write(run=run_id, pass_="ENTRY_STATE", input=os.path.basename(path), question=question, model=model,
-              evidence_files=[d[0] for d in ev.docs], evidence_groups=ev.groups)
+              evidence_files=[d[0] for d in ev.docs], evidence_groups=ev.groups,
+              memory_runs=mem.get("runs"), memory_changes=len(mem.get("changes") or []))
     if len(ev.groups) < 2:
         print(f"WARNING: evidence/ has {len(ev.groups)} source group(s); nothing can stabilize with fewer than 2.")
     t0 = time.time()
@@ -648,7 +655,15 @@ def run(path, model, question, max_claims, out_dir, evidence_dir):
             if (judge.get("ethics") or {}).get("decision") == "HALT":
                 log.write(run=run_id, claim=rid, pass_="FINAL_STATE", state="HALT")
                 readings_out.append((rid, reading, "HALT", e, {}, reports, fit)); print("      → HALT"); continue
-            r = ask(model, SYSTEM, P_REVISE.format(cid=rid, reading=reading, synth=synth, fit=fit))
+            prev = process_memory.previous_on(reading, mem)
+            prev_text = "none recorded" if not prev else (f"{prev['current']} in run {prev['history'][-1]['run']}: " +
+                        (prev['history'][-1].get('reason') or prev['history'][-1].get('why') or '(no reason logged)'))
+            r = ask(model, SYSTEM, P_REVISE.format(cid=rid, reading=reading, synth=synth, fit=fit, previous=prev_text))
+            if prev and prev["current"] != synth:
+                r["changed_from"] = {"verdict": prev["current"], "run": prev["history"][-1]["run"],
+                                     "reason": prev["history"][-1].get("reason") or prev["history"][-1].get("why")}
+                log.write(run=run_id, claim=rid, pass_="REGRESSION_STATE", previous=r["changed_from"], now=synth,
+                          explanation=r.get("change_of_mind"))
             if synth in ("STABILIZED", "LOCKED") and not r.get("reduced_statement"):
                 r["reduced_statement"] = reading
             log.write(run=run_id, claim=rid, pass_="REVISION_STATE", output=r)
@@ -692,6 +707,10 @@ def render_summary(run_id, path, question, model, ev, results, elapsed):
                 note = v.get("recorded_not_counted") or v.get("downgraded") or v.get("note")
                 L.append(f"  {k}: {v.get('verdict')} — {v.get('reason', '')}" + (f" [{note}]" if note else ""))
             if r.get("why"): L.append(f"  why: {r['why']}")
+            if r.get("changed_from"):
+                cf = r["changed_from"]
+                L.append(f"  CHANGED MIND: was {cf['verdict']} in {cf['run']} ({(cf.get('reason') or '')[:160]}); now {s}. "
+                         f"Explanation: {r.get('change_of_mind') or '(none given)'}")
             if s == "REJECTED" and r.get("folded_question"): L.append(f"  folded → {r['folded_question']}")
             if s == "UNSTABLE":
                 for cell in r.get("empty_cells") or []:

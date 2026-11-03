@@ -32,6 +32,7 @@ def main():
     ap.add_argument("--no-method", action="store_true")
     ap.add_argument("--with-run", nargs="?", const="latest", default=None)
     ap.add_argument("--evidence", action="store_true")
+    ap.add_argument("--no-memory", action="store_true", help="do not load the process memory digest")
     a = ap.parse_args()
 
     parts = []
@@ -42,6 +43,10 @@ def main():
                      "route to that' rather than guess, and name the measurement that would settle a question.\n\n" + method_text())
     else:
         parts.append("You are a helpful assistant.")
+    if not a.no_memory:
+        import memory as process_memory
+        process_memory.build()
+        parts.append("YOUR PROCESS MEMORY (your own history across runs, debriefs and chats; changes of mind are kept, not hidden):\n" + process_memory.digest())
     if a.with_run:
         import debrief
         jsonl = debrief.latest_run(None if a.with_run == "latest" else a.with_run)

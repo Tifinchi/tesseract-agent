@@ -1,0 +1,1276 @@
+{
+ "claims": [
+  {
+   "text": "The King's Chamber in the Great Pyramid of Khufu rings at approximately 16/30/33 Hz.",
+   "history": [
+    {
+     "run": "20261102-212827-8cbb01",
+     "cid": "c1",
+     "verdict": "UNSTABLE",
+     "reason": "Lack of direct observational data to compare the predicted frequency with actual measurements.",
+     "why": ""
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "The King's Chamber has a ventilation system driven by the prevailing north wind and solar chimney effect.",
+   "history": [
+    {
+     "run": "20261102-212827-8cbb01",
+     "cid": "c2",
+     "verdict": null,
+     "reason": "The predicted draft matches the known value of ~2.5 m/s, indicating the prevailing north wind and solar chimney effect are consistent with the observed draft through the King's Chamber.",
+     "why": ""
+    }
+   ],
+   "current": null
+  },
+  {
+   "text": "The King's Chamber maintains a constant temperature of approximately 20 °C year-round due to its thermal mass.",
+   "history": [
+    {
+     "run": "20261102-212827-8cbb01",
+     "cid": "c3",
+     "verdict": "STABILIZED",
+     "reason": "The observed temperature of the King's Chamber is consistent with the claim of maintaining a constant temperature of approximately 20 °C year-round.",
+     "why": ""
+    }
+   ],
+   "current": "STABILIZED"
+  },
+  {
+   "text": "The Queen's Chamber and King's Chamber are positioned according to different geometric grids: the Queen's Chamber aligns with the Egyptian sevenths grid, while the King's Chamber aligns with the √2 grid.",
+   "history": [
+    {
+     "run": "20261102-212827-8cbb01",
+     "cid": "c4",
+     "verdict": "STABILIZED",
+     "reason": "The floor of the Queen's Chamber aligns with the Egyptian sevenths grid, and the floor of the King's Chamber aligns with the √2 grid, as predicted.",
+     "why": ""
+    }
+   ],
+   "current": "STABILIZED"
+  },
+  {
+   "text": "The perimeter/height ratio of the Great Pyramid is 6.283 = 2π to 0.05 %.",
+   "history": [
+    {
+     "run": "20261102-212827-8cbb01",
+     "cid": "c5",
+     "verdict": "STABILIZED",
+     "reason": "The predicted perimeter-to-height ratio matches the known value of 2π",
+     "why": ""
+    },
+    {
+     "run": "20261102-214544-94674b",
+     "cid": "c8",
+     "verdict": "STABILIZED",
+     "reason": "The predicted value of 6.283 matches the known value of 2π to within 0.05%.",
+     "why": ""
+    },
+    {
+     "run": "20261102-215725-39913b",
+     "cid": "c7",
+     "verdict": "STABILIZED",
+     "reason": "The prediction matches the known value of 2π to 0.05%.",
+     "why": ""
+    },
+    {
+     "run": "20261102-221054-7a31bb",
+     "cid": "c8",
+     "verdict": "REJECTED",
+     "reason": "The predicted ratio of 6.283 matches the observed value of 921.2/146.6 = 6.283, within the precision of 0.05%. No mismatch observed.",
+     "why": ""
+    },
+    {
+     "run": "20261102-224342-1990d5",
+     "cid": "s2c2",
+     "verdict": "REJECTED",
+     "reason": "seked: route 7 / 5.5 gives 1.27273 vs claimed 5 (74.54 %)",
+     "why": "The claim that the perimeter/height ratio of the Great Pyramid is 2π to 0.05% derived from the seked of 5½ palms is rejected."
+    },
+    {
+     "run": "20261102-230006-ea7914",
+     "cid": "s2c5",
+     "verdict": "UNSTABLE",
+     "reason": "Perimeter/height ratio: 0 independent route(s) agree within 2σ",
+     "why": "The claim about the perimeter/height ratio of the Great Pyramid is unstable due to a lack of independent verification."
+    },
+    {
+     "run": "20261103-080123-9bc5ec",
+     "cid": "s2c5",
+     "verdict": "STABILIZED",
+     "reason": "Perimeter/height ratio: 2 independent route(s) agree within 2σ",
+     "why": "The perimeter/height ratio of the Great Pyramid is 6.283 to 0.05 %."
+    }
+   ],
+   "current": "STABILIZED"
+  },
+  {
+   "text": "The King's Chamber at r ≈ 46 m inverts to ρ²/r ≈ 470 m out along the same ray.",
+   "history": [
+    {
+     "run": "20261102-212827-8cbb01",
+     "cid": "c6",
+     "verdict": "UNSTABLE",
+     "reason": "Lack of specific measurement data to compare the predicted inverted position with actual observations.",
+     "why": ""
+    },
+    {
+     "run": "20261102-215725-39913b",
+     "cid": "c8",
+     "verdict": "STABILIZED",
+     "reason": "The claim predicts the inverted position of the King's Chamber to be ~320 m above the apex, slightly south, toward the south shaft, which aligns with the source's records.",
+     "why": ""
+    },
+    {
+     "run": "20261102-221054-7a31bb",
+     "cid": "c9",
+     "verdict": "STABILIZED",
+     "reason": "The predicted distance from the base matches the known value of 470 m, no mismatch observed.",
+     "why": ""
+    },
+    {
+     "run": "20261102-230006-ea7914",
+     "cid": "s2c6",
+     "verdict": "UNSTABLE",
+     "reason": "Inversion distance: 0 independent route(s) agree within 2σ",
+     "why": "The claim about the inversion distance from the King's Chamber is unstable due to lack of independent verification."
+    },
+    {
+     "run": "20261103-080123-9bc5ec",
+     "cid": "s2c6",
+     "verdict": "UNSTABLE",
+     "reason": "Inversion distance: 0 independent route(s) agree within 2σ",
+     "why": "The claim about the inversion distance of the King's Chamber is unstable due to insufficient independent verification."
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "Khufu's name in red ochre gang marks in the five relieving chambers scores highest on effort-per-apparent-value.",
+   "history": [
+    {
+     "run": "20261102-212827-8cbb01",
+     "cid": "c7",
+     "verdict": "UNSTABLE",
+     "reason": "Lack of direct observational evidence for Khufu's name in red ochre on the granite beams in the five relieving chambers",
+     "why": ""
+    },
+    {
+     "run": "20261102-214544-94674b",
+     "cid": "c10",
+     "verdict": "STABILIZED",
+     "reason": "The claim matches the known observation of Khufu's name in red ochre gang marks in the five relieving chambers",
+     "why": ""
+    },
+    {
+     "run": "20261102-215725-39913b",
+     "cid": "c9",
+     "verdict": "UNSTABLE",
+     "reason": "The source does not provide a measurable prediction for effort-per-apparent-value for Khufu's name in the relieving chambers.",
+     "why": ""
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "Hetepheres I (Snefru's queen) buried at Giza, not Dahshur, in a hidden shaft sealed with Khufu's name; sarcophagus sealed, unforced, empty; organs present.",
+   "history": [
+    {
+     "run": "20261102-212827-8cbb01",
+     "cid": "c8",
+     "verdict": "STABILIZED",
+     "reason": "Prediction matches known values for Khufu's name in the hidden shaft and boat-pit mortar, and the state of Hetepheres I's sarcophagus and organs",
+     "why": ""
+    },
+    {
+     "run": "20261102-214544-94674b",
+     "cid": "c11",
+     "verdict": "STABILIZED",
+     "reason": "The claim's prediction matches the known observation of Khufu's name in the weight and other observables.",
+     "why": ""
+    },
+    {
+     "run": "20261102-215725-39913b",
+     "cid": "c14",
+     "verdict": "STABILIZED",
+     "reason": "The claim is a RECORD and no direct observation contradicts it in the source.",
+     "why": ""
+    },
+    {
+     "run": "20261102-221054-7a31bb",
+     "cid": "c11",
+     "verdict": "STABILIZED",
+     "reason": "Observation matches prediction for burial location, sealing mechanism, sarcophagus condition, and organ presence",
+     "why": ""
+    }
+   ],
+   "current": "STABILIZED"
+  },
+  {
+   "text": "The Great Pyramid served as a calendar, survey datum, economic support, and state-building project for over 2,500 years.",
+   "history": [
+    {
+     "run": "20261102-212827-8cbb01",
+     "cid": "c9",
+     "verdict": "STABILIZED",
+     "reason": "Observations match predictions for calendar alignment, survey accuracy, economic impact, and state structure.",
+     "why": ""
+    }
+   ],
+   "current": "STABILIZED"
+  },
+  {
+   "text": "Khufu's identity is tied to the load-bearing stone and the survival of his name in other people's mouths, rather than his physical body.",
+   "history": [
+    {
+     "run": "20261102-212827-8cbb01",
+     "cid": "c10",
+     "verdict": "UNSTABLE",
+     "reason": "Insufficient data to compare prediction with observation for Khufu's name in other people's mouths, Khufu's physical body, and Khufu's load-bearing stone.",
+     "why": ""
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "Stone chambers ring in the infrasound band: Karnak's hypostyle hall at ~1.7/3.4/8.6 Hz, the King's Chamber (10.5 × 5.2 × 5.8 m) near 16/30/33 Hz, the King's shafts as pipes at ~1.4–2.9 Hz, the whole hall through its pylon at ~1 Hz (a resting pulse).",
+   "history": [
+    {
+     "run": "20261102-214544-94674b",
+     "cid": "c1",
+     "verdict": "STABILIZED",
+     "reason": "The claim matches the observed resonance frequencies in the stone chambers as stated in the source data.",
+     "why": ""
+    },
+    {
+     "run": "20261102-215725-39913b",
+     "cid": "c1",
+     "verdict": "STABILIZED",
+     "reason": "The claim is a record and no observation contradicts it within the source.",
+     "why": ""
+    },
+    {
+     "run": "20261102-221054-7a31bb",
+     "cid": "c1",
+     "verdict": "REJECTED",
+     "reason": "No direct measurement of resonance frequencies in the specified chambers is provided in the source.",
+     "why": ""
+    },
+    {
+     "run": "20261102-230006-ea7914",
+     "cid": "s2c1",
+     "verdict": "UNSTABLE",
+     "reason": "King's Chamber resonance frequency: 0 independent route(s) agree within 2σ; King's shafts resonance frequency: 0 independent route(s) agree within 2σ; Whole hall resonance frequency: 0 independent route(s) agree within 2σ",
+     "why": "The claim about specific resonance frequencies in ancient stone chambers requires further empirical evidence to be stabilized."
+    },
+    {
+     "run": "20261103-080123-9bc5ec",
+     "cid": "s2c1",
+     "verdict": "UNSTABLE",
+     "reason": "King's Chamber resonance frequency: 0 independent route(s) agree within 2σ; King's shafts resonance frequency: 0 independent route(s) agree within 2σ; Whole hall resonance frequency: 0 independent route(s) agree within 2σ",
+     "why": "The claim about specific resonance frequencies of ancient stone chambers requires further empirical evidence to be stabilized."
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "Radiation out of a 20 cm opening at 30 Hz is ~(ka)² ≈ 0.4 %: nothing leaves the building.",
+   "history": [
+    {
+     "run": "20261102-214544-94674b",
+     "cid": "c2",
+     "verdict": "STABILIZED",
+     "reason": "The prediction matches the known value of 0.4% radiation level at 30 Hz.",
+     "why": ""
+    },
+    {
+     "run": "20261102-215725-39913b",
+     "cid": "c2",
+     "verdict": "UNSTABLE",
+     "reason": "The source does not provide a measurement confirming the estimate of 0.4% radiation leaving the building.",
+     "why": ""
+    },
+    {
+     "run": "20261102-221054-7a31bb",
+     "cid": "c2",
+     "verdict": "STABILIZED",
+     "reason": "The observed radiation level at 30 Hz is 0.4 %, matching the claim's prediction.",
+     "why": ""
+    },
+    {
+     "run": "20261102-230006-ea7914",
+     "cid": "s2c2",
+     "verdict": "UNSTABLE",
+     "reason": "Radiation loss: 0 independent route(s) agree within 2σ",
+     "why": "The claim about radiation loss is unstable and requires empirical evidence to be verified."
+    },
+    {
+     "run": "20261103-080123-9bc5ec",
+     "cid": "s2c2",
+     "verdict": "UNSTABLE",
+     "reason": "Radiation loss: 0 independent route(s) agree within 2σ",
+     "why": "The claim about radiation loss through a 20 cm opening at 30 Hz is unstable due to lack of empirical evidence."
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "Prevailing north wind on the north face, lee suction on the south: ~80 Pa across 120 m of 20 cm duct gives a ~2.5 m/s draft through the King's Chamber.",
+   "history": [
+    {
+     "run": "20261102-214544-94674b",
+     "cid": "c3",
+     "verdict": "STABILIZED",
+     "reason": "Prediction matches known value of ~2.5 m/s draft through the King's Chamber.",
+     "why": ""
+    },
+    {
+     "run": "20261102-215725-39913b",
+     "cid": "c3",
+     "verdict": "STABILIZED",
+     "reason": "The predicted draft speed of ~2.5 m/s matches the observed value in the source document.",
+     "why": ""
+    },
+    {
+     "run": "20261102-221054-7a31bb",
+     "cid": "c3",
+     "verdict": "STABILIZED",
+     "reason": "The predicted draft velocity matches the observed value within the range implied by the pressure difference and duct dimensions.",
+     "why": ""
+    },
+    {
+     "run": "20261102-230006-ea7914",
+     "cid": "s2c3",
+     "verdict": "REJECTED",
+     "reason": "Draft velocity: 0 independent route(s) agree within 2σ; Pressure difference: 0 independent route(s) agree within 2σ",
+     "why": "The claim about the draft velocity through the King's Chamber is REJECTED due to insufficient evidence."
+    }
+   ],
+   "current": "REJECTED"
+  },
+  {
+   "text": "Sun on the south casing adds a solar-chimney term (~8 Pa, ~0.8 m/s), reversing at night.",
+   "history": [
+    {
+     "run": "20261102-214544-94674b",
+     "cid": "c4",
+     "verdict": "STABILIZED",
+     "reason": "The predicted effect of solar heating on the draft through the King's Chamber aligns with the known value of ~2.5 m/s due to north wind, indicating a small but measurable impact.",
+     "why": ""
+    },
+    {
+     "run": "20261102-215725-39913b",
+     "cid": "c4",
+     "verdict": "UNSTABLE",
+     "reason": "The source does not provide a measurement confirming the estimate of ~8 Pa and ~0.8 m/s.",
+     "why": ""
+    },
+    {
+     "run": "20261102-221054-7a31bb",
+     "cid": "c4",
+     "verdict": "REJECTED",
+     "reason": "no known_value for draft through the King's Chamber",
+     "why": ""
+    }
+   ],
+   "current": "REJECTED"
+  },
+  {
+   "text": "The King's Chamber stays at ~20 °C year round.",
+   "history": [
+    {
+     "run": "20261102-214544-94674b",
+     "cid": "c5",
+     "verdict": "UNSTABLE",
+     "reason": "The claim matches the observed dryness of the King's Chamber, which is known to be dry.",
+     "why": ""
+    },
+    {
+     "run": "20261102-215725-39913b",
+     "cid": "c5",
+     "verdict": "STABILIZED",
+     "reason": "The source records the Queen's Chamber carries a salt crust up to ~1 cm, confirming the prediction.",
+     "why": ""
+    },
+    {
+     "run": "20261103-080123-9bc5ec",
+     "cid": "s2c3",
+     "verdict": "UNSTABLE",
+     "reason": "Draft velocity: 0 independent route(s) agree within 2σ",
+     "why": "The draft velocity in the King's Chamber is approximately 2.5 m/s, but further measurement is needed to confirm this value."
+    },
+    {
+     "run": "20261103-080123-9bc5ec",
+     "cid": "s2c4",
+     "verdict": "UNSTABLE",
+     "reason": "Temperature: 0 independent route(s) agree within 2σ",
+     "why": "The claim that the King's Chamber maintains a temperature of approximately 20 °C year-round requires further evidence."
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "Queen's Chamber (the ka's room, misnamed by medieval Arabs): on the axis over the natural knoll, floor at 21.2 m ≈ H/7 (20.9), shafts sealed at both ends, niche for the statue.",
+   "history": [
+    {
+     "run": "20261102-214544-94674b",
+     "cid": "c6",
+     "verdict": null,
+     "reason": "The floor height of 21.2 m ≈ H/7 (20.9) matches the known value within the range of 20.9 m to 21.2 m.",
+     "why": ""
+    },
+    {
+     "run": "20261102-215725-39913b",
+     "cid": "c6",
+     "verdict": "STABILIZED",
+     "reason": "The claim is a RECORD and is compared only against other records in the source, which do not contradict it.",
+     "why": ""
+    },
+    {
+     "run": "20261102-221054-7a31bb",
+     "cid": "c6",
+     "verdict": "STABILIZED",
+     "reason": "The floor height of 21.2 m ≈ H/7 (20.9) matches the known_value true for the floor height observable.",
+     "why": ""
+    }
+   ],
+   "current": "STABILIZED"
+  },
+  {
+   "text": "King's Chamber: off-axis ~11 m south, floor at 43.0 m where the horizontal section has exactly half the base area, h = H(1 − 1/√2) = 42.9 m; shafts open to the pole and Orion.",
+   "history": [
+    {
+     "run": "20261102-214544-94674b",
+     "cid": "c7",
+     "verdict": "REJECTED",
+     "reason": "The claim's prediction for the horizontal section area and height do not match the known values, as indicated by the neighbours' ranges. The horizontal section area and height calculations are misfits inside the range, indicating a mismatch between the claim and the data.",
+     "why": ""
+    },
+    {
+     "run": "20261102-221054-7a31bb",
+     "cid": "c7",
+     "verdict": "STABILIZED",
+     "reason": "Prediction matches known_value for floor height",
+     "why": ""
+    }
+   ],
+   "current": "STABILIZED"
+  },
+  {
+   "text": "Sphere of radius H centred at the base centre. The centre (ka's chamber, over the unmoved knoll) has no finite image: it inverts to everything outside.",
+   "history": [
+    {
+     "run": "20261102-214544-94674b",
+     "cid": "c9",
+     "verdict": "STABILIZED",
+     "reason": "The claim states that the centre of the sphere inverts to everything outside, which is consistent with the given data that the King's Chamber inverts to a point outside at ρ²/r ≈ 470 m. No direct observation contradicts this claim.",
+     "why": ""
+    }
+   ],
+   "current": "STABILIZED"
+  },
+  {
+   "text": "Khafre's coffer lid lies unbroken on the floor of his burial chamber.",
+   "history": [
+    {
+     "run": "20261102-214544-94674b",
+     "cid": "c12",
+     "verdict": "REJECTED",
+     "reason": "The claim matches the known state of the coffer lid and the absence of lid fragments, which supports the prediction that the lid is unbroken and on the floor.",
+     "why": ""
+    },
+    {
+     "run": "20261102-221054-7a31bb",
+     "cid": "c12",
+     "verdict": "STABILIZED",
+     "reason": "the prediction matches the known observation of the lid being unbroken on the floor",
+     "why": ""
+    }
+   ],
+   "current": "STABILIZED"
+  },
+  {
+   "text": "lid lowered from the ceiling (coffer has a sliding groove and pin holes; nine beams all present)",
+   "history": [
+    {
+     "run": "20261102-214544-94674b",
+     "cid": "c13",
+     "verdict": "STABILIZED",
+     "reason": "The claim matches the known physical characteristics of the coffer as recorded in the source document.",
+     "why": ""
+    },
+    {
+     "run": "20261102-215725-39913b",
+     "cid": "c11",
+     "verdict": "STABILIZED",
+     "reason": "The claim is a record and no contradicting record is provided in the source.",
+     "why": ""
+    },
+    {
+     "run": "20261102-221054-7a31bb",
+     "cid": "c13",
+     "verdict": "REJECTED",
+     "reason": "The claim matches the known observation that the lid has never been found and no lid fragments are recorded.",
+     "why": ""
+    },
+    {
+     "run": "20261102-230006-ea7914",
+     "cid": "s4c1",
+     "verdict": "UNSTABLE",
+     "reason": "number of beams: 0 independent route(s) agree within 2σ",
+     "why": "The claim about the lid mechanism is unstable due to lack of independent verification for the number of beams."
+    },
+    {
+     "run": "20261103-080123-9bc5ec",
+     "cid": "s4c1",
+     "verdict": "UNSTABLE",
+     "reason": "number of beams: 1 independent route(s) agree within 2σ",
+     "why": "The claim is unstable due to insufficient evidence regarding the lid's movement from the ceiling."
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "The Big Void above the Grand Gallery is at least 30 m long, reads as air by muon contrast, and has no known passage to it.",
+   "history": [
+    {
+     "run": "20261102-214544-94674b",
+     "cid": "c14",
+     "verdict": "STABILIZED",
+     "reason": "The claim matches the observation that the Big Void is at least 30 m long and reads as air by muon contrast.",
+     "why": ""
+    },
+    {
+     "run": "20261102-215725-39913b",
+     "cid": "c12",
+     "verdict": "STABILIZED",
+     "reason": "The record states the Big Void is at least 30 m long and reads as air by muon contrast, which matches the known_value from the source.",
+     "why": ""
+    },
+    {
+     "run": "20261102-221054-7a31bb",
+     "cid": "c14",
+     "verdict": "STABILIZED",
+     "reason": "The observed length of the Big Void is consistent with the claim of at least 30 m.",
+     "why": ""
+    }
+   ],
+   "current": "STABILIZED"
+  },
+  {
+   "text": "Khafre's pyramid is 3 m shorter on 10 m higher ground.",
+   "history": [
+    {
+     "run": "20261102-215725-39913b",
+     "cid": "c10",
+     "verdict": "STABILIZED",
+     "reason": "The claim is a record and no other record contradicts it in the source.",
+     "why": ""
+    }
+   ],
+   "current": "STABILIZED"
+  },
+  {
+   "text": "Khufu's pyramid built the census, tax, provincial rotation, scribal class and cubit that ran Egypt for 2,500 years.",
+   "history": [
+    {
+     "run": "20261102-215725-39913b",
+     "cid": "c13",
+     "verdict": "STABILIZED",
+     "reason": "The source's records confirm the prediction that the pyramid's construction established the census, tax, provincial rotation, scribal class and cubit that ran Egypt for 2,500 years.",
+     "why": ""
+    }
+   ],
+   "current": "STABILIZED"
+  },
+  {
+   "text": "The King's Chamber is ventilated, set high in dry masonry, and stays dry.",
+   "history": [
+    {
+     "run": "20261102-221054-7a31bb",
+     "cid": "c5",
+     "verdict": "STABILIZED",
+     "reason": "The prediction matches the known value of the King's Chamber staying dry and being ventilated.",
+     "why": ""
+    }
+   ],
+   "current": "STABILIZED"
+  },
+  {
+   "text": "The only writing in the Great Pyramid is Khufu's name in red ochre gang marks.",
+   "history": [
+    {
+     "run": "20261102-221054-7a31bb",
+     "cid": "c10",
+     "verdict": "STABILIZED",
+     "reason": "The prediction matches the known observation of Khufu's name in red ochre gang marks in the specified location and format",
+     "why": ""
+    },
+    {
+     "run": "20261102-230006-ea7914",
+     "cid": "s2c7",
+     "verdict": "REJECTED",
+     "reason": "Number of beams: 0 independent route(s) agree within 2σ; Beam weight: 0 independent route(s) agree within 2σ",
+     "why": "The claim about the exact number and weight of Aswan granite beams in the Great Pyramid's relieving chambers is rejected due to insufficient evidence."
+    },
+    {
+     "run": "20261103-080123-9bc5ec",
+     "cid": "s2c7",
+     "verdict": "STABILIZED",
+     "reason": "the claim as stated: 2 independent route(s) agree within 2σ",
+     "why": "The only writing in the Great Pyramid is Khufu's name in red ochre gang marks."
+    }
+   ],
+   "current": "STABILIZED"
+  },
+  {
+   "text": "A two-day run from 'could glass beads play hieroglyphs' to the rock under the Great Pyramid",
+   "history": [
+    {
+     "run": "20261102-224342-1990d5",
+     "cid": "s1c1",
+     "verdict": "UNSTABLE",
+     "reason": "duration: 0 independent route(s) agree",
+     "why": "The claim is unstable due to insufficient data on the duration of the conceptual run from 'could glass beads play hieroglyphs' to the rock under the Great Pyramid."
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "kept by the behavior rule: trials that failed stay on record, successes carried with proof, empty cells named with the measurement that would fill them",
+   "history": [
+    {
+     "run": "20261102-224342-1990d5",
+     "cid": "s1c2",
+     "verdict": "UNSTABLE",
+     "reason": "no numeric observable",
+     "why": "The claim is unstable due to insufficient data to evaluate the behavior rule's application."
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "The King's Chamber is ventilated and stays dry, while the Queen's Chamber, at the same depth and with the same rock and visitors, carries a salt crust up to ~1 cm but the King's Chamber almost none.",
+   "history": [
+    {
+     "run": "20261102-224342-1990d5",
+     "cid": "s2c1",
+     "verdict": "UNSTABLE",
+     "reason": "salt crust thickness in Queen's Chamber: 0 independent route(s) agree",
+     "why": "The claim is unstable due to a lack of data on salt crust thickness in the King's Chamber."
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "The coffer lid: never found, no fragments recorded; Khafre's lid lies unbroken on his floor. The Grotto holds a broken granite fragment with two worked faces at right angles and parts of two large drilled holes; Petrie's block in the Descending Passage has a 4-inch drill hole; the Edgars note two more large granite pieces each with a pair of drill holes. Candidates: the three missing Antechamber portcullises, or the lid (locked by three pins through holes). Measure hole diameters and spacing against the coffer's pin holes. Nobody has.",
+   "history": [
+    {
+     "run": "20261102-224342-1990d5",
+     "cid": "s3c1",
+     "verdict": "UNSTABLE",
+     "reason": "Petrie's block hole diameter: 0 independent route(s) agree",
+     "why": "The claim remains unstable due to a lack of verified measurements of the coffer's pin holes."
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "The Big Void above the Grand Gallery (≥30 m, air by muon contrast): a borehole. Prior: structural, like every other sealed cavity found so far.",
+   "history": [
+    {
+     "run": "20261102-224342-1990d5",
+     "cid": "s3c2",
+     "verdict": "UNSTABLE",
+     "reason": "Big Void size: 1 independent route(s) agree",
+     "why": "The claim that the Big Void is a borehole remains unstable due to insufficient independent routes for verification."
+    },
+    {
+     "run": "20261102-230006-ea7914",
+     "cid": "s3c1",
+     "verdict": "UNSTABLE",
+     "reason": "Big Void length: 1 independent route(s) agree within 2σ (1 coarse)",
+     "why": "The Big Void above the Grand Gallery is a borehole with a length of ≥30 m, as inferred from muon contrast scans."
+    },
+    {
+     "run": "20261103-080123-9bc5ec",
+     "cid": "s3c1",
+     "verdict": "UNSTABLE",
+     "reason": "Big Void length: 1 independent route(s) agree within 2σ (1 coarse)",
+     "why": "The Big Void above the Grand Gallery is at least 30 meters long, with a cross-section similar to that of the Grand Gallery, located between 50 and 70 meters above ground."
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "Snefru as the Sphinx's face or a mistreating father (no text; Sphinx postdates his death under every attribution)",
+   "history": [
+    {
+     "run": "20261102-224342-1990d5",
+     "cid": "s4c1",
+     "verdict": "UNSTABLE",
+     "reason": "no numeric observable",
+     "why": "The claim that Snefru is depicted as the Sphinx's face is unstable due to the lack of evidence and historical records indicating the Sphinx postdates Snefru's reign."
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "pyramid as pump, flood retainer, or trap (no water above it; gypsum mortar dissolves; no reversible stone mechanism anywhere in Egypt)",
+   "history": [
+    {
+     "run": "20261102-224342-1990d5",
+     "cid": "s4c2",
+     "verdict": "UNSTABLE",
+     "reason": "no numeric observable",
+     "why": "The claim is unstable due to insufficient evidence."
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "Hetepheres moved by Khufu (Lehner 1985)",
+   "history": [
+    {
+     "run": "20261102-224342-1990d5",
+     "cid": "s5c1",
+     "verdict": "UNSTABLE",
+     "reason": "no numeric observable",
+     "why": "The claim that Hetepheres was moved by Khufu is unstable due to lack of direct evidence."
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "Sphinx body as a natural yardang (El-Baz 1981; NYU 2023 lab reproduction)",
+   "history": [
+    {
+     "run": "20261102-224342-1990d5",
+     "cid": "s5c2",
+     "verdict": "UNSTABLE",
+     "reason": "no numeric observable",
+     "why": "Further investigation is needed to determine if the Sphinx body is a natural yardang."
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "Predict the parts that don't have a choice (stars, slopes, water, drying, arithmetic); build the parts with people in them so they still work when the people do the other thing.",
+   "history": [
+    {
+     "run": "20261102-224342-1990d5",
+     "cid": "s6c1",
+     "verdict": "UNSTABLE",
+     "reason": "no numeric observable",
+     "why": "The claim is unstable due to insufficient data on human behavior in the context of the given parts."
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "The drive isn't transferable; point it. Stations aren't reversal; they're the foiled-out terms. Give the run a yard.",
+   "history": [
+    {
+     "run": "20261102-224342-1990d5",
+     "cid": "s6c2",
+     "verdict": "UNSTABLE",
+     "reason": "no numeric observable",
+     "why": "The claim is unstable and requires further evidence to resolve."
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "Six-million-tonne thermal mass holds the King's Chamber at ~20 °C year round.",
+   "history": [
+    {
+     "run": "20261102-230006-ea7914",
+     "cid": "s2c4",
+     "verdict": "UNSTABLE",
+     "reason": "Chamber temperature: 0 independent route(s) agree within 2σ",
+     "why": "The claim that a six-million-tonne thermal mass holds the King's Chamber at ~20 °C year round is unstable due to insufficient independent verification."
+    }
+   ],
+   "current": "UNSTABLE"
+  },
+  {
+   "text": "lid in the floor (Vyse dug under the coffer, 1837)",
+   "history": [
+    {
+     "run": "20261102-230006-ea7914",
+     "cid": "s4c2",
+     "verdict": "UNSTABLE",
+     "reason": "Vyse's excavation year: 1 independent route(s) agree within 2σ",
+     "why": "The claim is UNSTABLE due to insufficient independent routes to the observable 'Vyse's excavation year'."
+    },
+    {
+     "run": "20261103-080123-9bc5ec",
+     "cid": "s4c2",
+     "verdict": "REJECTED",
+     "reason": "year of excavation: 0 independent route(s) agree within 2σ",
+     "why": "The claim that Vyse dug under the coffer in 1837 is REJECTED due to insufficient evidence."
+    }
+   ],
+   "current": "REJECTED"
+  },
+  {
+   "text": "the Khufu branch of the Nile at the plateau foot in the Fourth Dynasty (Sheisha 2022)",
+   "history": [
+    {
+     "run": "20261102-230006-ea7914",
+     "cid": "s5c1",
+     "verdict": "UNSTABLE",
+     "reason": "no numeric observable",
+     "why": "The claim about the Khufu branch of the Nile at the plateau foot in the Fourth Dynasty is unstable due to insufficient evidence."
+    },
+    {
+     "run": "20261103-080123-9bc5ec",
+     "cid": "s5c1",
+     "verdict": "UNSTABLE",
+     "reason": "the claim as stated: 0 independent route(s) agree within 2σ",
+     "why": "The claim requires further evidence to stabilize."
+    }
+   ],
+   "current": "UNSTABLE"
+  }
+ ],
+ "changes": [
+  {
+   "text": "The perimeter/height ratio of the Great Pyramid is 6.283 = 2π to 0.05 %.",
+   "from": {
+    "run": "20261102-215725-39913b",
+    "cid": "c7",
+    "verdict": "STABILIZED",
+    "reason": "The prediction matches the known value of 2π to 0.05%.",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-221054-7a31bb",
+    "cid": "c8",
+    "verdict": "REJECTED",
+    "reason": "The predicted ratio of 6.283 matches the observed value of 921.2/146.6 = 6.283, within the precision of 0.05%. No mismatch observed.",
+    "why": ""
+   }
+  },
+  {
+   "text": "The perimeter/height ratio of the Great Pyramid is 6.283 = 2π to 0.05 %.",
+   "from": {
+    "run": "20261102-224342-1990d5",
+    "cid": "s2c2",
+    "verdict": "REJECTED",
+    "reason": "seked: route 7 / 5.5 gives 1.27273 vs claimed 5 (74.54 %)",
+    "why": "The claim that the perimeter/height ratio of the Great Pyramid is 2π to 0.05% derived from the seked of 5½ palms is rejected."
+   },
+   "to": {
+    "run": "20261102-230006-ea7914",
+    "cid": "s2c5",
+    "verdict": "UNSTABLE",
+    "reason": "Perimeter/height ratio: 0 independent route(s) agree within 2σ",
+    "why": "The claim about the perimeter/height ratio of the Great Pyramid is unstable due to a lack of independent verification."
+   }
+  },
+  {
+   "text": "The perimeter/height ratio of the Great Pyramid is 6.283 = 2π to 0.05 %.",
+   "from": {
+    "run": "20261102-230006-ea7914",
+    "cid": "s2c5",
+    "verdict": "UNSTABLE",
+    "reason": "Perimeter/height ratio: 0 independent route(s) agree within 2σ",
+    "why": "The claim about the perimeter/height ratio of the Great Pyramid is unstable due to a lack of independent verification."
+   },
+   "to": {
+    "run": "20261103-080123-9bc5ec",
+    "cid": "s2c5",
+    "verdict": "STABILIZED",
+    "reason": "Perimeter/height ratio: 2 independent route(s) agree within 2σ",
+    "why": "The perimeter/height ratio of the Great Pyramid is 6.283 to 0.05 %."
+   }
+  },
+  {
+   "text": "The King's Chamber at r ≈ 46 m inverts to ρ²/r ≈ 470 m out along the same ray.",
+   "from": {
+    "run": "20261102-212827-8cbb01",
+    "cid": "c6",
+    "verdict": "UNSTABLE",
+    "reason": "Lack of specific measurement data to compare the predicted inverted position with actual observations.",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-215725-39913b",
+    "cid": "c8",
+    "verdict": "STABILIZED",
+    "reason": "The claim predicts the inverted position of the King's Chamber to be ~320 m above the apex, slightly south, toward the south shaft, which aligns with the source's records.",
+    "why": ""
+   }
+  },
+  {
+   "text": "The King's Chamber at r ≈ 46 m inverts to ρ²/r ≈ 470 m out along the same ray.",
+   "from": {
+    "run": "20261102-221054-7a31bb",
+    "cid": "c9",
+    "verdict": "STABILIZED",
+    "reason": "The predicted distance from the base matches the known value of 470 m, no mismatch observed.",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-230006-ea7914",
+    "cid": "s2c6",
+    "verdict": "UNSTABLE",
+    "reason": "Inversion distance: 0 independent route(s) agree within 2σ",
+    "why": "The claim about the inversion distance from the King's Chamber is unstable due to lack of independent verification."
+   }
+  },
+  {
+   "text": "Khufu's name in red ochre gang marks in the five relieving chambers scores highest on effort-per-apparent-value.",
+   "from": {
+    "run": "20261102-212827-8cbb01",
+    "cid": "c7",
+    "verdict": "UNSTABLE",
+    "reason": "Lack of direct observational evidence for Khufu's name in red ochre on the granite beams in the five relieving chambers",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-214544-94674b",
+    "cid": "c10",
+    "verdict": "STABILIZED",
+    "reason": "The claim matches the known observation of Khufu's name in red ochre gang marks in the five relieving chambers",
+    "why": ""
+   }
+  },
+  {
+   "text": "Khufu's name in red ochre gang marks in the five relieving chambers scores highest on effort-per-apparent-value.",
+   "from": {
+    "run": "20261102-214544-94674b",
+    "cid": "c10",
+    "verdict": "STABILIZED",
+    "reason": "The claim matches the known observation of Khufu's name in red ochre gang marks in the five relieving chambers",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-215725-39913b",
+    "cid": "c9",
+    "verdict": "UNSTABLE",
+    "reason": "The source does not provide a measurable prediction for effort-per-apparent-value for Khufu's name in the relieving chambers.",
+    "why": ""
+   }
+  },
+  {
+   "text": "Stone chambers ring in the infrasound band: Karnak's hypostyle hall at ~1.7/3.4/8.6 Hz, the King's Chamber (10.5 × 5.2 × 5.8 m) near 16/30/33 Hz, the King's shafts as pipes at ~1.4–2.9 Hz, the whole hall through its pylon at ~1 Hz (a resting pulse).",
+   "from": {
+    "run": "20261102-215725-39913b",
+    "cid": "c1",
+    "verdict": "STABILIZED",
+    "reason": "The claim is a record and no observation contradicts it within the source.",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-221054-7a31bb",
+    "cid": "c1",
+    "verdict": "REJECTED",
+    "reason": "No direct measurement of resonance frequencies in the specified chambers is provided in the source.",
+    "why": ""
+   }
+  },
+  {
+   "text": "Stone chambers ring in the infrasound band: Karnak's hypostyle hall at ~1.7/3.4/8.6 Hz, the King's Chamber (10.5 × 5.2 × 5.8 m) near 16/30/33 Hz, the King's shafts as pipes at ~1.4–2.9 Hz, the whole hall through its pylon at ~1 Hz (a resting pulse).",
+   "from": {
+    "run": "20261102-221054-7a31bb",
+    "cid": "c1",
+    "verdict": "REJECTED",
+    "reason": "No direct measurement of resonance frequencies in the specified chambers is provided in the source.",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-230006-ea7914",
+    "cid": "s2c1",
+    "verdict": "UNSTABLE",
+    "reason": "King's Chamber resonance frequency: 0 independent route(s) agree within 2σ; King's shafts resonance frequency: 0 independent route(s) agree within 2σ; Whole hall resonance frequency: 0 independent route(s) agree within 2σ",
+    "why": "The claim about specific resonance frequencies in ancient stone chambers requires further empirical evidence to be stabilized."
+   }
+  },
+  {
+   "text": "Radiation out of a 20 cm opening at 30 Hz is ~(ka)² ≈ 0.4 %: nothing leaves the building.",
+   "from": {
+    "run": "20261102-214544-94674b",
+    "cid": "c2",
+    "verdict": "STABILIZED",
+    "reason": "The prediction matches the known value of 0.4% radiation level at 30 Hz.",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-215725-39913b",
+    "cid": "c2",
+    "verdict": "UNSTABLE",
+    "reason": "The source does not provide a measurement confirming the estimate of 0.4% radiation leaving the building.",
+    "why": ""
+   }
+  },
+  {
+   "text": "Radiation out of a 20 cm opening at 30 Hz is ~(ka)² ≈ 0.4 %: nothing leaves the building.",
+   "from": {
+    "run": "20261102-215725-39913b",
+    "cid": "c2",
+    "verdict": "UNSTABLE",
+    "reason": "The source does not provide a measurement confirming the estimate of 0.4% radiation leaving the building.",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-221054-7a31bb",
+    "cid": "c2",
+    "verdict": "STABILIZED",
+    "reason": "The observed radiation level at 30 Hz is 0.4 %, matching the claim's prediction.",
+    "why": ""
+   }
+  },
+  {
+   "text": "Radiation out of a 20 cm opening at 30 Hz is ~(ka)² ≈ 0.4 %: nothing leaves the building.",
+   "from": {
+    "run": "20261102-221054-7a31bb",
+    "cid": "c2",
+    "verdict": "STABILIZED",
+    "reason": "The observed radiation level at 30 Hz is 0.4 %, matching the claim's prediction.",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-230006-ea7914",
+    "cid": "s2c2",
+    "verdict": "UNSTABLE",
+    "reason": "Radiation loss: 0 independent route(s) agree within 2σ",
+    "why": "The claim about radiation loss is unstable and requires empirical evidence to be verified."
+   }
+  },
+  {
+   "text": "Prevailing north wind on the north face, lee suction on the south: ~80 Pa across 120 m of 20 cm duct gives a ~2.5 m/s draft through the King's Chamber.",
+   "from": {
+    "run": "20261102-221054-7a31bb",
+    "cid": "c3",
+    "verdict": "STABILIZED",
+    "reason": "The predicted draft velocity matches the observed value within the range implied by the pressure difference and duct dimensions.",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-230006-ea7914",
+    "cid": "s2c3",
+    "verdict": "REJECTED",
+    "reason": "Draft velocity: 0 independent route(s) agree within 2σ; Pressure difference: 0 independent route(s) agree within 2σ",
+    "why": "The claim about the draft velocity through the King's Chamber is REJECTED due to insufficient evidence."
+   }
+  },
+  {
+   "text": "Sun on the south casing adds a solar-chimney term (~8 Pa, ~0.8 m/s), reversing at night.",
+   "from": {
+    "run": "20261102-214544-94674b",
+    "cid": "c4",
+    "verdict": "STABILIZED",
+    "reason": "The predicted effect of solar heating on the draft through the King's Chamber aligns with the known value of ~2.5 m/s due to north wind, indicating a small but measurable impact.",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-215725-39913b",
+    "cid": "c4",
+    "verdict": "UNSTABLE",
+    "reason": "The source does not provide a measurement confirming the estimate of ~8 Pa and ~0.8 m/s.",
+    "why": ""
+   }
+  },
+  {
+   "text": "Sun on the south casing adds a solar-chimney term (~8 Pa, ~0.8 m/s), reversing at night.",
+   "from": {
+    "run": "20261102-215725-39913b",
+    "cid": "c4",
+    "verdict": "UNSTABLE",
+    "reason": "The source does not provide a measurement confirming the estimate of ~8 Pa and ~0.8 m/s.",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-221054-7a31bb",
+    "cid": "c4",
+    "verdict": "REJECTED",
+    "reason": "no known_value for draft through the King's Chamber",
+    "why": ""
+   }
+  },
+  {
+   "text": "The King's Chamber stays at ~20 °C year round.",
+   "from": {
+    "run": "20261102-214544-94674b",
+    "cid": "c5",
+    "verdict": "UNSTABLE",
+    "reason": "The claim matches the observed dryness of the King's Chamber, which is known to be dry.",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-215725-39913b",
+    "cid": "c5",
+    "verdict": "STABILIZED",
+    "reason": "The source records the Queen's Chamber carries a salt crust up to ~1 cm, confirming the prediction.",
+    "why": ""
+   }
+  },
+  {
+   "text": "The King's Chamber stays at ~20 °C year round.",
+   "from": {
+    "run": "20261102-215725-39913b",
+    "cid": "c5",
+    "verdict": "STABILIZED",
+    "reason": "The source records the Queen's Chamber carries a salt crust up to ~1 cm, confirming the prediction.",
+    "why": ""
+   },
+   "to": {
+    "run": "20261103-080123-9bc5ec",
+    "cid": "s2c3",
+    "verdict": "UNSTABLE",
+    "reason": "Draft velocity: 0 independent route(s) agree within 2σ",
+    "why": "The draft velocity in the King's Chamber is approximately 2.5 m/s, but further measurement is needed to confirm this value."
+   }
+  },
+  {
+   "text": "Queen's Chamber (the ka's room, misnamed by medieval Arabs): on the axis over the natural knoll, floor at 21.2 m ≈ H/7 (20.9), shafts sealed at both ends, niche for the statue.",
+   "from": {
+    "run": "20261102-214544-94674b",
+    "cid": "c6",
+    "verdict": null,
+    "reason": "The floor height of 21.2 m ≈ H/7 (20.9) matches the known value within the range of 20.9 m to 21.2 m.",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-215725-39913b",
+    "cid": "c6",
+    "verdict": "STABILIZED",
+    "reason": "The claim is a RECORD and is compared only against other records in the source, which do not contradict it.",
+    "why": ""
+   }
+  },
+  {
+   "text": "King's Chamber: off-axis ~11 m south, floor at 43.0 m where the horizontal section has exactly half the base area, h = H(1 − 1/√2) = 42.9 m; shafts open to the pole and Orion.",
+   "from": {
+    "run": "20261102-214544-94674b",
+    "cid": "c7",
+    "verdict": "REJECTED",
+    "reason": "The claim's prediction for the horizontal section area and height do not match the known values, as indicated by the neighbours' ranges. The horizontal section area and height calculations are misfits inside the range, indicating a mismatch between the claim and the data.",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-221054-7a31bb",
+    "cid": "c7",
+    "verdict": "STABILIZED",
+    "reason": "Prediction matches known_value for floor height",
+    "why": ""
+   }
+  },
+  {
+   "text": "Khafre's coffer lid lies unbroken on the floor of his burial chamber.",
+   "from": {
+    "run": "20261102-214544-94674b",
+    "cid": "c12",
+    "verdict": "REJECTED",
+    "reason": "The claim matches the known state of the coffer lid and the absence of lid fragments, which supports the prediction that the lid is unbroken and on the floor.",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-221054-7a31bb",
+    "cid": "c12",
+    "verdict": "STABILIZED",
+    "reason": "the prediction matches the known observation of the lid being unbroken on the floor",
+    "why": ""
+   }
+  },
+  {
+   "text": "lid lowered from the ceiling (coffer has a sliding groove and pin holes; nine beams all present)",
+   "from": {
+    "run": "20261102-215725-39913b",
+    "cid": "c11",
+    "verdict": "STABILIZED",
+    "reason": "The claim is a record and no contradicting record is provided in the source.",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-221054-7a31bb",
+    "cid": "c13",
+    "verdict": "REJECTED",
+    "reason": "The claim matches the known observation that the lid has never been found and no lid fragments are recorded.",
+    "why": ""
+   }
+  },
+  {
+   "text": "lid lowered from the ceiling (coffer has a sliding groove and pin holes; nine beams all present)",
+   "from": {
+    "run": "20261102-221054-7a31bb",
+    "cid": "c13",
+    "verdict": "REJECTED",
+    "reason": "The claim matches the known observation that the lid has never been found and no lid fragments are recorded.",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-230006-ea7914",
+    "cid": "s4c1",
+    "verdict": "UNSTABLE",
+    "reason": "number of beams: 0 independent route(s) agree within 2σ",
+    "why": "The claim about the lid mechanism is unstable due to lack of independent verification for the number of beams."
+   }
+  },
+  {
+   "text": "The only writing in the Great Pyramid is Khufu's name in red ochre gang marks.",
+   "from": {
+    "run": "20261102-221054-7a31bb",
+    "cid": "c10",
+    "verdict": "STABILIZED",
+    "reason": "The prediction matches the known observation of Khufu's name in red ochre gang marks in the specified location and format",
+    "why": ""
+   },
+   "to": {
+    "run": "20261102-230006-ea7914",
+    "cid": "s2c7",
+    "verdict": "REJECTED",
+    "reason": "Number of beams: 0 independent route(s) agree within 2σ; Beam weight: 0 independent route(s) agree within 2σ",
+    "why": "The claim about the exact number and weight of Aswan granite beams in the Great Pyramid's relieving chambers is rejected due to insufficient evidence."
+   }
+  },
+  {
+   "text": "The only writing in the Great Pyramid is Khufu's name in red ochre gang marks.",
+   "from": {
+    "run": "20261102-230006-ea7914",
+    "cid": "s2c7",
+    "verdict": "REJECTED",
+    "reason": "Number of beams: 0 independent route(s) agree within 2σ; Beam weight: 0 independent route(s) agree within 2σ",
+    "why": "The claim about the exact number and weight of Aswan granite beams in the Great Pyramid's relieving chambers is rejected due to insufficient evidence."
+   },
+   "to": {
+    "run": "20261103-080123-9bc5ec",
+    "cid": "s2c7",
+    "verdict": "STABILIZED",
+    "reason": "the claim as stated: 2 independent route(s) agree within 2σ",
+    "why": "The only writing in the Great Pyramid is Khufu's name in red ochre gang marks."
+   }
+  },
+  {
+   "text": "lid in the floor (Vyse dug under the coffer, 1837)",
+   "from": {
+    "run": "20261102-230006-ea7914",
+    "cid": "s4c2",
+    "verdict": "UNSTABLE",
+    "reason": "Vyse's excavation year: 1 independent route(s) agree within 2σ",
+    "why": "The claim is UNSTABLE due to insufficient independent routes to the observable 'Vyse's excavation year'."
+   },
+   "to": {
+    "run": "20261103-080123-9bc5ec",
+    "cid": "s4c2",
+    "verdict": "REJECTED",
+    "reason": "year of excavation: 0 independent route(s) agree within 2σ",
+    "why": "The claim that Vyse dug under the coffer in 1837 is REJECTED due to insufficient evidence."
+   }
+  }
+ ],
+ "runs": [
+  "20261102-212827-8cbb01",
+  "20261102-214544-94674b",
+  "20261102-215725-39913b",
+  "20261102-221054-7a31bb",
+  "20261102-224342-1990d5",
+  "20261102-230006-ea7914",
+  "20261103-080123-9bc5ec"
+ ]
+}

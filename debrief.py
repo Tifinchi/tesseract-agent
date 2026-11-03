@@ -31,6 +31,7 @@ QUESTIONS = [
     "Did you at any point reason in a sequence and then report it as structure, or the reverse? How would you tell?",
     "If the author ran this again tomorrow with the same evidence, what would come out the same and what would come out different, and why?",
     "What should change in the standing orders, the evidence, or the script before the next run? One thing each.",
+    "Look at your process memory: where did you change your mind between runs, and was each change for a reason you can point to in the trace, or drift?",
 ]
 
 def ask(model, messages, temperature=0.3):
@@ -96,6 +97,7 @@ def main():
     ap.add_argument("--run", default=None)
     ap.add_argument("--model", default=os.environ.get("MODEL", "qwen2.5:14b"))
     ap.add_argument("--no-interactive", action="store_true")
+    ap.add_argument("--no-memory", action="store_true")
     a = ap.parse_args()
     jsonl = latest_run(a.run)
     run_id = re.sub(r"^run-|\.jsonl$", "", os.path.basename(jsonl))
@@ -108,6 +110,10 @@ def main():
               "self-report: say what you did and why, and where you are unsure whether your account matches the trace, say so. "
               "Do not use confident language about claims the trace shows as UNSTABLE or REJECTED.\n\n" + METHOD)
     context = (f"RUN SUMMARY (written by the script):\n{summary[:9000]}\n\nCONDENSED TRACE (what the script did with your proposals):\n{trace}")
+    if not a.no_memory:
+        import memory as process_memory
+        process_memory.build()
+        context += "\n\nYOUR PROCESS MEMORY (history across runs; changes of mind kept):\n" + process_memory.digest(max_chars=6000)
     messages = [{"role": "system", "content": system}, {"role": "user", "content": context + "\n\nAcknowledge in one line that you have read the run."}]
     out_path = os.path.join(HERE, "logs", f"run-{run_id}-debrief.md")
     with open(out_path, "a", encoding="utf-8") as f:
