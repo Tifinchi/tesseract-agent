@@ -42,6 +42,16 @@ A paper always agrees with itself, so the document under test is never allowed t
   and the process that produced it (measurement, survey, excavation report, published analysis, argument,
   secondary summary). The same verbatim check shields the alternative core: a REJECT there needs the
   sentence that states the alternative, verbatim, or it is recorded and not counted.
+- **v1.3: readings, enumerated routes, definitions, fit accounts.** Extraction writes out each claim's
+  readings when the wording allows more than one ("nothing leaves" = exactly zero, or = inaudible outside)
+  and each reading is judged on its own; the summary says "fits if you mean this; does not if you mean
+  that." For a numeric observable the model names the relation and its variables once; the script then
+  gathers every evidence value for each variable (checking number, file, and unit), forms every combination
+  through the relation, computes each exactly, and keeps the largest set of routes whose source groups do
+  not overlap (the vertex lock by code). A relation whose result does not move when its inputs are perturbed
+  is a definition, counts once, and never as a cross-group measurement. Text routes count only for
+  qualitative readings and must say what part of the reading they cover. Every verdict carries the script's
+  deterministic account of the fit and the model's one-line why.
 - **The cube is in the standing orders.** `method/cube.md` carries the author's ascii geometry verbatim —
   the six face strings, the eight corners with their coordinates, neighbours and opposites, the two
   tetrahedra, the face laws, the turns — and every claim is anchored on it at extraction (corner, cell,
@@ -72,8 +82,8 @@ A paper always agrees with itself, so the document under test is never allowed t
     python3 agent.py claims/khufu-run.md --max-claims 12 --tolerance 0.05
     python3 agent.py claims/paper.md --question "..." --evidence /path/to/other/evidence
 
-Per claim: one model call per numeric observable (up to four), one judge call, one revision call.
-Twelve claims ≈ 15–20 minutes on an RTX 3060 with the 14B model.
+Per reading: one call to name relations, one call per variable to gather values, one judge call, one
+revision call. Ten claims ≈ 20–30 minutes on an RTX 3060 with the 14B model. `--max-claims 6` for a quick run.
 
 ## The Khufu test
 
@@ -114,6 +124,10 @@ checked against the originals. That is a station, not a skip.
   multiplication and the evaluator refused it), and two rejections from the alternative core that named a
   file containing no alternative. v1.2: implicit multiplication accepted; alternative REJECT needs a
   verbatim quote; text routes with process for qualitative claims.
+- Run 7 (v1.2, 11 claims, 5.3 min): alternative shield worked (one correct rejection with Vyse's verbatim
+  record); three paraphrases caught as non-verbatim; but 2π "stabilized" on a definition counted as a
+  cross-group computation plus a quoted angle, and "the only writing" stabilized on quotes that cover the
+  name but not "only." v1.3 answers both.
 - Runs 3 and 4 (v0.2, hinted vs blind evaluator): the kind labels were not reproducible between runs;
   blind, the model's synthesis contradicted its own four cores in 6 of 14 claims; and it confirmed
   predictions with the claim's own number. Diagnosis: the document was both claim source and evidence
