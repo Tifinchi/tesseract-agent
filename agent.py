@@ -23,7 +23,7 @@ def ask(model, system, user, json_out=True, num_ctx=8192, temperature=0.2, retri
         "model": model,
         "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
         "stream": False,
-        "options": {"temperature": temperature, "num_ctx": num_ctx},
+        "options": {"temperature": temperature, "num_ctx": num_ctx, "num_predict": 4096},
     }
     if json_out:
         body["format"] = "json"
@@ -201,12 +201,12 @@ def run(path, model, question, max_claims, out_dir):
     results = []
     for c in claims:
         cid, text = c.get("id", "?"), c.get("text", "")
-        print(f"  {cid}: {text[:90]}")
+        print(f"  {cid}: {text}")
         ctx = context_for(text, paras)
 
         t = time.time()
         a = ask(model, SYSTEM, P2_ANCHOR_EXPLORE.format(cid=cid, claim=text, ctx=ctx))
-        art_a = log.write(run=run_id, claim=cid, pass_="EXPLORATION_STATE", input=ctx[:400] + "…", output=a,
+        art_a = log.write(run=run_id, claim=cid, pass_="EXPLORATION_STATE", input=ctx, output=a,
                           elapsed=round(time.time() - t, 1), model=model)
 
         t = time.time()
