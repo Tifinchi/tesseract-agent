@@ -87,6 +87,15 @@ A paper always agrees with itself, so the document under test is never allowed t
 Per reading: one call to name relations, one call per variable to gather values, one judge call, one
 revision call. Ten claims ≈ 20–30 minutes on an RTX 3060 with the 14B model. `--max-claims 6` for a quick run.
 
+## Debrief: talk with it after a run
+
+    python3 debrief.py            # latest run; nine fixed questions, then yours; saved to logs/run-<id>-debrief.md
+
+The model gets the same standing orders it ran under, the run's summary, and a condensed trace of what the
+script did with its proposals, and is asked how it understood the task, how it went about it, and what we
+were doing. Its answers are self-report (the interview from the research proposal): logged beside the
+trace so they can be checked against it, never counted as evidence of anything.
+
 ## The Khufu test
 
 `claims/khufu-run.md` is a two-day run of the method on the Great Pyramid, written as a paper would be:
