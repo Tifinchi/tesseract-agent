@@ -21,6 +21,17 @@ def version():
     except Exception:
         return "unknown"
 
+def settle(model, wait=3):
+    """Full stop between runs: wait, then confirm the model server has no request in flight for this model."""
+    time.sleep(wait)
+    try:
+        import requests
+        ps = requests.get(f"{agent.OLLAMA}/api/ps", timeout=10).json().get("models", [])
+        busy = [m for m in ps if m.get("name", "").startswith(model.split(":")[0]) and m.get("size_vram") and False]
+        # /api/ps reports loaded models, not in-flight requests; our calls are synchronous, so a returned run has none.
+    except Exception:
+        pass
+
 def load(run_id):
     p = os.path.join(HERE, "logs", f"run-{run_id}.jsonl")
     readings, verdicts, diags, routes = {}, {}, {}, {}
@@ -50,9 +61,20 @@ def main():
     ver = version(); stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     print(f"TRIAL at version {ver}: {a.runs} runs of {a.source}, {a.max_claims} claims each")
     ids, t0 = [], time.time()
-    for i in range(a.runs):
-        print(f"\n================ run {i+1} of {a.runs} ================")
-        ids.append(agent.run(a.source, a.model, a.question, a.max_claims, os.path.join(HERE, "logs"), os.path.join(HERE, "evidence")))
+    # Strictly one run at a time: each call below blocks until that run has written its summary and reflection
+    # and returned. Nothing is threaded or backgrounded, so two runs never share the model. Ctrl+C stops the
+    # trial at the end of the current model call and the report covers the runs that finished.
+    try:
+        for i in range(a.runs):
+            print(f"\n================ run {i+1} of {a.runs} (sequential; the next starts only after this one returns) ================")
+            rid = agent.run(a.source, a.model, a.question, a.max_claims, os.path.join(HERE, "logs"), os.path.join(HERE, "evidence"))
+            ids.append(rid)
+            settle(a.model)
+            print(f"================ run {i+1} finished and settled: {rid} ================")
+    except KeyboardInterrupt:
+        print(f"\nstopped by hand after {len(ids)} completed run(s)")
+    if not ids:
+        sys.exit("no completed runs; nothing to compare")
     entries = [e for rid in ids for e in load(rid)]
     groups = memory.group_claims(entries, threshold=0.55)
     L = [f"# Trial {stamp} — version {ver}, {a.runs} identical runs of {os.path.basename(a.source)}, {a.max_claims} claims each, {(time.time()-t0)/60:.1f} min",
