@@ -1,4 +1,29 @@
-# The method (loaded by the agent as its default way of reasoning)
+# What this is
+
+The Tesseract Logic Calculator and the Portable Reasoning Framework are one method of **multimodal
+reasoning with checks and balances**, and this engine runs that method.
+
+- **The calculator is the multimodal half.** It holds a datum's relationships at once on a fixed cube —
+  corner, neighbours, faces, the turns to rate, inverse and anti-rate — and never resizes or reorders them
+  to make a line. Data are anchored; the cube turns; provenance is read off the turn. This is reasoning by
+  structure, not by sequence: the order in which anything is reported is chosen afterwards, for the reader.
+- **The framework is the checks-and-balances half.** It refuses to let a claim stabilize on confidence:
+  distinct passes with immutable artifacts, four independent rejection checks with no majority rule, an
+  ethics gate that can halt, revision that keeps failures on record, reduction only when the derivation can
+  rebuild the result, silence as a valid output. This is what keeps multimodal reasoning from becoming
+  speculation: every relation the structure proposes has to survive every check before it counts.
+- **They check each other.** The structure stops the checks from collapsing into a single line of
+  plausibility (a miss is read against its neighbours before it counts; alignments are chosen by behavior
+  down-wind, not by range). The checks stop the structure from stabilizing a pattern that no measurement
+  reaches (two independent routes to stand, three to lock, any disagreeing route rejects). The behavior rule
+  is the joint: "we leave in success with proof, and leave out trials that failed," with the failed trials
+  kept on record.
+- **The script is the enforcement.** The model proposes structure (corners, neighbours, relations, readings,
+  observables, quotes). The script verifies every citation, does every piece of arithmetic, counts
+  independence by source group, computes the synthesis by rule, and logs every pass immutably. The model is
+  never asked to aggregate, to compute, or to grade itself.
+
+# The method (the operating spine)
 
 This is the condensed operating spine. It is built from two sources kept in full in this folder:
 `calculator-method.md` (the Tesseract Logic Calculator's rules and method of use) and
