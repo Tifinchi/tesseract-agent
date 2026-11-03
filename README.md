@@ -119,6 +119,39 @@ citation is recorded and keeps the reading from standing.
 An UNSTABLE verdict is still an answer: the revision pass gives the **provisional answer** the available
 proof favors, what it rests on, what is missing, and the next verifiable step. Silence is for halts.
 
+## v1.5: troubleshoot, flip, fold, turn, cross-field match, reflect
+
+- **Troubleshooting instead of discarding.** A reading whose numbers matched but which failed a neighbour,
+  a down-wind consequence or an inverse turn is taken apart: which component carries the error (an input,
+  the relation, the framing, the corner, a missing term, a direction), what is still valid, and the repair.
+- **The inside-out test.** Same edges, delimiters traded, image reversed: the reading is rewritten under a
+  cell flip (instant↔inverse, rate↔anti-rate), a direction flip (cause↔effect, in↔out), a reciprocal flip
+  and a reversal, and each is asked whether its consequences would line up. "Correct room, flipped inside
+  out" is a diagnosis the engine can now give.
+- **The fold re-enters, once.** The corrected reading (or the folded question) becomes a child reading
+  evaluated in the same run, logged as the child of the rejected one. No deeper recursion.
+- **The inverse turn.** For every relation, the script takes the reading's own value and all but one cited
+  input, solves for the remaining variable, and compares with that variable's cited values. A relation
+  whose turn does not return to its inputs cannot stand.
+- **Cross-field matching by role and dimension, not name.** Every quantity gets a card: meaning, units
+  resolved to dimensions (L, M, T, I, Θ), role on the tetrahedron (amount, flow, momentum, effort), field.
+  A value is admissible only if its dimensions match (checked by the script) and its role matches (the
+  model's call, logged). A derivative in calculus, a velocity in physics and a current in a circuit are all
+  the flow role of their own amount; a shared letter is not a shared quantity.
+- **Kinds of route.** Each verdict lists the kinds that reached it: a text statement, a measurement, a
+  survey, a calculation, a definition, a calculator-derived value (something this engine stabilized in an
+  earlier run, drawn from memory, always provisional).
+- **Provisional sources.** An evidence file whose `status:` says compiled/from memory/unverified yields
+  provisional routes; nothing locks on them alone, and the diagnosis says so.
+- **Inherited misses (rule 8).** A disagreeing route that every reading of a claim shows is the evidence's
+  problem, not the claim's: kept on record, not counted.
+- **Open cells.** Memory keeps the ledger of next routes named across runs and marks which a later run closed.
+- **Reflection.** At the end of every run the engine is asked what it thinks of this testing, what it is
+  learning, what surprised it, where it is least sure its account matches the trace, and what it would
+  change; logged as REFLECTION_STATE and `logs/run-<id>-reflection.md`, carried into memory.
+
+Cost: 10–20 model calls per claim now. `--max-claims 4` for a first run of this version.
+
 ## Process memory (PRF section 12)
 
 `memory.py` reads every run log, debrief and chat in `logs/` and builds `logs/memory.md`: the latest

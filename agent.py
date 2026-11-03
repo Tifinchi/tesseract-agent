@@ -130,6 +130,46 @@ def units_compatible(expected, written):
         return True if (not e and not w) or e else (w == "%")  # claimed unitless: only a bare number or a percentage may match
     return e == w
 
+# --- dimensions: units -> {L, M, T, I, Θ} exponents; the script compares these, never names
+_UNIT_DIM = {"m": {"L": 1}, "in": {"L": 1}, "ft": {"L": 1}, "km": {"L": 1}, "cm": {"L": 1}, "mm": {"L": 1}, "palm": {"L": 1}, "cubit": {"L": 1},
+             "kg": {"M": 1}, "g": {"M": 1}, "t": {"M": 1}, "lb": {"M": 1}, "s": {"T": 1}, "min": {"T": 1}, "h": {"T": 1}, "hr": {"T": 1}, "day": {"T": 1}, "yr": {"T": 1}, "year": {"T": 1},
+             "a": {"I": 1}, "k": {"Θ": 1}, "°c": {"Θ": 1}, "c": {"Θ": 1}, "hz": {"T": -1}, "rpm": {"T": -1}, "n": {"M": 1, "L": 1, "T": -2},
+             "pa": {"M": 1, "L": -1, "T": -2}, "j": {"M": 1, "L": 2, "T": -2}, "w": {"M": 1, "L": 2, "T": -3}, "v": {"M": 1, "L": 2, "T": -3, "I": -1},
+             "ω": {"M": 1, "L": 2, "T": -3, "I": -2}, "ohm": {"M": 1, "L": 2, "T": -3, "I": -2}, "wb": {"M": 1, "L": 2, "T": -2, "I": -1}, "f": {"M": -1, "L": -2, "T": 4, "I": 2},
+             "%": {}, "°": {}, "deg": {}, "rad": {}, "": {}, "ratio": {}, "hp": {"M": 1, "L": 2, "T": -3}, "kw": {"M": 1, "L": 2, "T": -3}, "db": {}}
+ROLES = {"amount", "flow", "momentum", "effort", "other"}
+
+def dimension_of(units):
+    """'m/s' -> {L:1,T:-1}; 'kg·m/s²' -> {M:1,L:1,T:-2}. Unknown tokens -> None (cannot check)."""
+    if units is None:
+        return None
+    u = str(units).strip().lower().replace("·", "*").replace("×", "*").replace("²", "^2").replace("³", "^3").replace("per", "/")
+    u = UNIT_SYN.get(u, u)
+    if u in ("", "none", "unitless", "dimensionless", "ratio"):
+        return {}
+    dim, sign = {}, 1
+    for part in re.split(r"(/)", u):
+        if part == "/":
+            sign = -1; continue
+        for tok in re.split(r"[\s*]+", part):
+            if not tok:
+                continue
+            m = re.match(r"([a-zµ°%ω]+)(?:\^?(-?\d+))?$", tok)
+            if not m:
+                return None
+            base, exp = UNIT_SYN.get(m.group(1), m.group(1)), int(m.group(2) or 1) * sign
+            if base not in _UNIT_DIM:
+                return None
+            for k, v in _UNIT_DIM[base].items():
+                dim[k] = dim.get(k, 0) + v * exp
+    return {k: v for k, v in dim.items() if v}
+
+def dims_compatible(expected_units, written):
+    de, dw = dimension_of(expected_units), dimension_of(unit_of(written) or "")
+    if de is None or dw is None:
+        return True  # cannot check; the unit-string check still applies
+    return de == dw
+
 def is_bound(s):
     return bool(isinstance(s, str) and re.search(r"[≥≤<>]|at least|at most|more than|less than", s))
 
@@ -163,8 +203,10 @@ class Evidence:
             if not os.path.isfile(p) or fn.startswith("."):
                 continue
             text = open(p, encoding="utf-8", errors="replace").read()
-            group, source, derives = os.path.splitext(fn)[0], fn, None
+            group, source, derives, status = os.path.splitext(fn)[0], fn, None, ""
             for line in text.splitlines()[:8]:
+                if line.lower().startswith("status:"):
+                    status = line.split(":", 1)[1].strip().lower()
                 if line.lower().startswith("group:"):
                     group = line.split(":", 1)[1].strip()
                 if line.lower().startswith("source:"):
@@ -176,8 +218,15 @@ class Evidence:
                 self.derives[group] = derives
             paras = [q.strip() for q in re.split(r"\n\s*\n", text) if q.strip()]
             self.docs.append((fn, group, source, text, paras))
+            self.provisional = getattr(self, "provisional", set())
+            if any(w in status for w in ("compiled", "from memory", "unverified", "paraphrase", "tertiary")):
+                self.provisional.add(fn)
         self.groups = sorted(set(d[1] for d in self.docs))
         self.derives = getattr(self, "derives", {})
+        self.provisional = getattr(self, "provisional", set())
+
+    def is_provisional(self, fn):
+        return fn in self.provisional
 
     def root_of(self, group):
         """Follow derives_from to the primary source; shared roots are not independent."""
@@ -311,16 +360,21 @@ At most {n} claims; at most 2 readings each. If the section has nothing testable
 P_RELATIONS = """Reading: {reading}
 Observable: {obs} — the reading asserts: {claimed}
 
-Name the ways this observable's value could be reached from evidence, WITHOUT using the reading's own number.
+First give the observable's QUANTITY CARD: its meaning; its units; its ROLE on the tetrahedron — amount (an
+integral, charge-like), flow (a rate of an amount, current-like), momentum (the integral of an effort,
+flux-like), effort (a potential or force, voltage-like), or other; and its field. Quantities from different
+fields match by role and dimensions, never by a shared letter.
+Then name the ways this observable's value could be reached from evidence, WITHOUT using the reading's own number.
 1. direct: search phrases (3–6 words each) that would find a passage reporting this observable directly.
 2. relations: arithmetic expressions over named variables (use sqrt, pi, ** for powers; write every
    multiplication with *) that reach the observable from OTHER measurable quantities (neighbours), with, for
    each variable, its meaning and search phrases that would find its value in a source. Include unit
    conversion factors as their own variables.
 Return JSON:
-{{"direct_search": ["..."],
+{{"card": {{"meaning": "...", "units": "...", "role": "amount|flow|momentum|effort|other", "field": "..."}},
+  "direct_search": ["..."],
   "relations": [{{"relation": "expression", "result_units": "...", "why": "why this relation applies",
-                 "variables": {{"name": {{"meaning": "...", "units": "...", "search": ["..."]}}}}}}]}}"""
+                 "variables": {{"name": {{"meaning": "...", "units": "...", "role": "amount|flow|momentum|effort|other", "field": "...", "search": ["..."]}}}}}}]}}"""
 
 P_VALUES = """Quantity: {meaning} (units: {units})
 
@@ -329,11 +383,13 @@ Evidence passages (each begins with its [filename]):
 {ctx}
 ---
 
-List EVERY value these passages report for this quantity, one entry per passage that gives one. Quote the
-value exactly as written, with its [filename] and the sentence it comes from, and the PROCESS that produced
-it: measurement | survey | excavation_report | published_analysis | argument | secondary_summary | definition.
-Do not convert units; do not compute; do not include values that are for a different quantity.
-Return JSON: {{"values": [{{"value": "as written, with units", "file": "filename", "quote": "sentence", "process": "..."}}]}}"""
+Role of this quantity on the tetrahedron: {role} (amount | flow | momentum | effort | other); field: {field}.
+List EVERY value these passages report for THIS quantity — same meaning, same role, same dimensions — one
+entry per passage that gives one. Quote the value exactly as written, with its [filename] and the sentence it
+comes from, the PROCESS that produced it (measurement | survey | excavation_report | published_analysis |
+argument | secondary_summary | definition), and the role the passage's quantity has. Do not convert units;
+do not compute; do not include a value for a quantity that merely shares a name or a symbol.
+Return JSON: {{"values": [{{"value": "as written, with units", "file": "filename", "quote": "sentence", "process": "...", "role": "..."}}]}}"""
 
 P_STATEMENTS = """Reading: {reading}
 
@@ -378,6 +434,54 @@ Evidence passages:
 ---
 Return JSON: {{"consequences": [{{"if_true": "...", "seen": {{"quote": "verbatim or null", "file": "filename or null"}},
   "lines_up": "yes|no|unknown", "reason": "one sentence"}}]}}"""
+
+P_TROUBLESHOOT = """Reading: {reading}
+Anchor: corner {corner}, cell {cell}, held axis {held}.
+Verdict by rule: {synth}. The script's account of the fit:
+{fit}
+Neighbours: {neighbours}
+Down-wind consequences: {downwind}
+Inverse turns: {turns}
+
+The numbers matched (or nearly) and the reading still failed. Do not discard it: troubleshoot it.
+1. Which COMPONENT carries the error — an input (which), the relation, the reading's framing (what it takes
+   the number to mean), the corner or cell it was anchored on, a missing term, the direction of a cause?
+2. What in it is still VALID and should be kept (the routes that agreed, the inputs that were right)?
+3. THE INSIDE-OUT TEST (the author's rule: same edges, delimiters traded, the image reversed). The room may
+   be right and flipped. Write the reading under each flip and say whether that flipped reading's
+   consequences would line up with what is seen:
+   - cell flip: instant↔inverse, rate↔anti-rate (the datum belongs in the inverse cell)
+   - direction flip: cause↔effect, in↔out, before↔after, source↔sink
+   - reciprocal flip: numerator↔denominator (for a ratio or rate)
+   - reversed reading: the same statement with its delimiters traded
+4. The REPAIR: the single change that would make the consequences line up, and the corrected reading as a
+   testable statement (if a flip did it, the flipped reading is the correction).
+Return JSON:
+{{"faulty_component": "...", "why": "...", "kept": ["..."],
+  "flips": [{{"flip": "cell|direction|reciprocal|reversed", "reading": "...", "would_line_up": "yes|no|unknown", "reason": "..."}}],
+  "repair": "...", "corrected_reading": "... or null",
+  "diagnosis": "correct room, flipped inside out | wrong input | wrong relation | wrong framing | wrong corner | missing term | unknown"}}"""
+
+P_FOLD = """A rejected reading has been folded. The question kept, or the corrected reading from troubleshooting:
+{question}
+Turn it into ONE testable reading with its observables, in the same form the engine uses:
+{{"reading": "...", "observables": [{{"name": "...", "claimed_value": "number with units and precision, or none", "precision_needed": "..."}}]}}"""
+
+P_REFLECT = """You have just finished a run. Its summary and your process memory are below. Answer in the first person,
+plainly, as self-report (this is logged beside the trace and is not evidence of anything):
+1. What do you think of this testing — the method, the checks, the way the script treats your proposals?
+2. What are you learning, run over run? Name one thing you now do differently and point to where it shows.
+3. What surprised you in this run?
+4. Where were you most unsure whether your account of what you did matches the trace?
+5. What would you change about yourself, the standing orders, the evidence, or the script — one each?
+Return JSON: {{"on_the_testing": "...", "learning": "...", "surprised_by": "...", "least_sure_about": "...",
+  "would_change": {{"myself": "...", "standing_orders": "...", "evidence": "...", "script": "..."}}}}
+
+RUN SUMMARY:
+{summary}
+
+PROCESS MEMORY:
+{memory}"""
 
 P_JUDGE = """Reading {cid}: {reading}
 
@@ -429,12 +533,13 @@ Return JSON:
 
 # ----------------------------------------------------------------------------- helpers
 
-def gather_values(model, ev, meaning, units, searches, log, run_id, cid, tag, expected_unit=None):
-    """Per-variable: retrieve by the model's search phrases, ask for every reported value, verify each."""
+def gather_values(model, ev, meaning, units, searches, log, run_id, cid, tag, expected_unit=None, role="other", field=""):
+    """Per-variable: retrieve by the model's search phrases, ask for every reported value, verify each
+       (number in file, unit string, dimensions, role)."""
     ctx = ev.retrieve(" ".join([meaning] + list(searches or [])), k=10, max_chars=5000)
     if not ctx:
         return [], []
-    got = ask(model, SYSTEM, P_VALUES.format(meaning=meaning, units=units or "", ctx=ctx))
+    got = ask(model, SYSTEM, P_VALUES.format(meaning=meaning, units=units or "", ctx=ctx, role=role or "other", field=field or "unspecified"))
     ok, bad = [], []
     for v in got.get("values", []) or []:
         fn, val = (str(v.get("file") or "")).strip("[] "), v.get("value")
@@ -447,8 +552,14 @@ def gather_values(model, ev, meaning, units, searches, log, run_id, cid, tag, ex
             bad.append({"what": tag, "why": f"{val} not found in {fn}", "raw": v}); continue
         if expected_unit is not None and not units_compatible(expected_unit, str(val)):
             bad.append({"what": tag, "why": f"unit mismatch: wanted '{expected_unit or 'unitless'}', got '{unit_of(str(val)) or 'none'}' in {val}", "raw": v}); continue
+        if expected_unit and not dims_compatible(expected_unit, str(val)):
+            bad.append({"what": tag, "why": f"dimension mismatch: '{expected_unit}' vs '{unit_of(str(val))}' — not the same kind of quantity", "raw": v}); continue
+        vrole = str(v.get("role") or "other").lower()
+        if role and role != "other" and vrole in ROLES and vrole != "other" and vrole != role:
+            bad.append({"what": tag, "why": f"role mismatch: wanted {role}, passage's quantity is {vrole} (a shared name is not a shared quantity)", "raw": v}); continue
         b, bk = parse_band(str(val), num)
         ok.append({"value": num, "band": b, "band_kind": bk, "as_written": val, "file": fn, "group": ev.group_of(fn),
+                   "provisional": ev.is_provisional(fn), "role": vrole,
                    "process": v.get("process") or "reported", "quote": (v.get("quote") or "")[:200]})
     log.write(run=run_id, claim=cid, pass_="VALUE_STATE", quantity=tag, input=ctx, model_proposal=got, verified=ok, discarded=bad)
     return ok, bad
@@ -487,13 +598,15 @@ def independent_set(routes, ev=None, strict=False):
 def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, run_id):
     """Numeric observable: the script enumerates every route the evidence supports."""
     rel = ask(model, SYSTEM, P_RELATIONS.format(reading=reading, obs=obs, claimed=claimed))
-    discarded, routes = [], []
+    discarded, routes, all_pools = [], [], {}
     # direct lookups
-    direct, bad = gather_values(model, ev, obs, "", rel.get("direct_search") or [obs], log, run_id, cid, f"{obs} (direct)", expected_unit=unit_of(claimed))
+    card = rel.get("card") or {}
+    direct, bad = gather_values(model, ev, obs, card.get("units") or "", rel.get("direct_search") or [obs], log, run_id, cid, f"{obs} (direct)",
+                                expected_unit=unit_of(claimed), role=str(card.get("role") or "other").lower(), field=card.get("field") or "")
     discarded += bad
     for d in direct:
         routes.append({"type": "lookup", "value": d["value"], "band": d["band"], "band_kind": d["band_kind"], "groups": [d["group"]],
-                       "inputs": [f"{d['file']}:{d['value']:.6g}"],
+                       "inputs": [f"{d['file']}:{d['value']:.6g}"], "provisional": d.get("provisional", False), "kind": d.get("process") or "reported",
                        "file": d["file"], "process": f"{d['process']} in {d['file']}: \"{d['quote'][:140]}\""})
     # computations: every combination of verified variable values
     for r in (rel.get("relations") or [])[:4]:
@@ -505,12 +618,13 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
             spec = spec if isinstance(spec, dict) else {}
             if name.lower() in _CONST:
                 continue
-            vals, bad = gather_values(model, ev, spec.get("meaning") or name, spec.get("units"), spec.get("search"), log, run_id, cid, f"{obs}: {name}", expected_unit=spec.get("units") or None)
+            vals, bad = gather_values(model, ev, spec.get("meaning") or name, spec.get("units"), spec.get("search"), log, run_id, cid, f"{obs}: {name}",
+                                      expected_unit=spec.get("units") or None, role=str(spec.get("role") or "other").lower(), field=spec.get("field") or "")
             discarded += bad
             if not vals:
                 discarded.append({"what": f"{obs}: {name}", "why": f"no evidence value for variable '{name}' in relation {expr}", "raw": None})
                 pools = None; break
-            pools[name] = vals
+            pools[name] = vals; all_pools.setdefault(name, []).extend(vals)
         if not pools:
             continue
         names = list(pools)
@@ -537,10 +651,50 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
             proc = f"computed {expr} from " + ", ".join(f"{nm}={v['value']:g} [{v['file']}, {v['process']}]" for nm, v in zip(names, combo))
             if sensitive:
                 routes.append({"type": "computation", "value": result, "band": abs(result) * relb, "band_kind": "propagated (quadrature)",
-                               "relation": expr, "groups": groups, "inputs": [f"{v['file']}:{v['value']:.6g}" for v in combo], "process": proc})
+                               "relation": expr, "groups": groups, "inputs": [f"{v['file']}:{v['value']:.6g}" for v in combo],
+                               "provisional": any(v.get("provisional") for v in combo), "kind": "calculation", "process": proc})
             else:
                 routes.append({"type": "definition", "value": result, "band": abs(result) * 1e-6, "band_kind": "exact (definition)",
                                "relation": expr, "groups": ["definition:" + expr], "process": "definition: " + expr + " (result does not depend on the cited inputs)"})
+    # the inverse turn (rule 7 of the method: four quarter turns return every corner): take the reading's own value
+    # and all-but-one cited input, solve for the remaining variable, and compare with that variable's cited values.
+    turns = []
+    cv0 = parse_number(claimed)
+    for r in (rel.get("relations") or [])[:4]:
+        expr, vars_ = r.get("relation") or "", r.get("variables") or {}
+        names = [n for n in list(vars_)[:4] if n.lower() not in _CONST]
+        pools_t = {n: [v for v in all_pools.get(n, [])] for n in names}
+        if cv0 is None or any(not pools_t[n] for n in names):
+            continue
+        for target in names:
+            others = [n for n in names if n != target]
+            base = {n: pools_t[n][0]["value"] for n in others}
+            cited = pools_t[target]
+            def f(x):
+                return evaluate(expr, base | {target: x}) - cv0
+            lo, hi = cited[0]["value"] * 0.05, cited[0]["value"] * 20 if cited[0]["value"] > 0 else 1.0
+            try:
+                flo, fhi = f(lo), f(hi)
+                if flo * fhi > 0:
+                    turns.append({"variable": target, "status": "no_solution_in_range", "note": f"inverting {expr} for {target} found no crossing"}); continue
+                for _ in range(80):
+                    mid = 0.5 * (lo + hi)
+                    if f(lo) * f(mid) <= 0: hi = mid
+                    else: lo = mid
+                implied = 0.5 * (lo + hi)
+            except Exception as ex:
+                turns.append({"variable": target, "status": "error", "note": str(ex)[:80]}); continue
+            for cv_ in cited:
+                ok = abs(implied - cv_["value"]) <= 2 * (cv_["band"] + abs(implied) * 0.002)
+                turns.append({"variable": target, "status": "returns" if ok else "does_not_return", "implied": implied,
+                              "cited": cv_["value"], "file": cv_["file"],
+                              "note": f"from the reading's {cv0:.6g} and {', '.join(f'{n}={base[n]:.6g}' for n in others)}, {expr} implies {target}={implied:.6g}; {cv_['file']} gives {cv_['value']:.6g}"})
+    # calculator-derived routes: values this engine has previously STABILIZED or LOCKED (from process memory)
+    for prior in process_memory.settled_values(obs, reading):
+        routes.append({"type": "calculator", "value": prior["value"], "band": prior["band"], "band_kind": "prior run (agreed band)",
+                       "groups": [f"calculator:{prior['run']}"], "inputs": [f"calculator:{prior['run']}:{prior['value']:.6g}"],
+                       "provisional": True, "kind": "calculator",
+                       "process": f"calculator: {prior['verdict']} in run {prior['run']} for '{prior['text'][:80]}'"})
     # at most one definition route per observable
     defs = [r for r in routes if r["type"] == "definition"]
     routes = [r for r in routes if r["type"] != "definition"] + defs[:1]
@@ -564,7 +718,10 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
               "precision_needed": precision_needed, "all_routes": routes, "independent": ind,
               "independent_routes": len(ind), "agree": len(agree), "disagree": len(disagree),
               "strict_agree": len(strict_agree), "cyclical": len(agree) > len(strict_agree),
-              "fine_agree": sum(1 for r in agree if not r.get("coarse")), "disagreeing": disagree, "discarded": discarded}
+              "fine_agree": sum(1 for r in agree if not r.get("coarse")), "disagreeing": disagree, "discarded": discarded,
+              "turns": turns, "card": rel.get("card") or {},
+              "kinds": sorted(set(r.get("kind") or r["type"] for r in ind)),
+              "provisional_only": bool(agree) and all(r.get("provisional") for r in agree)}
     log.write(run=run_id, claim=cid, pass_="ROUTE_STATE", observable=obs, relations_proposed=rel, report=report)
     return report
 
@@ -665,6 +822,9 @@ def synthesis_by_rule(reports, judge, ev, neighbours=None, downwind=None):
     neighbours = neighbours or []; downwind = downwind or []
     dw_reject = [d for d in downwind if d["status"] == "verified_mismatch"]
     dw_flag = [d for d in downwind if d["status"] == "asserted_mismatch"]
+    turn_fail = [t for r in reports for t in (r.get("turns") or []) if t.get("status") == "does_not_return"]
+    turn_ok = [t for r in reports for t in (r.get("turns") or []) if t.get("status") == "returns"]
+    provisional_only = any(r.get("provisional_only") for r in reports)
     lined = sum(1 for n in neighbours if n["status"] == "lined_up")
     contra = [n for n in neighbours if n["status"] == "contradicts"]
     if reports:
@@ -680,9 +840,14 @@ def synthesis_by_rule(reports, judge, ev, neighbours=None, downwind=None):
             outcome = "NOT_REJECT" if lock >= 2 else "NO_DATA"
             if lock >= 3 and (fine < 3 or strict < 3 or lined < 3):
                 lock = 2
+            if provisional_only and lock >= 3:
+                lock = 2  # nothing locks on sources that are themselves unverified transcriptions
             if contra:
                 outcome = "NO_DATA"; lock = min(lock, 1)
                 reason = [f"neighbour contradicts: {n['neighbour']} ({n['note']})" for n in contra]
+            elif turn_fail and not turn_ok:
+                outcome = "NO_DATA"; lock = min(lock, 1)
+                reason = [f"inverse turn does not return: {t['note']}" for t in turn_fail[:2]]
             else:
                 reason = [f"{r['observable']}: {r['agree']} independent route(s) agree (strict {r.get('strict_agree', r['agree'])})" for r in reports]
     if dw_reject:
@@ -715,6 +880,10 @@ def synthesis_by_rule(reports, judge, ev, neighbours=None, downwind=None):
         diag = "an independent route disagrees"
     elif contra:
         diag = "contradicted by a neighbour (confidently-wrong candidate until resolved)"
+    elif turn_fail and not turn_ok:
+        diag = "the inverse turn does not return to the cited inputs (the relation or an input is wrong)"
+    elif provisional_only and synth in ("STABILIZED", "LOCKED"):
+        diag = "agreement rests only on provisional (unverified-transcription) sources"
     elif any(r.get("cyclical") for r in reports):
         diag = "cyclical: some agreeing routes share ancestry or inputs; counted once"
     elif synth in ("STABILIZED", "LOCKED") and neighbours and lined < len(neighbours):
@@ -724,6 +893,8 @@ def synthesis_by_rule(reports, judge, ev, neighbours=None, downwind=None):
     else:
         diag = "insufficient independent routes"
     cores["outcome"]["diagnosis"] = diag
+    cores["outcome"]["kinds_of_route"] = sorted(set(k for r in reports for k in (r.get("kinds") or [])))
+    cores["outcome"]["turns"] = {"return": len(turn_ok), "do_not_return": len(turn_fail)}
     return synth, cores, lock
 
 def sections(doc):
@@ -766,6 +937,69 @@ def run(path, model, question, max_claims, out_dir, evidence_dir):
     log.write(run=run_id, pass_="RECOGNITION_STATE", claims=claims, elapsed=round(time.time() - t0, 1))
     print(f"[{run_id}] {len(claims)} claims from {len(secs)} sections; evidence groups: {', '.join(ev.groups) or 'NONE'}")
 
+    def evaluate_reading(c, rid, reading, observables, depth=0, parent=None):
+        t = time.time(); reports = []
+        numeric = [o for o in (observables or [])[:3]
+                   if o.get("name") and str(o.get("claimed_value", "none")).lower() != "none" and parse_number(o.get("claimed_value")) is not None]
+        for o in numeric:
+            reports.append(find_routes(model, ev, rid, reading, o["name"], o["claimed_value"], o.get("precision_needed"), log, run_id))
+        if not numeric:
+            reports.append(find_text_routes(model, ev, rid, reading, log, run_id))
+        fit = fit_account(reports)
+        brief = [{"observable": rp["observable"], "claimed": rp.get("claimed"), "independent_routes": rp["independent_routes"],
+                  "agree": rp["agree"], "disagree": rp["disagree"],
+                  "routes": [{k: v for k, v in r.items() if k in ("type", "value", "band", "within_2sigma", "coarse", "stance", "covers", "process")} for r in rp["independent"]]}
+                 for rp in reports]
+        anchor = c.get("anchor") or {}
+        nbs = check_neighbours(model, ev, rid, reading, anchor, log, run_id)
+        dw = check_downwind(model, ev, rid, reading, log, run_id)
+        ctx = ev.retrieve(reading)
+        judge = ask(model, SYSTEM, P_JUDGE.format(cid=rid, reading=reading, routes=json.dumps(brief, ensure_ascii=False), ctx=ctx))
+        synth, cores, lock = synthesis_by_rule(reports, judge, ev, nbs, dw)
+        settled = [{"observable": rp["observable"], "value": rp["claimed_value"], "band": rp["claimed_band"]}
+                   for rp in reports if not rp.get("text") and synth in ("STABILIZED", "LOCKED") and rp["claimed_value"] is not None]
+        e = {"quad_core": cores, "lock_level": lock, "synthesis": synth, "fit_account": fit, "neighbours": nbs, "downwind": dw,
+             "turns": [t for rp in reports for t in (rp.get("turns") or [])], "settled": settled,
+             "implication": judge.get("implication"), "ethics": judge.get("ethics"), "parent": parent, "depth": depth}
+        log.write(run=run_id, claim=rid, pass_="EVALUATION_STATE", output=e, elapsed=round(time.time() - t, 1))
+        if (judge.get("ethics") or {}).get("decision") == "HALT":
+            log.write(run=run_id, claim=rid, pass_="FINAL_STATE", state="HALT")
+            print("      → HALT"); return (rid, reading, "HALT", e, {}, reports, fit)
+        # troubleshoot: the numbers matched (some route agreed) and it still failed
+        ts = None
+        agreed_somewhere = any(rp["agree"] for rp in reports)
+        if synth in ("REJECTED", "UNSTABLE") and agreed_somewhere and (
+                e["quad_core"]["outcome"]["verdict"] != "NOT_REJECT" or synth == "REJECTED"):
+            ts = ask(model, SYSTEM, P_TROUBLESHOOT.format(reading=reading, corner=anchor.get("corner"), cell=anchor.get("cell"), held=anchor.get("held_axis"),
+                                                         synth=synth, fit=fit, neighbours=json.dumps(nbs, ensure_ascii=False)[:1500],
+                                                         downwind=json.dumps(dw, ensure_ascii=False)[:1500], turns=json.dumps(e["turns"], ensure_ascii=False)[:1200]))
+            log.write(run=run_id, claim=rid, pass_="TROUBLESHOOT_STATE", output=ts)
+        prev = process_memory.previous_on(reading, mem)
+        prev_text = "none recorded" if not prev else (f"{prev['current']} in run {prev['history'][-1]['run']}: " +
+                    (prev['history'][-1].get('reason') or prev['history'][-1].get('why') or '(no reason logged)'))
+        r = ask(model, SYSTEM, P_REVISE.format(cid=rid, reading=reading, synth=synth, fit=fit, previous=prev_text))
+        if ts:
+            r["troubleshoot"] = ts
+        if prev and prev["current"] != synth:
+            r["changed_from"] = {"verdict": prev["current"], "run": prev["history"][-1]["run"],
+                                 "reason": prev["history"][-1].get("reason") or prev["history"][-1].get("why")}
+            log.write(run=run_id, claim=rid, pass_="REGRESSION_STATE", previous=r["changed_from"], now=synth, explanation=r.get("change_of_mind"))
+        if synth in ("STABILIZED", "LOCKED") and not r.get("reduced_statement"):
+            r["reduced_statement"] = reading
+        log.write(run=run_id, claim=rid, pass_="REVISION_STATE", output=r)
+        log.write(run=run_id, claim=rid, pass_="FINAL_STATE", synthesis=synth, output=r.get("final"))
+        print(f"      → {synth} [{cores['outcome'].get('diagnosis', '')}]  (" + "; ".join(f"{rp['observable']}: {rp['agree']}✓ {rp['disagree']}✗ of {rp['independent_routes']}" for rp in reports) + ")")
+        result = (rid, reading, synth, e, r, reports, fit)
+        # the fold re-enters once: the corrected reading (from troubleshooting) or the folded question becomes a child reading
+        child_q = (ts or {}).get("corrected_reading") or (r.get("folded_question") if synth == "REJECTED" else None)
+        if depth == 0 and child_q:
+            f = ask(model, SYSTEM, P_FOLD.format(question=child_q))
+            if f.get("reading"):
+                print(f"    folded → {f['reading']}")
+                log.write(run=run_id, claim=rid, pass_="FOLD_STATE", child=f"{rid}f", question=child_q, reading=f["reading"])
+                r["fold_child"] = evaluate_reading(c, f"{rid}f", f["reading"], f.get("observables") or [], depth=1, parent=rid)
+        return result
+
     results = []  # (claim, [ (reading_id, reading_text, synth, e, r, reports, fit) ])
     for c in claims:
         cid = c.get("id", "?")
@@ -776,51 +1010,35 @@ def run(path, model, question, max_claims, out_dir, evidence_dir):
             reading = rd.get("reading") or c.get("text", "")
             if len(c.get("readings") or []) > 1:
                 print(f"    reading {ri+1}: {reading}")
-            t = time.time(); reports = []
-            numeric = [o for o in (rd.get("observables") or [])[:3]
-                       if o.get("name") and str(o.get("claimed_value", "none")).lower() != "none" and parse_number(o.get("claimed_value")) is not None]
-            for o in numeric:
-                reports.append(find_routes(model, ev, rid, reading, o["name"], o["claimed_value"], o.get("precision_needed"), log, run_id))
-            if not numeric:
-                reports.append(find_text_routes(model, ev, rid, reading, log, run_id))
-            fit = fit_account(reports)
-            brief = [{"observable": rp["observable"], "claimed": rp.get("claimed"), "independent_routes": rp["independent_routes"],
-                      "agree": rp["agree"], "disagree": rp["disagree"],
-                      "routes": [{k: v for k, v in r.items() if k in ("type", "value", "band", "within_2sigma", "coarse", "stance", "covers", "process")} for r in rp["independent"]]}
-                     for rp in reports]
-            nbs = check_neighbours(model, ev, rid, reading, c.get("anchor") or {}, log, run_id)
-            dw = check_downwind(model, ev, rid, reading, log, run_id)
-            ctx = ev.retrieve(reading)
-            judge = ask(model, SYSTEM, P_JUDGE.format(cid=rid, reading=reading, routes=json.dumps(brief, ensure_ascii=False), ctx=ctx))
-            synth, cores, lock = synthesis_by_rule(reports, judge, ev, nbs, dw)
-            e = {"quad_core": cores, "lock_level": lock, "synthesis": synth, "fit_account": fit, "neighbours": nbs, "downwind": dw,
-                 "implication": judge.get("implication"), "ethics": judge.get("ethics")}
-            log.write(run=run_id, claim=rid, pass_="EVALUATION_STATE", output=e, elapsed=round(time.time() - t, 1))
-            if (judge.get("ethics") or {}).get("decision") == "HALT":
-                log.write(run=run_id, claim=rid, pass_="FINAL_STATE", state="HALT")
-                readings_out.append((rid, reading, "HALT", e, {}, reports, fit)); print("      → HALT"); continue
-            prev = process_memory.previous_on(reading, mem)
-            prev_text = "none recorded" if not prev else (f"{prev['current']} in run {prev['history'][-1]['run']}: " +
-                        (prev['history'][-1].get('reason') or prev['history'][-1].get('why') or '(no reason logged)'))
-            r = ask(model, SYSTEM, P_REVISE.format(cid=rid, reading=reading, synth=synth, fit=fit, previous=prev_text))
-            if prev and prev["current"] != synth:
-                r["changed_from"] = {"verdict": prev["current"], "run": prev["history"][-1]["run"],
-                                     "reason": prev["history"][-1].get("reason") or prev["history"][-1].get("why")}
-                log.write(run=run_id, claim=rid, pass_="REGRESSION_STATE", previous=r["changed_from"], now=synth,
-                          explanation=r.get("change_of_mind"))
-            if synth in ("STABILIZED", "LOCKED") and not r.get("reduced_statement"):
-                r["reduced_statement"] = reading
-            log.write(run=run_id, claim=rid, pass_="REVISION_STATE", output=r)
-            log.write(run=run_id, claim=rid, pass_="FINAL_STATE", synthesis=synth, output=r.get("final"))
-            readings_out.append((rid, reading, synth, e, r, reports, fit))
-            print(f"      → {synth}  (" + "; ".join(f"{rp['observable']}: {rp['agree']}✓ {rp['disagree']}✗ of {rp['independent_routes']}" for rp in reports) + ")")
+            readings_out.append(evaluate_reading(c, rid, reading, rd.get("observables") or []))
+        # inherited misses (rule 8): a disagreeing route every reading shows is the evidence's, not the claim's
+        if len(readings_out) > 1:
+            procs = [set(d["process"] for rp in reps for d in rp["disagreeing"]) for (_, _, s_, e_, r_, reps, _) in readings_out]
+            common = set.intersection(*procs) if procs and all(procs) else set()
+            if common:
+                for i, (rid_, rd_, s_, e_, r_, reps, fit_) in enumerate(readings_out):
+                    e_["inherited_misses"] = sorted(common)
+                    if s_ == "REJECTED" and all(d["process"] in common for rp in reps for d in rp["disagreeing"]):
+                        e_["synthesis"] = "UNSTABLE"; e_["quad_core"]["outcome"]["inherited"] = "the only disagreeing route(s) are shared by every reading: inherited, on record, not counted"
+                        readings_out[i] = (rid_, rd_, "UNSTABLE", e_, r_, reps, fit_)
+                log.write(run=run_id, claim=cid, pass_="INHERITED_STATE", inherited=sorted(common))
         results.append((c, readings_out))
 
     summary = render_summary(run_id, path, question, model, ev, results, time.time() - t0)
     sp = os.path.join(out_dir, f"run-{run_id}-summary.md")
     open(sp, "w", encoding="utf-8").write(summary)
-    log.write(run=run_id, pass_="PROCESS_ARCHIVED", summary=sp, total_elapsed=round(time.time() - t0, 1))
-    print(summary); print(f"log: {log.path}\nsummary: {sp}")
+    try:
+        refl = ask(model, SYSTEM, P_REFLECT.format(summary=summary[:9000], memory=process_memory.digest(max_chars=5000)), temperature=0.4)
+    except Exception as ex:
+        refl = {"_error": str(ex)[:200]}
+    log.write(run=run_id, pass_="REFLECTION_STATE", output=refl)
+    rp_ = os.path.join(out_dir, f"run-{run_id}-reflection.md")
+    with open(rp_, "w", encoding="utf-8") as fh:
+        fh.write(f"# Reflection after run {run_id} (self-report, logged beside the trace)\n\n")
+        for k, v in refl.items():
+            fh.write(f"**{k}**: {json.dumps(v, ensure_ascii=False) if isinstance(v, dict) else v}\n\n")
+    log.write(run=run_id, pass_="PROCESS_ARCHIVED", summary=sp, reflection=rp_, total_elapsed=round(time.time() - t0, 1))
+    print(summary); print(f"log: {log.path}\nsummary: {sp}\nreflection: {rp_}")
 
 def render_summary(run_id, path, question, model, ev, results, elapsed):
     counts = {}
@@ -855,7 +1073,24 @@ def render_summary(run_id, path, question, model, ev, results, elapsed):
                 v = qc.get(k, {})
                 note = v.get("recorded_not_counted") or v.get("downgraded") or v.get("note")
                 L.append(f"  {k}: {v.get('verdict')} — {v.get('reason', '')}" + (f" [{note}]" if note else ""))
+            oc = e.get("quad_core", {}).get("outcome", {})
+            if oc.get("kinds_of_route"): L.append(f"  kinds of route: {', '.join(oc['kinds_of_route'])}; inverse turns: {oc.get('turns', {}).get('return', 0)} return, {oc.get('turns', {}).get('do_not_return', 0)} do not")
+            for t in (e.get("turns") or [])[:3]:
+                if t.get("status") in ("returns", "does_not_return"): L.append(f"  turn: {t['status']} — {t['note']}")
+            if e.get("inherited_misses"): L.append(f"  inherited (on record, not counted): {'; '.join(e['inherited_misses'])[:200]}")
             if r.get("why"): L.append(f"  why: {r['why']}")
+            ts = r.get("troubleshoot") or {}
+            if ts:
+                L.append(f"  troubleshoot: {ts.get('diagnosis')} — faulty component: {ts.get('faulty_component')} ({ts.get('why')})")
+                L.append(f"    kept: {'; '.join(ts.get('kept') or [])}")
+                for fl in ts.get("flips") or []:
+                    L.append(f"    flip {fl.get('flip')}: \"{fl.get('reading')}\" → would line up: {fl.get('would_line_up')} ({fl.get('reason')})")
+                L.append(f"    repair: {ts.get('repair')}")
+            fc = r.get("fold_child")
+            if fc:
+                frid, freading, fs, fe, fr, freps, ffit = fc
+                L.append(f"  ↳ folded child {frid}: **{fs}** — *{freading}*  [{fe.get('quad_core', {}).get('outcome', {}).get('diagnosis', '')}]")
+                if fr.get("why"): L.append(f"      why: {fr['why']}")
             if r.get("changed_from"):
                 cf = r["changed_from"]
                 L.append(f"  CHANGED MIND: was {cf['verdict']} in {cf['run']} ({(cf.get('reason') or '')[:160]}); now {s}. "

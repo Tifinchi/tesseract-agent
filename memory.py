@@ -34,7 +34,7 @@ def load_runs():
     runs = []
     for p in sorted(glob.glob(os.path.join(LOGS, "run-*.jsonl")), key=os.path.getmtime):
         rid = re.sub(r"^run-|\.jsonl$", "", os.path.basename(p))
-        claims, verdicts, whys, routes = {}, {}, {}, {}
+        claims, verdicts, whys, routes, settled, cells = {}, {}, {}, {}, {}, {}
         for line in open(p, encoding="utf-8"):
             try:
                 r = json.loads(line)
@@ -52,12 +52,17 @@ def load_runs():
                 verdicts[r.get("claim")] = e.get("synthesis")
                 qc = e.get("quad_core") or {}
                 routes[r.get("claim")] = (qc.get("outcome") or {}).get("reason", "")
+                if e.get("settled"):
+                    settled[r.get("claim")] = e["settled"]
             elif ps == "REVISION_STATE":
                 o = r.get("output") or {}
                 whys[r.get("claim")] = o.get("why") or (o.get("final") or {}).get("statement") or ""
+                if o.get("empty_cells"):
+                    cells[r.get("claim")] = [(c.get("observable"), c.get("next_route")) for c in o["empty_cells"] if isinstance(c, dict)]
         for cid, v in verdicts.items():
             text = claims.get(cid) or claims.get(re.sub(r"r\d+$", "", cid)) or ""
-            runs.append({"run": rid, "cid": cid, "text": text, "verdict": v, "reason": routes.get(cid, ""), "why": whys.get(cid, "")})
+            runs.append({"run": rid, "cid": cid, "text": text, "verdict": v, "reason": routes.get(cid, ""), "why": whys.get(cid, ""),
+                         "settled": settled.get(cid) or [], "cells": cells.get(cid) or []})
     return runs
 
 def group_claims(entries, threshold=0.6):
@@ -78,7 +83,7 @@ def group_claims(entries, threshold=0.6):
 def self_reports():
     """What the model said about itself: debrief answers and chat replies, newest last, trimmed."""
     out = []
-    for p in sorted(glob.glob(os.path.join(LOGS, "run-*-debrief.md")) + glob.glob(os.path.join(LOGS, "chat-*.md")), key=os.path.getmtime):
+    for p in sorted(glob.glob(os.path.join(LOGS, "run-*-debrief.md")) + glob.glob(os.path.join(LOGS, "run-*-reflection.md")) + glob.glob(os.path.join(LOGS, "chat-*.md")), key=os.path.getmtime):
         t = open(p, encoding="utf-8").read()
         out.append((os.path.basename(p), t))
     return out
@@ -90,7 +95,12 @@ def build():
     for g in groups:
         g = sorted(g, key=lambda e: e["run"])
         hist = [{"run": e["run"], "cid": e["cid"], "verdict": e["verdict"], "reason": e["reason"][:300], "why": e["why"][:300]} for e in g]
-        item = {"text": g[-1]["text"], "history": hist, "current": hist[-1]["verdict"]}
+        item = {"text": g[-1]["text"], "history": hist, "current": hist[-1]["verdict"],
+                "settled": [sv | {"run": e["run"], "verdict": e["verdict"]} for e in g for sv in (e.get("settled") or []) if isinstance(sv, dict)]}
+        # open-cell ledger: a cell named in an earlier run is closed if a later run on this claim stabilized/locked
+        opened = [(e["run"], ob, nx) for e in g for ob, nx in (e.get("cells") or [])]
+        closed_after = {e["run"] for e in g if e["verdict"] in ("STABILIZED", "LOCKED")}
+        item["open_cells"] = [{"run": rn, "observable": ob, "next_route": nx, "closed": any(cr > rn for cr in closed_after)} for rn, ob, nx in opened]
         memory["claims"].append(item)
         for a, b in zip(hist, hist[1:]):
             if a["verdict"] != b["verdict"]:
@@ -119,15 +129,39 @@ def digest(memory=None, max_chars=9000):
         verdict_hist = "→".join(h["verdict"] or "?" for h in c["history"][-5:])
         L.append(f"- [{c['current']}] ({runs_seen} run(s): {verdict_hist}) {c['text'][:140]}")
     L.append("")
+    cells = [(c["text"], oc) for c in memory["claims"] for oc in c.get("open_cells") or []]
+    still = [(t, oc) for t, oc in cells if not oc["closed"]]
+    L.append(f"## Open cells (the stations): {len(still)} open, {len(cells) - len(still)} closed by a later run")
+    seen = set()
+    for t, oc in still[-15:]:
+        k = (oc["observable"], oc["next_route"])
+        if k in seen: continue
+        seen.add(k); L.append(f"- [{oc['run']}] {oc['observable']} → {oc['next_route']}  ({t[:80]})")
+    L.append("")
     reports = self_reports()
     if reports:
-        L.append("## What I said about myself (debriefs and chats, newest last; self-report, not evidence)")
+        L.append("## What I said about myself (reflections, debriefs and chats, newest last; self-report, not evidence)")
         budget = max_chars - sum(len(x) for x in L) - 200
         for name, t in reports[-4:]:
             snippet = re.sub(r"\s+", " ", t)[: max(300, budget // 4)]
             L.append(f"- {name}: {snippet}")
     text = "\n".join(L)
     return text[:max_chars] + ("\n…(memory digest truncated)" if len(text) > max_chars else "")
+
+def settled_values(observable, reading, memory=None, threshold=0.6):
+    """Values this engine previously STABILIZED or LOCKED for a claim like this one: the calculator's own routes."""
+    if memory is None:
+        p = os.path.join(LOGS, "memory.json")
+        memory = json.load(open(p, encoding="utf-8")) if os.path.exists(p) else {"claims": []}
+    out = []
+    for c in memory.get("claims", []):
+        if similar(reading, c["text"]) < threshold:
+            continue
+        for sv in c.get("settled") or []:
+            if similar(observable, sv.get("observable", "")) >= 0.5 and sv.get("value") is not None:
+                out.append({"value": float(sv["value"]), "band": float(sv.get("band") or abs(float(sv["value"])) * 0.01),
+                            "run": sv.get("run"), "verdict": sv.get("verdict"), "text": c["text"]})
+    return out[-3:]
 
 def previous_on(text, memory=None, threshold=0.6):
     """Earlier verdicts on a claim like this one (for the engine to see before it judges again)."""
