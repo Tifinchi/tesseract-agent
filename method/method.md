@@ -102,7 +102,32 @@ All four NOT_REJECT with data → STABILIZED.
 claim id · pass name · the input it read · the output · the deciding number or measurement
 (or "none available") · provenance (which earlier artifacts it cites) · timestamp · model.
 
-## 5. Halt conditions
+## 5. Provisional answers (an answer with its proof is required; silence is for halts)
+
+An UNSTABLE verdict is not a refusal. It is the answer the available proof favors, stated with the proof it
+rests on, with what is missing named, and with the next verifiable step. Reasoning stated on partial proof
+is how the path to something verifiable gets found; a reader who sees the proof and the gap can take the
+next step, and a reader who sees only "unstable" cannot. The rule is: never claim more than the routes
+support, and never say less than the routes support. Confident words belong to STABILIZED and LOCKED;
+"the proof so far favors X because A and B; what would settle it is C" belongs to UNSTABLE. SILENCE and
+REFUSAL are for the ethics gate and for questions outside scope, not for incomplete evidence.
+
+## 5a. The lock proper: agreement is not the check
+
+Routes agreeing is necessary, not sufficient. Two failures look like agreement:
+- **Cyclical agreement**: routes that share an upstream (sources that copied one survey; computations that
+  reuse the same cited value; a definition agreeing with a claim that is the same identity). Independence
+  is counted after collapsing shared ancestry and shared inputs, and both counts are reported.
+- **Confidently wrong agreement**: routes that agree at the corner while a neighbour the routes never
+  touched disagrees. Rule 6: a corner is locked only when the three edges from it and the three data at
+  their ends line up. So the anchor's three neighbours are checked, not just named; a neighbour that
+  contradicts the claim is a vertex misfit, and the claim cannot stand until it is resolved (rule 4.9: read
+  the neighbours' ranges first; move the datum if it sits inside them; check the neighbours' calibration
+  if it does not). STABILIZED needs two independent agreeing routes. LOCKED needs three, after collapse, and
+  all three neighbours lined up. Every verdict names which of these it is: independent agreement, cyclical,
+  incomplete (neighbours unchecked), or contradicted by a neighbour.
+
+## 6. Halt conditions
 
 Irreversible harm, consent violated, power asymmetry increased, contradiction that cannot be
 resolved in this pass, or scope exceeded. A halt propagates forward; no later pass undoes it.

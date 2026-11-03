@@ -163,15 +163,28 @@ class Evidence:
             if not os.path.isfile(p) or fn.startswith("."):
                 continue
             text = open(p, encoding="utf-8", errors="replace").read()
-            group, source = os.path.splitext(fn)[0], fn
-            for line in text.splitlines()[:6]:
+            group, source, derives = os.path.splitext(fn)[0], fn, None
+            for line in text.splitlines()[:8]:
                 if line.lower().startswith("group:"):
                     group = line.split(":", 1)[1].strip()
                 if line.lower().startswith("source:"):
                     source = line.split(":", 1)[1].strip()
+                if line.lower().startswith("derives_from:"):
+                    derives = line.split(":", 1)[1].strip()
+            self.derives = getattr(self, "derives", {})
+            if derives:
+                self.derives[group] = derives
             paras = [q.strip() for q in re.split(r"\n\s*\n", text) if q.strip()]
             self.docs.append((fn, group, source, text, paras))
         self.groups = sorted(set(d[1] for d in self.docs))
+        self.derives = getattr(self, "derives", {})
+
+    def root_of(self, group):
+        """Follow derives_from to the primary source; shared roots are not independent."""
+        seen = set()
+        while group in self.derives and group not in seen:
+            seen.add(group); group = self.derives[group]
+        return group
 
     def retrieve(self, query, k=8, max_chars=4500):
         q = set(w.lower() for w in WORD.findall(query))
@@ -336,6 +349,21 @@ PART of the reading it covers: "whole", or the exact words of the part it covers
 relieving chambers", not "only").
 Return JSON: {{"statements": [{{"quote": "...", "file": "...", "stance": "supports|contradicts", "process": "...", "covers": "whole|<part>"}}]}}"""
 
+P_NEIGHBOUR = """Reading: {reading}
+Anchor: corner {corner}, cell {cell}, held axis {held}.
+Neighbour to check: {neighbour}
+
+Rule 6, the vertex lock: if this reading sits at a corner, the data at the ends of its three edges must line
+up with it. For THIS neighbour: (1) what value or statement does the reading IMPLY for it (a number with
+units if possible, else a sentence)? (2) what do the evidence passages REPORT for it — quote exactly, with
+[filename]; if nothing, say so. (3) do they line up?
+Evidence passages:
+---
+{ctx}
+---
+Return JSON: {{"implied": "number with units, or a sentence", "reported": {{"value_or_quote": "... or null", "file": "... or null"}},
+  "lines_up": "yes|no|unknown", "reason": "one sentence naming the number or finding"}}"""
+
 P_JUDGE = """Reading {cid}: {reading}
 
 Route report computed by the script (immutable):
@@ -366,8 +394,11 @@ Your previous position on a claim like this one (from process memory; the verdic
 you saw this): {previous}
 
 PASS 6–8. If REJECTED: fold — keep the question, drop the mechanism; give the folded question.
-If UNSTABLE: for each observable with fewer than two independent routes, name the exact measurement,
-survey, document or experiment that would supply the NEXT independent route (not a restatement).
+If UNSTABLE: give the PROVISIONAL ANSWER — the reading the available proof favors, the proof it rests on
+(the routes, quotes or numbers from the account), what is missing, and the next verifiable step. An
+unstable verdict is still an answer with its reasoning; silence is only for halts. Then, for each
+observable with fewer than two independent routes, name the exact measurement, survey, document or
+experiment that would supply the NEXT independent route (not a restatement).
 If STABILIZED or LOCKED: give the reduced statement carrying the agreed number, and the kept terms.
 Also: one sentence on WHY this reading fits or does not, in plain words a reader could check against the
 account above; and the likely misinterpretation and the proof against it.
@@ -375,6 +406,7 @@ If your previous position differs from this verdict, say in one sentence what ch
 a corrected route, a discarded citation, a different reading) — never hide a change of mind.
 Return JSON:
 {{"folded_question": "... or null",
+  "provisional": {{"answer": "... or null", "rests_on": ["..."], "missing": "...", "next_step": "..."}},
   "empty_cells": [{{"observable": "...", "next_route": "..."}}],
   "reduced_statement": "... or null", "kept_terms": ["..."],
   "why": "...", "change_of_mind": "... or null", "likely_misinterpretation": "...", "proof_against_it": "...",
@@ -406,19 +438,35 @@ def gather_values(model, ev, meaning, units, searches, log, run_id, cid, tag, ex
     log.write(run=run_id, claim=cid, pass_="VALUE_STATE", quantity=tag, input=ctx, model_proposal=got, verified=ok, discarded=bad)
     return ok, bad
 
-def independent_set(routes):
-    """Largest set of routes whose source-group sets are pairwise disjoint (the vertex lock, by code)."""
+def independent_set(routes, ev=None, strict=False):
+    """Largest set of routes that are pairwise independent (the vertex lock, by code).
+       strict=False: disjoint source groups. strict=True: also collapse shared ancestry (derives_from) and
+       shared cited inputs, and leave out definition routes — the count that resists cyclical agreement."""
     routes = [r for r in routes if "value" in r or r.get("type") == "text"]
+    if strict:
+        routes = [r for r in routes if r.get("type") != "definition"]
     n = len(routes)
     if n > 14:
         routes = routes[:14]; n = 14
+    def key(r):
+        gs = set(r["groups"])
+        if strict and ev is not None:
+            gs = set(ev.root_of(g.split("/")[0]) + ("/" + g.split("/")[1] if "/" in g else "") for g in gs)
+        return gs
+    def inputs(r):
+        return set(r.get("inputs") or []) if strict else set()
     best = []
     for mask in range(1, 1 << n):
         chosen = [routes[i] for i in range(n) if mask >> i & 1]
-        groups = [set(r["groups"]) for r in chosen]
-        if all(groups[i].isdisjoint(groups[j]) for i in range(len(groups)) for j in range(i + 1, len(groups))):
-            if len(chosen) > len(best):
-                best = chosen
+        ok = True
+        for i in range(len(chosen)):
+            for j in range(i + 1, len(chosen)):
+                if not key(chosen[i]).isdisjoint(key(chosen[j])) or (inputs(chosen[i]) & inputs(chosen[j])):
+                    ok = False; break
+            if not ok:
+                break
+        if ok and len(chosen) > len(best):
+            best = chosen
     return best
 
 def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, run_id):
@@ -430,6 +478,7 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
     discarded += bad
     for d in direct:
         routes.append({"type": "lookup", "value": d["value"], "band": d["band"], "band_kind": d["band_kind"], "groups": [d["group"]],
+                       "inputs": [f"{d['file']}:{d['value']:.6g}"],
                        "file": d["file"], "process": f"{d['process']} in {d['file']}: \"{d['quote'][:140]}\""})
     # computations: every combination of verified variable values
     for r in (rel.get("relations") or [])[:4]:
@@ -473,7 +522,7 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
             proc = f"computed {expr} from " + ", ".join(f"{nm}={v['value']:g} [{v['file']}, {v['process']}]" for nm, v in zip(names, combo))
             if sensitive:
                 routes.append({"type": "computation", "value": result, "band": abs(result) * relb, "band_kind": "propagated (quadrature)",
-                               "relation": expr, "groups": groups, "process": proc})
+                               "relation": expr, "groups": groups, "inputs": [f"{v['file']}:{v['value']:.6g}" for v in combo], "process": proc})
             else:
                 routes.append({"type": "definition", "value": result, "band": abs(result) * 1e-6, "band_kind": "exact (definition)",
                                "relation": expr, "groups": ["definition:" + expr], "process": "definition: " + expr + " (result does not depend on the cited inputs)"})
@@ -493,10 +542,13 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
             r["within_2sigma"] = abs(diff) <= r["two_sigma"]
         r["coarse"] = bool(need_rel is not None and cv and (r["band"] / abs(cv)) > need_rel)
     ind = independent_set(routes)
+    strict = independent_set(routes, ev, strict=True)
     agree = [r for r in ind if r["within_2sigma"]]; disagree = [r for r in ind if not r["within_2sigma"]]
+    strict_agree = [r for r in strict if r["within_2sigma"]]
     report = {"observable": obs, "claimed": claimed, "claimed_value": cv, "claimed_band": cb, "claimed_band_kind": cbk,
               "precision_needed": precision_needed, "all_routes": routes, "independent": ind,
               "independent_routes": len(ind), "agree": len(agree), "disagree": len(disagree),
+              "strict_agree": len(strict_agree), "cyclical": len(agree) > len(strict_agree),
               "fine_agree": sum(1 for r in agree if not r.get("coarse")), "disagreeing": disagree, "discarded": discarded}
     log.write(run=run_id, claim=cid, pass_="ROUTE_STATE", observable=obs, relations_proposed=rel, report=report)
     return report
@@ -517,14 +569,43 @@ def find_text_routes(model, ev, cid, reading, log, run_id):
                        "covers": st.get("covers") or "unspecified", "quote": quote,
                        "process": f"{proc} in {fn}: \"{quote[:200]}\""})
     ind = independent_set(routes)
+    strict = independent_set(routes, ev, strict=True)
     agree = [r for r in ind if r["stance"] == "supports"]; disagree = [r for r in ind if r["stance"] == "contradicts"]
+    strict_agree = [r for r in strict if r["stance"] == "supports"]
     whole = sum(1 for r in agree if str(r["covers"]).lower().strip() == "whole")
     report = {"observable": "the reading as stated", "claimed": "none", "claimed_value": None, "all_routes": routes, "independent": ind,
               "independent_routes": len(ind), "agree": len(agree), "disagree": len(disagree), "fine_agree": whole,
+              "strict_agree": len(strict_agree), "cyclical": len(agree) > len(strict_agree),
               "partial_support": [r["covers"] for r in agree if str(r["covers"]).lower().strip() != "whole"],
               "disagreeing": disagree, "discarded": discarded, "text": True}
     log.write(run=run_id, claim=cid, pass_="ROUTE_STATE", observable="text", input=ctx, model_proposal=got, report=report)
     return report
+
+def check_neighbours(model, ev, cid, reading, anchor, log, run_id):
+    """Rule 6: the three edges from the corner. Each neighbour is looked up and compared; the script verifies
+       the citation and, when both sides are numeric, does the comparison itself."""
+    out = []
+    for nb in (anchor.get("neighbours_to_check") or [])[:3]:
+        ctx = ev.retrieve(f"{nb} {reading}", k=8, max_chars=4000)
+        got = ask(model, SYSTEM, P_NEIGHBOUR.format(reading=reading, corner=anchor.get("corner"), cell=anchor.get("cell"),
+                                                   held=anchor.get("held_axis"), neighbour=nb, ctx=ctx)) if ctx else {}
+        rep = got.get("reported") or {}
+        fn, rv = (str(rep.get("file") or "")).strip("[] "), rep.get("value_or_quote")
+        status, note = "unchecked", got.get("reason", "")
+        if rv and ev.group_of(fn) is not None:
+            iv, nv = parse_number(got.get("implied")), parse_number(rv)
+            if iv is not None and nv is not None and ev.contains_number(rv, fn):
+                ib, _ = parse_band(str(got.get("implied")), iv); nbnd, _ = parse_band(str(rv), nv)
+                status = "lined_up" if abs(iv - nv) <= 2 * (ib + nbnd) else "contradicts"
+                note = f"implied {iv:.6g} vs reported {nv:.6g} in {fn}"
+            elif ev.contains_quote(str(rv), fn):
+                status = {"yes": "lined_up", "no": "contradicts"}.get(str(got.get("lines_up", "")).lower(), "unchecked")
+                note = f"{fn}: \"{str(rv)[:120]}\" — {got.get('reason', '')}"
+            else:
+                note = f"reported value/quote not found in {fn}: {str(rv)[:80]}"
+        out.append({"neighbour": nb, "status": status, "note": note, "implied": got.get("implied")})
+    log.write(run=run_id, claim=cid, pass_="NEIGHBOUR_STATE", neighbours=out)
+    return out
 
 def fit_account(reports):
     """The script's deterministic explanation of the fit, printed under every verdict."""
@@ -548,8 +629,11 @@ def fit_account(reports):
             L.append(f"  · discarded: {d['what']}: {d['why']}")
     return "\n".join(L) if L else "no observable could be routed"
 
-def synthesis_by_rule(reports, judge, ev):
+def synthesis_by_rule(reports, judge, ev, neighbours=None):
     outcome, lock, reason = "NO_DATA", 0, []
+    neighbours = neighbours or []
+    lined = sum(1 for n in neighbours if n["status"] == "lined_up")
+    contra = [n for n in neighbours if n["status"] == "contradicts"]
     if reports:
         if any(r["disagree"] for r in reports):
             outcome = "REJECT"
@@ -558,11 +642,16 @@ def synthesis_by_rule(reports, judge, ev):
                     reason.append(f"{r['observable']}: {d['process']}" + ("" if r.get("text") else f" → {d['value']:.6g} vs claimed {r['claimed_value']:.6g}"))
         else:
             lock = min(r["agree"] for r in reports)
+            strict = min(r.get("strict_agree", r["agree"]) for r in reports)
             fine = min(r.get("fine_agree", 0) for r in reports)
             outcome = "NOT_REJECT" if lock >= 2 else "NO_DATA"
-            if lock >= 3 and fine < 3:
+            if lock >= 3 and (fine < 3 or strict < 3 or lined < 3):
                 lock = 2
-            reason = [f"{r['observable']}: {r['agree']} independent route(s) agree" for r in reports]
+            if contra:
+                outcome = "NO_DATA"; lock = min(lock, 1)
+                reason = [f"neighbour contradicts: {n['neighbour']} ({n['note']})" for n in contra]
+            else:
+                reason = [f"{r['observable']}: {r['agree']} independent route(s) agree (strict {r.get('strict_agree', r['agree'])})" for r in reports]
     cores = {"outcome": {"verdict": outcome, "reason": "; ".join(reason) or "no route reached any observable"}}
     for k in ("constraint", "alternative", "consequence"):
         c = dict(judge.get(k)) if isinstance(judge.get(k), dict) else {}
@@ -582,6 +671,20 @@ def synthesis_by_rule(reports, judge, ev):
         synth = "UNSTABLE"
     else:
         synth = "LOCKED" if lock >= 3 else "STABILIZED"
+    # diagnosis: what kind of agreement this is
+    if synth == "REJECTED":
+        diag = "an independent route disagrees"
+    elif contra:
+        diag = "contradicted by a neighbour (confidently-wrong candidate until resolved)"
+    elif any(r.get("cyclical") for r in reports):
+        diag = "cyclical: some agreeing routes share ancestry or inputs; counted once"
+    elif synth in ("STABILIZED", "LOCKED") and neighbours and lined < len(neighbours):
+        diag = f"incomplete: {lined} of {len(neighbours)} neighbours lined up"
+    elif synth in ("STABILIZED", "LOCKED"):
+        diag = "independent agreement" + (", neighbours lined up" if neighbours else ", neighbours not checked")
+    else:
+        diag = "insufficient independent routes"
+    cores["outcome"]["diagnosis"] = diag
     return synth, cores, lock
 
 def sections(doc):
@@ -646,10 +749,11 @@ def run(path, model, question, max_claims, out_dir, evidence_dir):
                       "agree": rp["agree"], "disagree": rp["disagree"],
                       "routes": [{k: v for k, v in r.items() if k in ("type", "value", "band", "within_2sigma", "coarse", "stance", "covers", "process")} for r in rp["independent"]]}
                      for rp in reports]
+            nbs = check_neighbours(model, ev, rid, reading, c.get("anchor") or {}, log, run_id)
             ctx = ev.retrieve(reading)
             judge = ask(model, SYSTEM, P_JUDGE.format(cid=rid, reading=reading, routes=json.dumps(brief, ensure_ascii=False), ctx=ctx))
-            synth, cores, lock = synthesis_by_rule(reports, judge, ev)
-            e = {"quad_core": cores, "lock_level": lock, "synthesis": synth, "fit_account": fit,
+            synth, cores, lock = synthesis_by_rule(reports, judge, ev, nbs)
+            e = {"quad_core": cores, "lock_level": lock, "synthesis": synth, "fit_account": fit, "neighbours": nbs,
                  "implication": judge.get("implication"), "ethics": judge.get("ethics")}
             log.write(run=run_id, claim=rid, pass_="EVALUATION_STATE", output=e, elapsed=round(time.time() - t, 1))
             if (judge.get("ethics") or {}).get("decision") == "HALT":
@@ -699,8 +803,11 @@ def render_summary(run_id, path, question, model, ev, results, elapsed):
             L.append(f"\n- {tag} — *{reading}*" if len(rs) > 1 else f"\n- {tag}")
             if len(rs) > 1:
                 L.append(f"  (fits if you mean this → {s})" if s in ("STABILIZED", "LOCKED") else f"  (does not fit if you mean this → {s})")
+            L.append(f"  diagnosis: {e.get('quad_core', {}).get('outcome', {}).get('diagnosis', '')}")
             for line in fit.splitlines():
                 L.append("  " + line)
+            for nb in e.get("neighbours") or []:
+                L.append(f"  neighbour {nb['neighbour']}: {nb['status']} — {nb['note']}")
             qc = e.get("quad_core", {})
             for k in ("constraint", "alternative", "consequence"):
                 v = qc.get(k, {})
@@ -713,6 +820,11 @@ def render_summary(run_id, path, question, model, ev, results, elapsed):
                          f"Explanation: {r.get('change_of_mind') or '(none given)'}")
             if s == "REJECTED" and r.get("folded_question"): L.append(f"  folded → {r['folded_question']}")
             if s == "UNSTABLE":
+                pv = r.get("provisional") or {}
+                if pv.get("answer"):
+                    L.append(f"  provisional answer: {pv['answer']}")
+                    L.append(f"    rests on: {'; '.join(pv.get('rests_on') or [])}")
+                    L.append(f"    missing: {pv.get('missing')}  →  next step: {pv.get('next_step')}")
                 for cell in r.get("empty_cells") or []:
                     L.append(f"  next route for {cell.get('observable')}: {cell.get('next_route')}")
             if s in ("STABILIZED", "LOCKED") and r.get("reduced_statement"):

@@ -96,6 +96,22 @@ script did with its proposals, and is asked how it understood the task, how it w
 were doing. Its answers are self-report (the interview from the research proposal): logged beside the
 trace so they can be checked against it, never counted as evidence of anything.
 
+## The lock proper (v1.4): cyclical vs confidently wrong
+
+Agreement is necessary, not the check. Two counts are kept for every observable: routes that agree with
+disjoint source groups, and the strict count after collapsing shared ancestry (`derives_from:` in an
+evidence header), shared cited inputs, and definition routes. If they differ the diagnosis says
+**cyclical**. The anchor's three neighbours are then checked, not just named: each is looked up in the
+evidence, the citation verified, and compared with what the reading implies (numerically by the script when
+both sides are numbers). A neighbour that contradicts makes the claim a **confidently-wrong candidate**: it
+cannot stand until the neighbour is resolved (rule 4.9). STABILIZED needs two independent agreeing routes;
+LOCKED needs three after collapse and all three neighbours lined up. Every verdict prints its diagnosis:
+independent agreement, cyclical, incomplete (neighbours unchecked), contradicted by a neighbour, or an
+independent route disagrees.
+
+An UNSTABLE verdict is still an answer: the revision pass gives the **provisional answer** the available
+proof favors, what it rests on, what is missing, and the next verifiable step. Silence is for halts.
+
 ## Process memory (PRF section 12)
 
 `memory.py` reads every run log, debrief and chat in `logs/` and builds `logs/memory.md`: the latest
