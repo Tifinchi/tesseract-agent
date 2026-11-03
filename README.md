@@ -63,6 +63,8 @@ A paper always agrees with itself, so the document under test is never allowed t
 - `method/cube.md` — the ascii cube, verbatim, with the corner table; loaded with the spine.
 - `method/calculator-method.md` — the calculator's rules (4.1), method (4.8), neighbours (4.9), in full.
 - `method/prf-full.txt` — the Portable Reasoning Framework, sections 0–20, in full. Source of truth.
+- `examples/motor/` — the motor calculator (the built page, its manual, the engine source) and
+  `WHY-IT-WORKS.md`: how it instantiates the method and how each result is reached by more than one route.
 - `agent.py` — v1, the triangulating loop. `agent_v0.py` — the first version, kept for the record.
 - `claims/` — documents under test. `evidence/` — independent sources with `source:`/`group:` headers.
 - `logs/` — one `run-<stamp>.jsonl` (every pass, every claim, every route proposal and what the script

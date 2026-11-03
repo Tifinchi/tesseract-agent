@@ -106,3 +106,28 @@ claim id · pass name · the input it read · the output · the deciding number 
 
 Irreversible harm, consent violated, power asymmetry increased, contradiction that cannot be
 resolved in this pass, or scope exceeded. A halt propagates forward; no later pass undoes it.
+
+## 6. A worked example: the motor calculator (full example in `examples/motor/`)
+
+One page takes a motor's nameplate and the circuit around it and derives everything from one structure.
+Charge, current, flux and voltage sit on the tetrahedron's corners and never move; the six circuit laws sit
+one per face; the equivalent circuit is those faces with values, solved once at the operating point, so
+every result (efficiency, amps, power factor, slip, losses, torque, temperature, the conductor, the
+breaker) is one derivation and moves together. The start, the reversal and the stop are the same
+torque–slip curve read after one, two and three quarter turns; the generator is the half turn past zero
+slip; the scale turn reads the same motor at other sizes. Nothing is resized.
+
+Truth there is multi-source, and the page shows it. For the default 10 HP motor: efficiency 91.63 % from
+the circuit's loss legs beside 91.7 % from NEMA MG 1 Table 12-12 (a standards table, a different body,
+a different process); full-load current 12.29 A from the circuit beside 14 A from NEC Table 430.250 and
+beside the nameplate when entered (three readings of one corner, each tied to the rule that uses it);
+locked-rotor current 6.34 × beside NEMA code letter G; pull-out 284 % beside Design B's 200 % minimum.
+The circuit never looks at the tables; the tables never look at the circuit; the page prints them beside
+each other with a verdict and a band (±1 point of efficiency, ±8 % of current, one code letter). The
+typical parameters were chosen by behavior: a set that hit the efficiency and missed the pull-out was
+thrown out. The lock is the round trip: synthesize the IEEE 112 tests from the motor, extract the motor
+back from the tests, and the rated point returns within 0.01 point of efficiency — neighbours finding the
+unknown corners, and folding losing nothing. The frame changes no number; the routes establish the number.
+
+That is what every claim should get: a value from the structure, values from independent sources by
+their own processes, the band from how precisely each was stated, and the verdict from their agreement.
