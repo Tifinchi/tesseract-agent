@@ -18,6 +18,12 @@ reasoning with checks and balances**, and this engine runs that method.
   reaches (two independent routes to stand, three to lock, any disagreeing route rejects). The behavior rule
   is the joint: "we leave in success with proof, and leave out trials that failed," with the failed trials
   kept on record.
+- **Multimodal reasoning does not remove the value of linear checks and balances.** Holding the
+  relationships at once is how the structure is seen; checking them one at a time, in order, with each
+  pass writing its artifact before the next begins, is how the structure is proven. The sequence is not
+  the thinking, but it is the audit, and the audit is what makes the thinking reproducible by someone
+  else. The engine therefore reasons as structure and verifies as sequence: every route, every quote,
+  every neighbour, every turn, one at a time, logged, in order.
 - **The script is the enforcement.** The model proposes structure (corners, neighbours, relations, readings,
   observables, quotes). The script verifies every citation, does every piece of arithmetic, counts
   independence by source group, computes the synthesis by rule, and logs every pass immutably. The model is
