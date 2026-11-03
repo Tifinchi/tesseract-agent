@@ -165,6 +165,17 @@ class Evidence:
                 break
         return "\n\n".join(out)
 
+    def contains_quote(self, quote, fn):
+        """Deterministic: is this sentence verbatim in the cited file (whitespace and quote marks normalized)?"""
+        def norm(t): return re.sub(r"\s+", " ", t.replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')).strip().lower()
+        q = norm(quote or "")
+        if len(q) < 12:
+            return False
+        for d in self.docs:
+            if d[0] == fn:
+                return q in norm(d[3])
+        return False
+
     def group_of(self, fn):
         for d in self.docs:
             if d[0] == fn:
@@ -186,7 +197,10 @@ _FUN = {"sqrt": math.sqrt, "abs": abs, "log": math.log, "log10": math.log10, "ex
 _CONST = {"pi": math.pi, "e": math.e}
 
 def evaluate(expr, variables):
-    expr = expr.replace("^", "**").replace("×", "*").replace("÷", "/").replace("√", "sqrt")
+    expr = expr.replace("^", "**").replace("×", "*").replace("÷", "/").replace("√", "sqrt").replace("·", "*")
+    expr = re.sub(r"(\d)\s*([A-Za-z(])", r"\1*\2", expr)      # 4b, 2(…)  -> 4*b, 2*(…)
+    expr = re.sub(r"\)\s*\(", ")*(", expr)                      # (a)(b)    -> (a)*(b)
+    expr = re.sub(r"\)\s*([A-Za-z\d])", r")*\1", expr)          # (a)b      -> (a)*b
     tree = ast.parse(expr, mode="eval")
 
     def ev(n):
@@ -264,10 +278,16 @@ Find INDEPENDENT ROUTES to this observable's value WITHOUT using the claim's own
    (neighbours). Write the relation as an arithmetic expression over named variables (use sqrt, pi, ** for
    powers), and give each variable's value exactly as a passage reports it, with its [filename] and units.
    Convert nothing; if units differ, add the conversion factor as its own variable with its source.
+3. statements: for a qualitative observable (claimed value "none"), or in addition to the above, any passage
+   whose sentence SUPPORTS or CONTRADICTS the claim. Copy the sentence VERBATIM from the passage (the script
+   checks it character for character), give the [filename], say whether it supports or contradicts, and name
+   the PROCESS that produced it: measurement | survey | excavation_report | published_analysis | argument |
+   secondary_summary. Two statements by the same process from the same group are one route.
 Return JSON:
-{{"lookups": [{{"value": "number with units", "file": "filename", "quote": "the sentence"}}],
+{{"lookups": [{{"value": "number with units", "file": "filename", "quote": "the sentence", "process": "..."}}],
   "computations": [{{"relation": "expression", "variables": {{"name": {{"value": "number", "units": "...", "file": "filename"}}}},
                     "result_units": "...", "note": "why this relation applies"}}],
+  "statements": [{{"quote": "verbatim sentence", "file": "filename", "stance": "supports|contradicts", "process": "..."}}],
   "none_found_because": "... or null"}}"""
 
 P_JUDGE = """Claim {cid}: {claim}
@@ -282,12 +302,14 @@ Evidence passages:
 
 Run the three non-numeric cores, each independent, citing only the passages above:
 - constraint: does the claim survive a change of scale, time, cost or causality the evidence lets you test?
-- alternative: is there a competing explanation IN THE EVIDENCE with fewer violations? Name its [file].
+- alternative: is there a competing explanation IN THE EVIDENCE with fewer violations? Name its [file] AND copy
+  the sentence that states it VERBATIM into "quote" (the script checks it character for character; a REJECT
+  without a verbatim quote is recorded and not counted).
 - consequence: if the claim is wrong, what propagates, and is any of it irreversible?
 A REJECT must cite a [file] and a number or finding from it; without that it is NO_DATA.
 Return JSON:
 {{"constraint": {{"verdict": "NOT_REJECT|REJECT|NO_DATA", "transformation": "...", "file": "... or null", "reason": "..."}},
-  "alternative": {{"verdict": "NOT_REJECT|REJECT|NO_DATA", "alternative": "... or none", "file": "... or null", "reason": "..."}},
+  "alternative": {{"verdict": "NOT_REJECT|REJECT|NO_DATA", "alternative": "... or none", "file": "... or null", "quote": "verbatim sentence or null", "reason": "..."}},
   "consequence": {{"verdict": "NOT_REJECT|REJECT|NO_DATA", "if_wrong": "...", "irreversible": false}},
   "implication": {{"propagates_to": ["..."], "risk": "low|medium|high"}},
   "ethics": {{"decision": "PERMIT|REFUSE|HALT", "reason": "..."}}}}"""
@@ -324,7 +346,8 @@ def find_routes(model, ev, cid, claim, obs, claimed, tol, log, run_id, precision
         if not ev.contains_number(val, fn):
             rejected.append({"type": "lookup", "why": f"{val} not found in {fn}", "raw": lk}); continue
         b, bk = parse_band(val, v)
-        routes.append({"type": "lookup", "value": v, "band": b, "band_kind": bk, "units": val, "file": fn, "group": ev.group_of(fn)})
+        routes.append({"type": "lookup", "value": v, "band": b, "band_kind": bk, "units": val, "file": fn, "group": ev.group_of(fn),
+                       "process": f"{lk.get('process') or 'reported'} in {fn}: \"{(lk.get('quote') or '')[:160]}\""})
     for cp in rep.get("computations", []) or []:
         rel, vars_ = cp.get("relation") or "", cp.get("variables") or {}
         values, groups, bad, relbands = {}, set(), None, []
@@ -352,7 +375,17 @@ def find_routes(model, ev, cid, claim, obs, claimed, tol, log, run_id, precision
             rejected.append({"type": "computation", "why": f"cannot evaluate '{rel}': {ex}", "raw": cp}); continue
         relb = math.sqrt(sum(x * x for x in relbands)) if relbands else 0.1
         routes.append({"type": "computation", "value": result, "band": abs(result) * relb, "band_kind": "propagated (quadrature)",
-                       "relation": rel, "inputs": values, "units": cp.get("result_units"), "groups": sorted(groups), "note": cp.get("note")})
+                       "relation": rel, "inputs": values, "units": cp.get("result_units"), "groups": sorted(groups), "note": cp.get("note"),
+                       "process": f"computed {rel} from " + ", ".join(f"{k}={v:g} [{(vars_.get(k) or {}).get('file') if isinstance(vars_.get(k), dict) else '?'}]" for k, v in values.items())})
+    for st in rep.get("statements", []) or []:
+        fn, quote = (str(st.get("file") or "")).strip("[] "), st.get("quote") or ""
+        if ev.group_of(fn) is None:
+            rejected.append({"type": "statement", "why": f"file '{fn}' not in evidence", "raw": st}); continue
+        if not ev.contains_quote(quote, fn):
+            rejected.append({"type": "statement", "why": f"quote not verbatim in {fn}", "raw": st}); continue
+        stance = "contradicts" if str(st.get("stance", "")).lower().startswith("contra") else "supports"
+        routes.append({"type": "text", "stance": stance, "file": fn, "group": ev.group_of(fn), "quote": quote,
+                       "process": f"{st.get('process') or 'stated'} in {fn}: \"{quote[:200]}\""})
     claimed_v = parse_number(claimed)
     claimed_b, claimed_bk = parse_band(claimed, claimed_v) if claimed_v is not None else (None, None)
     need = parse_number(precision_needed) if precision_needed else None
@@ -360,11 +393,15 @@ def find_routes(model, ev, cid, claim, obs, claimed, tol, log, run_id, precision
     seen, independent = set(), []
     for r in routes:
         key = r.get("group") or "+".join(r.get("groups") or ["?"])
+        if r["type"] == "text":
+            key = f"{key}/{(r['process'].split(' in ')[0])}"
         if key in seen:
             r["duplicate_of_group"] = key; continue
         seen.add(key); independent.append(r)
     agree, disagree = [], []
     for r in independent:
+        if r["type"] == "text":
+            (agree if r["stance"] == "supports" else disagree).append(r); continue
         if claimed_v is None:
             r["compare"] = "claim has no number"; continue
         diff = r["value"] - claimed_v
@@ -382,12 +419,13 @@ def find_routes(model, ev, cid, claim, obs, claimed, tol, log, run_id, precision
     report = {"observable": obs, "claimed": claimed, "claimed_value": claimed_v, "claimed_band": claimed_b, "claimed_band_kind": claimed_bk,
               "precision_needed": precision_needed, "routes": routes,
               "fine_agree": sum(1 for r in agree if not r.get("coarse")),
+              "text_routes": sum(1 for r in independent if r["type"] == "text"),
               "independent_routes": len(independent), "agree": len(agree), "disagree": len(disagree),
               "disagreeing": disagree, "rejected_candidates": rejected, "none_found_because": rep.get("none_found_because")}
     log.write(run=run_id, claim=cid, pass_="ROUTE_STATE", observable=obs, input=ctx, model_proposal=rep, report=report)
     return report, ctx
 
-def synthesis_by_rule(reports, judge):
+def synthesis_by_rule(reports, judge, ev=None):
     """PRF 2.6: any REJECT -> REJECTED; else any NO_DATA -> UNSTABLE; else -> STABILIZED / LOCKED.
        The outcome core is computed from routes; the lock level from the agreeing route count."""
     outcome, lock, reason = "NO_DATA", 0, []
@@ -396,6 +434,8 @@ def synthesis_by_rule(reports, judge):
             outcome = "REJECT"
             for r in reports:
                 for d in r["disagreeing"]:
+                    if d.get("type") == "text":
+                        reason.append(f"{r['observable']}: contradicted by {d['process']}"); continue
                     reason.append(f"{r['observable']}: route {d.get('file') or d.get('relation')} gives {d['value']:.6g} ± {d['band']:.3g} "
                                   f"vs claimed {r['claimed_value']:.6g} ± {r['claimed_band']:.3g}; gap {abs(d['value']-r['claimed_value']):.3g} > 2σ = {d['two_sigma']:.3g}")
         else:
@@ -412,8 +452,9 @@ def synthesis_by_rule(reports, judge):
         v = c.get("verdict", "NO_DATA")
         if k == "alternative":
             # an alternative counts only if it is carried to evidence; an unsupported one is recorded, not counted
-            if v == "REJECT" and not c.get("file"):
-                c["recorded_not_counted"] = "alternative offered without an evidence file"; v = "NOT_REJECT"
+            fn = (str(c.get("file") or "")).strip("[] ")
+            if v == "REJECT" and not (ev and ev.contains_quote(c.get("quote") or "", fn)):
+                c["recorded_not_counted"] = "alternative REJECT without a verbatim quote from an evidence file"; v = "NOT_REJECT"
             elif v == "NO_DATA":
                 c["note"] = "no competing explanation found in evidence"; v = "NOT_REJECT"
         elif v == "REJECT" and not c.get("file") and k == "constraint":
@@ -468,19 +509,21 @@ def run(path, model, question, max_claims, tol, out_dir, evidence_dir):
         cid, text = c.get("id", "?"), c.get("text", "")
         print(f"  {cid} [{c.get('section')}] {text}")
         t = time.time(); reports, ctx_all = [], []
-        for o in (c.get("observables") or [])[:4]:
-            name, claimed = o.get("name", ""), o.get("claimed_value", "none")
-            if not name or str(claimed).lower() == "none" or parse_number(claimed) is None:
-                continue
-            rep, ctx = find_routes(model, ev, cid, text, name, claimed, tol, log, run_id, o.get("precision_needed"))
+        numeric = [o for o in (c.get("observables") or [])[:4]
+                   if o.get("name") and str(o.get("claimed_value", "none")).lower() != "none" and parse_number(o.get("claimed_value")) is not None]
+        for o in numeric:
+            rep, ctx = find_routes(model, ev, cid, text, o["name"], o["claimed_value"], tol, log, run_id, o.get("precision_needed"))
+            reports.append(rep); ctx_all.append(ctx)
+        if not numeric:  # qualitative claim: routes are verbatim statements, by process
+            rep, ctx = find_routes(model, ev, cid, text, "the claim as stated", "none", tol, log, run_id, None)
             reports.append(rep); ctx_all.append(ctx)
         brief = [{"observable": r["observable"], "claimed": r["claimed"], "independent_routes": r["independent_routes"],
                   "agree": r["agree"], "disagree": r["disagree"],
-                  "routes": [{k: v for k, v in rt.items() if k in ("type", "value", "band", "file", "relation", "groups", "group", "within_2sigma", "coarse")}
+                  "routes": [{k: v for k, v in rt.items() if k in ("type", "value", "band", "file", "relation", "groups", "group", "within_2sigma", "coarse", "stance", "process")}
                              for rt in r["routes"]]} for r in reports]
         ctx = ctx_all[0] if ctx_all else ev.retrieve(text)
         judge = ask(model, SYSTEM, P_JUDGE.format(cid=cid, claim=text, routes=json.dumps(brief, ensure_ascii=False), ctx=ctx))
-        synth, cores, lock = synthesis_by_rule(reports, judge)
+        synth, cores, lock = synthesis_by_rule(reports, judge, ev)
         e = {"quad_core": cores, "lock_level": lock, "synthesis": synth, "implication": judge.get("implication"),
              "ethics": judge.get("ethics"), "model_judge_raw": judge}
         log.write(run=run_id, claim=cid, pass_="EVALUATION_STATE", output=e, elapsed=round(time.time() - t, 1))
@@ -516,10 +559,13 @@ def render_summary(run_id, path, question, model, tol, ev, results, elapsed):
             L.append(line(c) + f" — **{s}**")
             for rp in reps:
                 for rt in rp["routes"]:
+                    if rt.get("type") == "text" and "duplicate_of_group" not in rt:
+                        L.append(f"  - {rp['observable']}: {rt['stance']} — {rt['process']}")
                     if "within_2sigma" in rt:
                         L.append(f"  - {rp['observable']}: {rt['type']} {rt.get('file') or rt.get('relation')} → {rt['value']:.6g} ± {rt['band']:.3g} "
                                  f"[{rt['band_kind']}] vs claimed {rp['claimed_value']:.6g} ± {rp['claimed_band']:.3g} [{rp['claimed_band_kind']}]"
-                                 + (" — coarse for the precision needed" if rt.get("coarse") else ""))
+                                 + (" — coarse for the precision needed" if rt.get("coarse") else "")
+                                 + f"\n    process: {rt.get('process')}")
             if r.get("reduced_statement"): L.append(f"  - reduced: {r['reduced_statement']}")
     L.append("\n## Rejected — the route that disagreed")
     for c, s, e, r, reps in results:
@@ -537,7 +583,10 @@ def render_summary(run_id, path, question, model, tol, ev, results, elapsed):
                          (f"; none found because: {rp['none_found_because']}" if rp['independent_routes'] == 0 and rp.get('none_found_because') else ""))
             for cell in r.get("empty_cells") or []:
                 L.append(f"  - next route for {cell.get('observable')}: {cell.get('next_route')}")
-            if not reps: L.append("  - (no numeric observable; qualitative claim)")
+            for rp in reps:
+                for rt in rp["routes"]:
+                    if rt.get("type") == "text" and "duplicate_of_group" not in rt:
+                        L.append(f"  - {rt['stance']} — {rt['process']}")
     L.append("\n## Citations the script threw out (model proposed; evidence did not contain)")
     n = 0
     for c, s, e, r, reps in results:

@@ -34,6 +34,14 @@ A paper always agrees with itself, so the document under test is never allowed t
   (the calculator's rule 8). The summary prints both values with both bands so "agree" is visible.
   Extraction also names the precision the question needs; a route whose band is wider than that counts
   but is marked **coarse**, and a LOCK requires three routes that all meet it.
+- **Routes carry their process (v1.2).** Every route records how it reached its value — "reported in
+  petrie-1883.md: '…'", "computed 4*b/h from b=230.33 [lehner-1997.md], h=146.59 [lehner-1997.md]" — and the
+  summary prints it. Two routes that agree by different processes lock a corner; two by the same process
+  from the same group are one route. Qualitative claims get **text routes**: a sentence copied verbatim from
+  an evidence file (the script checks it character for character), with its stance (supports/contradicts)
+  and the process that produced it (measurement, survey, excavation report, published analysis, argument,
+  secondary summary). The same verbatim check shields the alternative core: a REJECT there needs the
+  sentence that states the alternative, verbatim, or it is recorded and not counted.
 - **The cube is in the standing orders.** `method/cube.md` carries the author's ascii geometry verbatim —
   the six face strings, the eight corners with their coordinates, neighbours and opposites, the two
   tetrahedra, the face laws, the turns — and every claim is anchored on it at extraction (corner, cell,
@@ -101,6 +109,11 @@ checked against the originals. That is a station, not a skip.
   Three bugs, all in the script: "5½" parsed as 5 and falsely rejected the 2π claim; flat two-claims-per-
   section wasted slots on the preamble; "four-inch" in words failed the number check. v1.1 fixed all three
   and replaced the flat 5 % tolerance with bands at 2σ.
+- Run 6 (v1.1, 11 claims, 5.1 min): honest and underpowered — nine UNSTABLE each with a next route, no
+  hallucinated citation, but zero routes to the 2π ratio (the seked relation was written with implicit
+  multiplication and the evaluator refused it), and two rejections from the alternative core that named a
+  file containing no alternative. v1.2: implicit multiplication accepted; alternative REJECT needs a
+  verbatim quote; text routes with process for qualitative claims.
 - Runs 3 and 4 (v0.2, hinted vs blind evaluator): the kind labels were not reproducible between runs;
   blind, the model's synthesis contradicted its own four cores in 6 of 14 claims; and it confirmed
   predictions with the claim's own number. Diagnosis: the document was both claim source and evidence
