@@ -24,8 +24,8 @@ import argparse, ast, datetime, json, math, operator, os, re, sys, time, uuid
 import requests
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-METHOD = (open(os.path.join(HERE, "method", "method.md"), encoding="utf-8").read() + "\n\n" +
-          open(os.path.join(HERE, "method", "cube.md"), encoding="utf-8").read())
+METHOD = "\n\n".join(open(os.path.join(HERE, "method", f), encoding="utf-8").read()
+                      for f in ("method.md", "cube.md", "multimodal.md"))
 OLLAMA = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 
 # ----------------------------------------------------------------------------- model
