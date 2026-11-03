@@ -27,10 +27,22 @@ A paper always agrees with itself, so the document under test is never allowed t
   REJECTED; any NO_DATA → UNSTABLE; otherwise STABILIZED or LOCKED). The model never aggregates.
 - An alternative explanation counts only if it is carried to an evidence file; otherwise it is recorded
   and not counted. A constraint REJECT without a file is NO_DATA.
+- **Bands, not a flat tolerance (v1.1).** Every value carries a band from how its source wrote it: a stated
+  ± or "to x %" is used as written; a bare number gets half its last digit (the truth of rounding); a hedged
+  number (~, ≈, about) gets ±10 %; a bound (≥, ≤) is compared as a bound. A computed route propagates its
+  inputs' relative bands in quadrature. Two values agree when their gap is within 2σ of the combined band
+  (the calculator's rule 8). The summary prints both values with both bands so "agree" is visible.
+  Extraction also names the precision the question needs; a route whose band is wider than that counts
+  but is marked **coarse**, and a LOCK requires three routes that all meet it.
+- **The cube is in the standing orders.** `method/cube.md` carries the author's ascii geometry verbatim —
+  the six face strings, the eight corners with their coordinates, neighbours and opposites, the two
+  tetrahedra, the face laws, the turns — and every claim is anchored on it at extraction (corner, cell,
+  held axis, the three neighbours to check), logged with the claim.
 
 ## Layout
 
 - `method/method.md` — the condensed operating spine, loaded as the system prompt.
+- `method/cube.md` — the ascii cube, verbatim, with the corner table; loaded with the spine.
 - `method/calculator-method.md` — the calculator's rules (4.1), method (4.8), neighbours (4.9), in full.
 - `method/prf-full.txt` — the Portable Reasoning Framework, sections 0–20, in full. Source of truth.
 - `agent.py` — v1, the triangulating loop. `agent_v0.py` — the first version, kept for the record.
@@ -84,6 +96,11 @@ checked against the originals. That is a station, not a skip.
   extracted a rejectable claim, and was given a test file with the facts cut out.
 - Run 2 (v0.1, 14 claims, 8.3 min): overshot the other way — stabilized computed estimates and an
   interpretation; the alternative check rejected two plain records with invented competitors.
+- Run 5 (v1, 12 claims, 4.7 min): first cross-source computation found on its own (Cole's perimeter over
+  Lehner's height = 6.2859); Big Void correctly one route; salt crust correctly no route (evidence gap).
+  Three bugs, all in the script: "5½" parsed as 5 and falsely rejected the 2π claim; flat two-claims-per-
+  section wasted slots on the preamble; "four-inch" in words failed the number check. v1.1 fixed all three
+  and replaced the flat 5 % tolerance with bands at 2σ.
 - Runs 3 and 4 (v0.2, hinted vs blind evaluator): the kind labels were not reproducible between runs;
   blind, the model's synthesis contradicted its own four cores in 6 of 14 claims; and it confirmed
   predictions with the claim's own number. Diagnosis: the document was both claim source and evidence

@@ -24,7 +24,8 @@ import argparse, ast, datetime, json, math, operator, os, re, sys, time, uuid
 import requests
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-METHOD = open(os.path.join(HERE, "method", "method.md"), encoding="utf-8").read()
+METHOD = (open(os.path.join(HERE, "method", "method.md"), encoding="utf-8").read() + "\n\n" +
+          open(os.path.join(HERE, "method", "cube.md"), encoding="utf-8").read())
 OLLAMA = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 
 # ----------------------------------------------------------------------------- model
@@ -53,25 +54,66 @@ def ask(model, system, user, num_ctx=8192, temperature=0.1, retries=2):
 
 WORD = re.compile(r"[A-Za-z0-9√π]{3,}")
 NUM = re.compile(r"-?\d+(?:[.,]\d+)?(?:[eE]-?\d+)?")
+FRAC = {"½": ".5", "¼": ".25", "¾": ".75", "⅓": ".333", "⅔": ".667", "⅛": ".125"}
+WORDS = {"zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
+         "ten": 10, "eleven": 11, "twelve": 12, "fifteen": 15, "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "hundred": 100}
+
+def _norm(s):
+    s = s.replace("−", "-").replace("–", "-").replace(",", "")
+    for k, v in FRAC.items():
+        s = re.sub(r"(\d)" + k, r"\1" + v, s).replace(k, "0" + v)
+    return s
 
 def parse_number(s):
     if isinstance(s, (int, float)):
         return float(s)
     if not isinstance(s, str):
         return None
-    m = NUM.search(s.replace("−", "-").replace("–", "-"))
-    if not m:
-        return None
-    try:
-        return float(m.group(0).replace(",", ""))
-    except ValueError:
-        return None
+    m = NUM.search(_norm(s))
+    if m:
+        try:
+            return float(m.group(0))
+        except ValueError:
+            pass
+    for w, v in WORDS.items():
+        if re.search(r"\b" + w + r"\b", s.lower()):
+            return float(v)
+    return None
+
+def parse_band(s, value):
+    """Half-width of the value's band, from how the source wrote it. Returns (abs_band, kind)."""
+    if not isinstance(s, str) or value is None:
+        return (abs(value) * 0.1 if value else 0.0, "assumed 10 %")
+    t = _norm(s)
+    m = re.search(r"±\s*(\d+(?:\.\d+)?)\s*(%?)", t)
+    if m:
+        b = float(m.group(1))
+        return (abs(value) * b / 100, f"stated ±{b} %") if m.group(2) else (b, f"stated ±{b}")
+    m = re.search(r"to\s+(\d+(?:\.\d+)?)\s*%", t)
+    if m:
+        b = float(m.group(1)); return (abs(value) * b / 100, f"stated to {b} %")
+    if re.search(r"[~≈]|\babout\b|\broughly\b|\bapprox", s.lower()):
+        return (abs(value) * 0.10, "hedged (~): ±10 %")
+    m = NUM.search(t)
+    digits = m.group(0) if m else ""
+    if "." in digits:
+        return (0.5 * 10 ** (-(len(digits.split(".")[1]))), "half last digit")
+    if digits:
+        trailing = len(digits) - len(digits.rstrip("0"))
+        return (0.5 * 10 ** trailing, "half last digit")
+    return (abs(value) * 0.1, "assumed 10 %")
+
+def is_bound(s):
+    return bool(isinstance(s, str) and re.search(r"[≥≤<>]|at least|at most|more than|less than", s))
 
 def number_in_text(value, text):
     v = parse_number(value)
     if v is None:
         return False
-    t = text.replace("−", "-").replace("–", "-").replace(",", "")
+    t = _norm(text)
+    for w, n in WORDS.items():
+        if n == v and re.search(r"\b" + w + r"\b", t.lower()):
+            return True
     for m in NUM.finditer(t):
         try:
             x = float(m.group(0))
@@ -194,12 +236,18 @@ P_EXTRACT = """Section "{heading}" of the document under test:
 Question in focus (may be empty): {question}
 
 PASS 1, ENTRY: extract the distinct claims in this section. One claim per entry; split a recorded fact
-from the inference drawn from it. Normalize each into a testable statement. For each claim list the
-OBSERVABLES it commits to: quantities that could be measured or looked up, each with the value the claim
-asserts (a number with units, or "none" if the claim is qualitative). Return JSON:
+from the inference drawn from it. Normalize each into a testable statement. ANCHOR each claim on the cube:
+name the corner its datum sits on (one of + − × * ’ ” , . — or face:<Top|Front|Right|Left|Back|Bottom>, or
+axis:<x|y|z>), the cell (instant|rate|inverse|anti-rate), and the held axis (what does not change). For each
+claim list the OBSERVABLES it commits to: quantities that could be measured or looked up, each with the
+value the claim asserts, INCLUDING any precision the claim states (write "6.283 to 0.05 %", "43.0 ± 0.1 m",
+"~2.5 m/s" — never strip a stated tolerance; a named constant like 2π becomes its decimal), or "none" if
+the claim is qualitative. Return JSON:
 {{"claims": [{{"id": "{prefix}1", "text": "...", "kind": "record|estimate|inference|rejected_by_source|open_question",
-  "observables": [{{"name": "short name", "claimed_value": "number with units or none"}}]}}, ...]}}
-At most {n} claims."""
+  "anchor": {{"corner": "...", "cell": "...", "held_axis": "...", "neighbours_to_check": ["the corner's three neighbours, named for this datum"]}},
+  "observables": [{{"name": "short name", "claimed_value": "number with units and stated precision, or none",
+                    "precision_needed": "the precision this question needs, e.g. '1 cm', '1 %', 'order of magnitude'"}}]}}, ...]}}
+At most {n} claims. If the section contains nothing testable (preamble, summary, moral), return {{"claims": []}}."""
 
 P_ROUTES = """Claim {cid}: {claim}
 Observable: {obs} — the claim asserts: {claimed}
@@ -262,7 +310,7 @@ Return JSON:
 
 # ----------------------------------------------------------------------------- route finding (script-verified)
 
-def find_routes(model, ev, cid, claim, obs, claimed, tol, log, run_id):
+def find_routes(model, ev, cid, claim, obs, claimed, tol, log, run_id, precision_needed=None):
     ctx = ev.retrieve(f"{obs} {claim}")
     rep = ask(model, SYSTEM, P_ROUTES.format(cid=cid, claim=claim, obs=obs, claimed=claimed, ctx=ctx))
     routes, rejected = [], []
@@ -275,10 +323,11 @@ def find_routes(model, ev, cid, claim, obs, claimed, tol, log, run_id):
             rejected.append({"type": "lookup", "why": f"file '{fn}' not in evidence", "raw": lk}); continue
         if not ev.contains_number(val, fn):
             rejected.append({"type": "lookup", "why": f"{val} not found in {fn}", "raw": lk}); continue
-        routes.append({"type": "lookup", "value": v, "units": val, "file": fn, "group": ev.group_of(fn)})
+        b, bk = parse_band(val, v)
+        routes.append({"type": "lookup", "value": v, "band": b, "band_kind": bk, "units": val, "file": fn, "group": ev.group_of(fn)})
     for cp in rep.get("computations", []) or []:
         rel, vars_ = cp.get("relation") or "", cp.get("variables") or {}
-        values, groups, bad = {}, set(), None
+        values, groups, bad, relbands = {}, set(), None, []
         for name, spec in vars_.items():
             spec = spec if isinstance(spec, dict) else {"value": spec}
             fn = (str(spec.get("file") or "")).strip("[] ")
@@ -292,15 +341,22 @@ def find_routes(model, ev, cid, claim, obs, claimed, tol, log, run_id):
             if not ev.contains_number(spec.get("value"), fn):
                 bad = f"variable {name}: {spec.get('value')} not found in {fn}"; break
             values[name] = v; groups.add(ev.group_of(fn))
+            vb, _ = parse_band(str(spec.get("value")), v)
+            if v:
+                relbands.append(vb / abs(v))
         if bad:
             rejected.append({"type": "computation", "why": bad, "raw": cp}); continue
         try:
             result = evaluate(rel, values)
         except Exception as ex:
             rejected.append({"type": "computation", "why": f"cannot evaluate '{rel}': {ex}", "raw": cp}); continue
-        routes.append({"type": "computation", "value": result, "relation": rel, "inputs": values,
-                       "units": cp.get("result_units"), "groups": sorted(groups), "note": cp.get("note")})
+        relb = math.sqrt(sum(x * x for x in relbands)) if relbands else 0.1
+        routes.append({"type": "computation", "value": result, "band": abs(result) * relb, "band_kind": "propagated (quadrature)",
+                       "relation": rel, "inputs": values, "units": cp.get("result_units"), "groups": sorted(groups), "note": cp.get("note")})
     claimed_v = parse_number(claimed)
+    claimed_b, claimed_bk = parse_band(claimed, claimed_v) if claimed_v is not None else (None, None)
+    need = parse_number(precision_needed) if precision_needed else None
+    need_rel = (need / abs(claimed_v)) if (need and claimed_v and "%" not in str(precision_needed)) else (need / 100 if need and "%" in str(precision_needed) else None)
     seen, independent = set(), []
     for r in routes:
         key = r.get("group") or "+".join(r.get("groups") or ["?"])
@@ -311,10 +367,21 @@ def find_routes(model, ev, cid, claim, obs, claimed, tol, log, run_id):
     for r in independent:
         if claimed_v is None:
             r["compare"] = "claim has no number"; continue
-        rel = abs(r["value"] - claimed_v) / abs(claimed_v) if claimed_v else abs(r["value"])
-        r["rel_diff"] = round(rel, 5)
-        (agree if rel <= tol else disagree).append(r)
-    report = {"observable": obs, "claimed": claimed, "claimed_value": claimed_v, "routes": routes,
+        diff = r["value"] - claimed_v
+        r["rel_diff"] = round(abs(diff) / abs(claimed_v), 5) if claimed_v else abs(diff)
+        two_sigma = 2 * (r["band"] + claimed_b)
+        r["two_sigma"] = two_sigma
+        if is_bound(claimed):
+            ok = (diff >= -two_sigma) if re.search(r"[≥>]|at least|more than", claimed) else (diff <= two_sigma)
+            r["compare"] = "bound"
+        else:
+            ok = abs(diff) <= two_sigma
+        r["within_2sigma"] = ok
+        r["coarse"] = bool(need_rel is not None and claimed_v and (r["band"] / abs(claimed_v)) > need_rel)
+        (agree if ok else disagree).append(r)
+    report = {"observable": obs, "claimed": claimed, "claimed_value": claimed_v, "claimed_band": claimed_b, "claimed_band_kind": claimed_bk,
+              "precision_needed": precision_needed, "routes": routes,
+              "fine_agree": sum(1 for r in agree if not r.get("coarse")),
               "independent_routes": len(independent), "agree": len(agree), "disagree": len(disagree),
               "disagreeing": disagree, "rejected_candidates": rejected, "none_found_because": rep.get("none_found_because")}
     log.write(run=run_id, claim=cid, pass_="ROUTE_STATE", observable=obs, input=ctx, model_proposal=rep, report=report)
@@ -329,12 +396,16 @@ def synthesis_by_rule(reports, judge):
             outcome = "REJECT"
             for r in reports:
                 for d in r["disagreeing"]:
-                    reason.append(f"{r['observable']}: route {d.get('file') or d.get('relation')} gives {d['value']:.6g} "
-                                  f"vs claimed {r['claimed_value']:.6g} ({d['rel_diff']*100:.2f} %)")
+                    reason.append(f"{r['observable']}: route {d.get('file') or d.get('relation')} gives {d['value']:.6g} ± {d['band']:.3g} "
+                                  f"vs claimed {r['claimed_value']:.6g} ± {r['claimed_band']:.3g}; gap {abs(d['value']-r['claimed_value']):.3g} > 2σ = {d['two_sigma']:.3g}")
         else:
             lock = min(r["agree"] for r in reports)
+            fine = min(r.get("fine_agree", 0) for r in reports)
             outcome = "NOT_REJECT" if lock >= 2 else "NO_DATA"
-            reason = [f"{r['observable']}: {r['agree']} independent route(s) agree" for r in reports]
+            if lock >= 3 and fine < 3:
+                lock = 2  # three agreements, but not all at the precision the question needs: stands, does not lock
+            reason = [f"{r['observable']}: {r['agree']} independent route(s) agree within 2σ"
+                      + (f" ({r['agree'] - r.get('fine_agree', 0)} coarse)" if r['agree'] > r.get('fine_agree', 0) else "") for r in reports]
     cores = {"outcome": {"verdict": outcome, "reason": "; ".join(reason) or "no numeric observable"}}
     for k in ("constraint", "alternative", "consequence"):
         c = dict(judge.get(k)) if isinstance(judge.get(k), dict) else {}
@@ -379,10 +450,11 @@ def run(path, model, question, max_claims, tol, out_dir, evidence_dir):
     t0 = time.time()
 
     claims, secs = [], sections(doc)
-    per = max(2, math.ceil(max_claims / max(1, len(secs))))
+    total = sum(len(t) for _, t in secs) or 1
     for i, (heading, text) in enumerate(secs):
         if len(claims) >= max_claims:
             break
+        per = max(1, round(max_claims * len(text) / total))
         got = ask(model, SYSTEM, P_EXTRACT.format(heading=heading, doc=text[:12000], question=question or "",
                                                   prefix=f"s{i+1}c", n=per))
         for c in got.get("claims", []) or []:
@@ -400,11 +472,11 @@ def run(path, model, question, max_claims, tol, out_dir, evidence_dir):
             name, claimed = o.get("name", ""), o.get("claimed_value", "none")
             if not name or str(claimed).lower() == "none" or parse_number(claimed) is None:
                 continue
-            rep, ctx = find_routes(model, ev, cid, text, name, claimed, tol, log, run_id)
+            rep, ctx = find_routes(model, ev, cid, text, name, claimed, tol, log, run_id, o.get("precision_needed"))
             reports.append(rep); ctx_all.append(ctx)
         brief = [{"observable": r["observable"], "claimed": r["claimed"], "independent_routes": r["independent_routes"],
                   "agree": r["agree"], "disagree": r["disagree"],
-                  "routes": [{k: v for k, v in rt.items() if k in ("type", "value", "file", "relation", "groups", "group", "rel_diff")}
+                  "routes": [{k: v for k, v in rt.items() if k in ("type", "value", "band", "file", "relation", "groups", "group", "within_2sigma", "coarse")}
                              for rt in r["routes"]]} for r in reports]
         ctx = ctx_all[0] if ctx_all else ev.retrieve(text)
         judge = ask(model, SYSTEM, P_JUDGE.format(cid=cid, claim=text, routes=json.dumps(brief, ensure_ascii=False), ctx=ctx))
@@ -421,7 +493,8 @@ def run(path, model, question, max_claims, tol, out_dir, evidence_dir):
         log.write(run=run_id, claim=cid, pass_="REVISION_STATE", output=r)
         log.write(run=run_id, claim=cid, pass_="FINAL_STATE", synthesis=synth, output=r.get("final"))
         results.append((c, synth, e, r, reports))
-        print(f"      → {synth}  (" + "; ".join(f"{rp['observable']}: {rp['agree']}✓ {rp['disagree']}✗ of {rp['independent_routes']}" for rp in reports) + ")")
+        print(f"      → {synth}  (" + "; ".join(f"{rp['observable']}: {rp['agree']}✓ {rp['disagree']}✗ of {rp['independent_routes']}"
+              + (f", {rp['agree']-rp.get('fine_agree',0)} coarse" if rp['agree'] > rp.get('fine_agree', 0) else "") for rp in reports) + ")")
 
     summary = render_summary(run_id, path, question, model, tol, ev, results, time.time() - t0)
     sp = os.path.join(out_dir, f"run-{run_id}-summary.md")
@@ -434,7 +507,7 @@ def render_summary(run_id, path, question, model, tol, ev, results, elapsed):
     for _, s, _, _, _ in results:
         counts[s] = counts.get(s, 0) + 1
     L = [f"# Run {run_id}", f"claims: {os.path.basename(path)} · evidence groups: {', '.join(ev.groups) or 'NONE'} · "
-         f"model: {model} · tolerance: {tol:.0%} · question: {question or '(none)'} · {len(results)} claims · {elapsed/60:.1f} min",
+         f"model: {model} · agreement: 2σ of combined bands · question: {question or '(none)'} · {len(results)} claims · {elapsed/60:.1f} min",
          "", "counts: " + ", ".join(f"{k} {v}" for k, v in sorted(counts.items())), ""]
     def line(c): return f"- **{c.get('id')}** [{c.get('section')}] {c.get('text')}"
     L.append("## Locked / stabilized — routes that agreed")
@@ -443,8 +516,10 @@ def render_summary(run_id, path, question, model, tol, ev, results, elapsed):
             L.append(line(c) + f" — **{s}**")
             for rp in reps:
                 for rt in rp["routes"]:
-                    if "rel_diff" in rt:
-                        L.append(f"  - {rp['observable']}: {rt['type']} {rt.get('file') or rt.get('relation')} → {rt['value']:.6g} (Δ {rt['rel_diff']*100:.2f} %)")
+                    if "within_2sigma" in rt:
+                        L.append(f"  - {rp['observable']}: {rt['type']} {rt.get('file') or rt.get('relation')} → {rt['value']:.6g} ± {rt['band']:.3g} "
+                                 f"[{rt['band_kind']}] vs claimed {rp['claimed_value']:.6g} ± {rp['claimed_band']:.3g} [{rp['claimed_band_kind']}]"
+                                 + (" — coarse for the precision needed" if rt.get("coarse") else ""))
             if r.get("reduced_statement"): L.append(f"  - reduced: {r['reduced_statement']}")
     L.append("\n## Rejected — the route that disagreed")
     for c, s, e, r, reps in results:
@@ -479,7 +554,7 @@ if __name__ == "__main__":
     ap.add_argument("--model", default=os.environ.get("MODEL", "qwen2.5:14b"))
     ap.add_argument("--question", default="")
     ap.add_argument("--max-claims", type=int, default=12)
-    ap.add_argument("--tolerance", type=float, default=0.05, help="relative agreement tolerance (0.05 = 5 %)")
+    ap.add_argument("--tolerance", type=float, default=0.0, help="unused since v1.1: agreement is at 2σ of the combined bands")
     ap.add_argument("--evidence", default=os.path.join(HERE, "evidence"))
     ap.add_argument("--out", default=os.path.join(HERE, "logs"))
     a = ap.parse_args()
