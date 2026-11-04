@@ -196,6 +196,13 @@ Routes agreeing is necessary, not sufficient. Two failures look like agreement:
   way of writing a band (1.2 × 10³ is ±50); trailing zeros are ambiguous and are read at the coarser band.
   A comparison is made at the precision the question needs: a route is "coarse" when its band is wider than
   the precision needed, and agreement at a coarse band is reported as such, never upgraded.
+- **Specificity is read like precision.** A name can be underspecified the way a number can be coarse:
+  "voltage" against a source that gives "locked-rotor test voltage 91.0 V" and "rated line voltage 460 V" is
+  not a mismatch and not a match; it is a reading at lower resolution than the evidence. The engine lists the
+  meanings the evidence distinguishes and says which the reading fits and which would make it wrong — "fits
+  if you mean the locked-rotor test voltage; does not fit if you mean the rated voltage" — and, when exactly
+  one meaning fits, re-enters once with that meaning spelled out. When several fit, the reading is ambiguous
+  and must say which; when none fit, it is wrong under every meaning.
 - **The engine's own memory is a record, not a recollection.** When asked about its history it quotes the
   log (run id, verdict, reason); it never reconstructs a sequence from memory of the sequence.
 

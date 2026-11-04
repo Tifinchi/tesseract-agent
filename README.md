@@ -188,6 +188,11 @@ python3 trial.py claims/khufu-run.md --runs 3       # the old sampling check, wh
   written are reported beside every claimed value; scientific notation (`1.2 × 10^3`, `6.674 x 10^-11`,
   `2.5·10³`) parses and its band is half the last digit of the mantissa at the exponent; trailing zeros are
   labelled ambiguous and read at the coarser band.
+- **Meaning ladder (v2.3.1)**: an underspecified quantity name ("voltage") against sources that give narrower
+  meanings (locked-rotor test voltage 91.0 V; rated line voltage 460 V) is read like a coarse number: the
+  summary lists "fits if you mean X / does not fit if you mean Y" with the values and sources, and when exactly
+  one meaning fits the engine re-enters once with that meaning spelled out. Refinements are never counted as
+  routes to the bare name.
 - **Electrical units** (for the motor trial): N·m / N⋅m / Nm, amps/volts/watts/ohms synonyms, and SI-prefix
   conversion between the same base (8135 W cited where kW is wanted → 8.135 kW, the value as written kept on
   record and the band scaled with it). No conversion across bases: 12.4 A is never "compatible" with watts.

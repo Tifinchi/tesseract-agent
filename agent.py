@@ -542,7 +542,11 @@ entry per passage that gives one. Quote the value exactly as written, with its [
 comes from, the PROCESS that produced it (measurement | survey | excavation_report | published_analysis |
 argument | secondary_summary | definition), and the role the passage's quantity has. Do not convert units;
 do not compute; do not include a value for a quantity that merely shares a name or a symbol.
-Return JSON: {{"values": [{{"value": "as written, with units", "file": "filename", "quote": "sentence", "process": "...", "role": "..."}}]}}"""
+If the quantity asked for is UNDERSPECIFIED ("voltage") and a passage gives a NARROWER quantity of the same kind
+and units ("locked-rotor test voltage 91.0 V", "rated line voltage 460 V"), include it with "refines" set to the
+narrower meaning in a few words; the engine keeps refinements apart and reports which meanings agree. Leave
+"refines" null for a value of exactly the quantity asked.
+Return JSON: {{"values": [{{"value": "as written, with units", "file": "filename", "quote": "sentence", "process": "...", "role": "...", "refines": null}}]}}"""
 
 P_STATEMENTS = """Reading: {reading}
 
@@ -761,6 +765,7 @@ def gather_values(model, ev, meaning, units, searches, log, run_id, cid, tag, ex
         b0, bk = parse_band(src, parse_number(src) or num)
         b = b0 * (abs(num) / abs(parse_number(src))) if v.get("as_written_before_conversion") and parse_number(src) else b0
         ok.append({"value": num, "band": b, "band_kind": bk, "as_written": v.get("as_written_before_conversion") or val, "file": fn, "group": ev.group_of(fn),
+                   "refines": (str(v["refines"]).strip() if v.get("refines") and str(v.get("refines")).lower() not in ("null", "none", "") else None),
                    "provisional": ev.is_provisional(fn), "role": vrole,
                    "process": v.get("process") or "reported", "quote": (v.get("quote") or "")[:200]})
     # the legal version: when more than one edition of a code or standard is on file (same root group, different
@@ -778,7 +783,7 @@ def gather_values(model, ev, meaning, units, searches, log, run_id, cid, tag, ex
         root = ev.root_of(d["group"])
         if mt.get("is_code") and mt.get("year") and root in governing and mt["year"] < governing[root]:
             bad.append({"what": tag, "why": f"superseded: {d['file']} is the {mt['year']} edition; the {governing[root]} edition is the one in force as of {AS_OF_YEAR} and governs", "raw": d["as_written"]}); continue
-        if mt.get("is_code") and mt.get("year") and root in governing:
+        if mt.get("is_code") and mt.get("year") and root in governing and len(by_root[root]) > 1:
             d["process"] = (d.get("process") or "reported") + f"; {mt['year']} edition, in force as of {AS_OF_YEAR}"
         kept.append(d)
     ok = kept
@@ -844,7 +849,13 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
     direct, bad = gather_values(model, ev, obs, card.get("units") or "", rel.get("direct_search") or [obs], log, run_id, cid, f"{obs} (direct)",
                                 expected_unit=unit_of(claimed), role=str(card.get("role") or "other").lower(), field=card.get("field") or "")
     discarded += bad
+    # the meaning ladder: values for NARROWER meanings of an underspecified quantity are not routes to the bare
+    # name; they are the meanings the name could have. Like precision, specificity is read at the resolution the
+    # evidence gives: the reading agrees under the meanings whose values it matches and is wrong under the others.
+    meanings = {}
     for d in direct:
+        if d.get("refines"):
+            meanings.setdefault(d["refines"], []).append(d); continue
         routes.append({"type": "lookup", "value": d["value"], "band": d["band"], "band_kind": d["band_kind"], "groups": [d["group"]],
                        "inputs": [f"{d['file']}:{d['value']:.6g}"], "provisional": d.get("provisional", False), "kind": d.get("process") or "reported",
                        "file": d["file"], "process": f"{d['process']} in {d['file']}: \"{d['quote'][:140]}\""})
@@ -990,8 +1001,16 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
     strict = independent_set(counted, ev, strict=True)
     agree = [r for r in ind if r["within_2sigma"]]; disagree = [r for r in ind if not r["within_2sigma"]]
     strict_agree = [r for r in strict if r["within_2sigma"]]
+    ladder = []
+    for meaning, ds in meanings.items():
+        rows = []
+        for d in ds:
+            two = 2 * (d["band"] + cb); gap = abs(d["value"] - cv)
+            rows.append({"value": d["value"], "band": d["band"], "file": d["file"], "group": d["group"], "agrees": gap <= two, "gap": gap, "two_sigma": two,
+                         "process": f"{d['process']} in {d['file']}: \"{d['quote'][:100]}\""})
+        ladder.append({"meaning": meaning, "agrees": all(r["agrees"] for r in rows), "groups": len(set(r["group"] for r in rows)), "values": rows})
     report = {"observable": obs, "claimed": claimed, "claimed_value": cv, "claimed_band": cb, "claimed_band_kind": cbk,
-              "relation_conflicts": sorted(set(relation_conflicts)),
+              "relation_conflicts": sorted(set(relation_conflicts)), "meaning_ladder": ladder,
               "precision_needed": precision_needed, "all_routes": routes, "independent": ind,
               "independent_routes": len(ind), "agree": len(agree), "disagree": len(disagree),
               "strict_agree": len(strict_agree),
@@ -1194,6 +1213,11 @@ def fit_account(reports):
             L.append(f"  · discarded: {d['what']}: {d['why']}")
         for rc in rp.get("relation_conflicts") or []:
             L.append(f"  · relation conflict (recorded, not counted; troubleshoot the relation): {rc}")
+        if rp.get("meaning_ladder"):
+            L.append(f"  meaning ladder for '{rp['observable']}' (the name is underspecified; read at the resolution the evidence gives):")
+            for m in rp["meaning_ladder"]:
+                L.append(f"    · {'fits' if m['agrees'] else 'does not fit'} if you mean {m['meaning']}: " +
+                         "; ".join(f"{show(v['value'], v['band'])} ± {v['band']:.2g} ({v['process'][:70]})" for v in m["values"]))
     return "\n".join(L) if L else "no observable could be routed"
 
 def bears_on(quote, reading, extra=""):
@@ -1479,8 +1503,18 @@ def run(path, model, question, max_claims, out_dir, evidence_dir, research_on=Fa
         log.write(run=run_id, claim=rid, pass_="FINAL_STATE", synthesis=synth, output=r.get("final"))
         print(f"      → {synth} [{cores['outcome'].get('diagnosis', '')}]  (" + "; ".join(f"{rp['observable']}: {rp['agree']}✓ {rp['disagree']}✗ of {rp['independent_routes']}" for rp in reports) + ")")
         result = (rid, reading, synth, e, r, reports, fit)
+        # an underspecified name with an agreeing narrower meaning and no route to the bare name: re-enter once with the
+        # meaning spelled out (the same move as calibration, made after the evidence has shown which meaning fits)
+        refine = None
+        for rp in reports:
+            if rp.get("meaning_ladder") and rp["independent_routes"] == 0:
+                fits = [m for m in rp["meaning_ladder"] if m["agrees"]]
+                if len(fits) == 1:
+                    refine = f"{reading} (where '{rp['observable']}' means {fits[0]['meaning']})"
+                elif len(fits) > 1:
+                    e.setdefault("notes", []).append(f"'{rp['observable']}' fits under {len(fits)} meanings ({', '.join(m['meaning'] for m in fits)}): ambiguous; the reading must say which")
         # the fold re-enters once: the corrected reading (from troubleshooting) or the folded question becomes a child reading
-        child_q = (ts or {}).get("corrected_reading") or (r.get("folded_question") if synth == "REJECTED" else None)
+        child_q = refine or (ts or {}).get("corrected_reading") or (r.get("folded_question") if synth == "REJECTED" else None)
         if depth == 0 and child_q:
             f = ask(model, SYSTEM, P_FOLD.format(question=child_q))
             if f.get("reading"):
