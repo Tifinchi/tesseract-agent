@@ -117,6 +117,8 @@ def parse_band(s, value):
     return (abs(value) * 0.1, "assumed 10 %")
 
 UNIT_SYN = {"inches": "in", "inch": "in", "metres": "m", "meters": "m", "metre": "m", "meter": "m", "feet": "ft", "foot": "ft",
+            "square meters": "m²", "square metres": "m²", "sq m": "m²", "m2": "m²", "cubic meters": "m³", "cubic metres": "m³", "m3": "m³",
+            "square feet": "ft²", "sq ft": "ft²", "ft2": "ft²", "square inches": "in²", "in2": "in²",
             "percent": "%", "degrees": "°", "deg": "°", "tonnes": "t", "tons": "t", "ratio": "", "dimensionless": "", "none": ""}
 
 STOP = {"to", "of", "and", "or", "per", "at", "by", "the", "for", "with", "is", "palms", "cubit", "from", "vs"}
@@ -652,11 +654,19 @@ def gather_values(model, ev, meaning, units, searches, log, run_id, cid, tag, ex
     for v in got.get("values", []) or []:
         fn, val = (str(v.get("file") or "")).strip("[] "), v.get("value")
         num = parse_number(val)
+        by = re.match(r"\s*(-?\d+(?:\.\d+)?)\s*([a-zA-Z]*)\s*(?:by|×|x)\s*(-?\d+(?:\.\d+)?)\s*([a-zA-Z]*)\s*$", str(val or ""))
+        if by and expected_unit and ("²" in expected_unit or "square" in expected_unit.lower() or expected_unit.lower() in ("m2", "ft2", "in2")):
+            # a dimension pair reported where an area is wanted: the area is the product; both factors must be in the file
+            a_, b_ = float(by.group(1)), float(by.group(3))
+            if ev.contains_number(by.group(1), fn) and ev.contains_number(by.group(3), fn):
+                u = (by.group(4) or by.group(2) or "").lower()
+                num = a_ * b_; val = f"{num:.6g} {u}²"
+                v = dict(v, reduced_from=by.group(0).strip(), process=(v.get("process") or "reported") + f"; area as length × width from {by.group(0).strip()} (factors kept on record)")
         if num is None:
             bad.append({"what": tag, "why": "no number", "raw": v}); continue
         if ev.group_of(fn) is None:
             bad.append({"what": tag, "why": f"file '{fn}' not in evidence", "raw": v}); continue
-        if not ev.contains_number(val, fn):
+        if not v.get("reduced_from") and not ev.contains_number(val, fn):
             bad.append({"what": tag, "why": f"{val} not found in {fn}", "raw": v}); continue
         if expected_unit is not None and not units_compatible(expected_unit, str(val)):
             bad.append({"what": tag, "why": f"unit mismatch: wanted '{expected_unit or 'unitless'}', got '{unit_of(str(val)) or 'none'}' in {val}", "raw": v}); continue
@@ -724,6 +734,10 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
     discarded, routes, all_pools = [], [], {}
     # direct lookups
     card = rel.get("card") or {}
+    cu = str(card.get("units") or "").lower()
+    if re.search(r"\b(height|length|side|perimeter|diameter|radius|width|depth|distance)\b", obs.lower()) and re.search(r"²|³|square|cubic|m2|m3", cu):
+        discarded.append({"what": obs, "why": f"quantity card declared '{cu}' for a length-named observable; card units ignored, the reading's own unit '{unit_of(claimed) or 'none'}' used", "raw": card})
+        card["units"] = unit_of(claimed) or ""
     direct, bad = gather_values(model, ev, obs, card.get("units") or "", rel.get("direct_search") or [obs], log, run_id, cid, f"{obs} (direct)",
                                 expected_unit=unit_of(claimed), role=str(card.get("role") or "other").lower(), field=card.get("field") or "")
     discarded += bad

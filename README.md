@@ -164,6 +164,10 @@ python3 trial.py claims/khufu-run.md --runs 3       # the old sampling check, wh
   the route from it "disagreed" — a false rejection. Now, when two relations for one observable share inputs and
   one reproduces the reading while the other does not, the disagreeing relation is recorded as a relation
   conflict and troubleshot, not counted as a rejection; directly reported values still reject on their own.
+- **Area from a dimension pair** (trial 4: "10.47 m by 5.23 m" discarded where m² was wanted): the product is the
+  area, both factors must be in the file, and the factors stay on record. Unit synonyms for square/cubic units.
+- **Card-unit sanity**: a length-named observable whose quantity card declares area or volume units (trial 4:
+  "height" wanted square meters, 22 discards) falls back to the reading's own unit; the card is recorded.
 - **Chrome**: research.py falls back to headless Chrome on the box (`--dump-dom`) for pages a plain GET cannot
   read (scripts, consent walls, bot checks).
 - **From the phone**: remote in rather than a bot. A terminal on the box (SSH over Tailscale, or any SSH app on
