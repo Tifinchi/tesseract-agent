@@ -128,6 +128,22 @@ write them); a neighbour is compared only when its implied value is a single num
 the same test the down-wind check uses) or it is recorded and not counted; the trial report counts base
 readings and fold children separately; and a "cyclical" verdict names what the routes share.
 
+## Trial 4 (v1.8.1 at a11cecd; 3 × 4 claims; 52 min) and v1.9: calibration as a standing pass
+
+Base extraction held at 5/5/5 with no drift; fold children 3/5/5. But only 2 of 10 readings were seen in
+every run and the two that were — the Big Void "similar to other sealed cavities" and 2π — switched verdict
+every run (UNSTABLE/STABILIZED/REJECTED/LOCKED across six evaluations of the first). In a chat after the
+run (`logs/chat-20261103-192541.md`) the author asked the model to troubleshoot the switching by replacing
+ambiguous components with known ones — "big" carries no constraint without a reference size; "similar"
+has no standard — and the model produced a calibrated reading, then invented data for it and declared it
+stabilized, which is exactly what the model must not do. v1.9 makes the calibration a standing pass (1b in
+the method), run on every reading before any route is sought: the model names each ambiguous component and
+the reference that would fix it; the script verifies every reference quote verbatim and substitutes only the
+verified ones, term by term, so the calibrated reading is rebuilt by rule; the reading as stated is kept
+beside it with the substitution map; a component the evidence cannot fix is an empty cell with the
+measurement that would fill it. The verdict is then the routes' verdict on the calibrated reading, never the
+model's. Matching across runs stays on the as-stated wording.
+
 ## Trial: the same version, three times, before anything changes
 
     python3 trial.py claims/khufu-run.md --runs 3 --max-claims 4

@@ -51,6 +51,14 @@ claim in any domain: physics, a motor, a building, a text, a plan.
 ## 1. Pass order (non-collapsible)
 
 1. ENTRY & RECOGNITION — normalize the input into claims. For each claim: anchor it.
+1b. CALIBRATION — before any route is sought, every reading is calibrated: each ambiguous component
+   (a word with no constraint of its own — "big", "similar", "near", "dry", "nothing", "half" of an
+   unnamed whole, a label that names a detection rather than a measurement) is named, the reference
+   that would fix it is named, and where the evidence supplies that reference the component is
+   replaced by its measured form. The reading as stated is kept beside the calibrated reading with the
+   substitution map, so the process is traceable; a component the evidence cannot fix is an empty cell
+   with the measurement that would fill it. A verdict that switches between runs on an uncalibrated
+   term was never a verdict on a measurement.
 2. EXPLORATION — turn it; find neighbours; list competing explanations. Nothing stabilizes here.
 3. CLAIM EVALUATION (quad-core) — four independent rejection checks; any reject blocks.
 4. IMPLICATION — project what follows if the claim is wrong; flag irreversibility.

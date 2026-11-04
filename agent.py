@@ -455,6 +455,32 @@ PART of the reading it covers: "whole", or the exact words of the part it covers
 relieving chambers", not "only").
 Return JSON: {{"statements": [{{"quote": "...", "file": "...", "stance": "supports|contradicts", "process": "...", "covers": "whole|<part>"}}]}}"""
 
+P_CALIBRATE = """Reading, as stated: {reading}
+
+Evidence passages (each begins with its [filename]):
+---
+{ctx}
+---
+
+CALIBRATION (a standing pass, before any route is sought). A reading can only be checked against measurements
+if its terms are measurable. List every AMBIGUOUS COMPONENT in the reading: a word that carries no constraint
+of its own and only works against a reference it does not name. Kinds: relative size or degree ("big",
+"large", "small", "thick", "dry", "slight"); comparison without a stated standard ("similar", "like", "near",
+"about", "exactly", "half" of an unnamed whole); unanchored quantity words ("nothing", "all", "most",
+"some"); a noun that names an object by a label rather than by what was measured ("the Big Void" names a
+detection, not a size). For each: the reference that would fix it (what known quantity it must be measured
+against), and whether THESE passages supply that reference — if so the [filename], a VERBATIM quote, and
+the value with units; if not, null. Then write the calibrated reading: the same sentence with each
+component that has a supplied reference replaced by its measured form (keep the sentence's logic and
+every other word; do not add claims; a component without a reference stays as written). Do not judge the
+reading; do not say whether it fits.
+
+Return JSON: {{"components": [{{"term": "...", "kind": "...", "needs": "a reference <what>",
+  "reference": {{"file": "...", "quote": "...", "value": "...", "units": "..."}} or null,
+  "replacement": "the measured wording that replaces the term, or null"}}],
+ "calibrated_reading": "...", "observables_added": [{{"name": "...", "claimed_value": "...", "precision_needed": "..."}}]}}
+"""
+
 P_NEIGHBOUR = """Reading: {reading}
 Anchor: corner {corner}, cell {cell}, held axis {held}.
 Neighbour to check: {neighbour}
@@ -841,6 +867,41 @@ def find_text_routes(model, ev, cid, reading, log, run_id):
     log.write(run=run_id, claim=cid, pass_="ROUTE_STATE", observable="text", input=ctx, model_proposal=got, report=report)
     return report
 
+def calibrate(model, ev, cid, reading, log, run_id):
+    """Standing pass: replace ambiguous components with known ones, where the evidence supplies the reference.
+       The model proposes components and references; the script verifies every quote and substitutes ONLY the
+       verified ones, term by term, so the calibrated reading is rebuilt by rule from the reading as stated.
+       Components with no reference in the evidence are empty cells (the measurement that would fix the word).
+       Returns (calibrated_reading, record)."""
+    ctx = ev.retrieve(reading)
+    got = ask(model, SYSTEM, P_CALIBRATE.format(reading=reading, ctx=ctx))
+    comps, cal, empty = [], reading, []
+    for c in (got.get("components") or [])[:6]:
+        if not isinstance(c, dict) or not c.get("term"):
+            continue
+        term, ref, rep = str(c["term"]), c.get("reference") or {}, c.get("replacement")
+        status = "no reference in evidence"
+        if ref and ref.get("file") and ref.get("quote"):
+            fn = str(ref["file"]).strip("[] ")
+            if ev.contains_quote(ref["quote"], fn):
+                if rep and term.lower() in cal.lower():
+                    i = cal.lower().find(term.lower()); cal = cal[:i] + str(rep) + cal[i + len(term):]
+                    status = f"replaced (reference verified in {fn})"
+                elif rep:
+                    status = f"reference verified in {fn} but the term is not in the reading as stated; not replaced"
+                else:
+                    status = f"reference verified in {fn} but no replacement wording given; not replaced"
+            else:
+                status = "reference quote not verbatim in the evidence as cited; not replaced (recorded)"
+        if status.startswith("no reference") or "not verbatim" in status:
+            empty.append({"term": term, "needs": c.get("needs"), "next_route": f"a measurement of {c.get('needs') or term} in a cited source"})
+        comps.append({"term": term, "kind": c.get("kind"), "needs": c.get("needs"), "reference": ref or None, "replacement": rep, "status": status})
+    obs_added = [o for o in (got.get("observables_added") or []) if isinstance(o, dict) and o.get("name") and parse_number(o.get("claimed_value")) is not None][:2]
+    rec = {"as_stated": reading, "calibrated": cal, "changed": cal != reading, "components": comps, "empty_cells": empty,
+           "observables_added": obs_added, "model_calibrated_reading": got.get("calibrated_reading")}
+    log.write(run=run_id, claim=cid, pass_="CALIBRATION_STATE", input=ctx[:3000], model_proposal=got, output=rec)
+    return cal, rec
+
 def check_neighbours(model, ev, cid, reading, anchor, log, run_id):
     """Rule 6: the three edges from the corner. Each neighbour is looked up and compared; the script verifies
        the citation and, when both sides are numeric, does the comparison itself."""
@@ -1063,6 +1124,11 @@ def run(path, model, question, max_claims, out_dir, evidence_dir):
 
     def evaluate_reading(c, rid, reading, observables, depth=0, parent=None):
         t = time.time(); reports = []
+        as_stated = reading
+        reading, calib = calibrate(model, ev, rid, reading, log, run_id)
+        if calib["changed"]:
+            print(f"    calibrated → {reading}")
+        observables = list(observables or []) + calib["observables_added"]
         numeric = [o for o in (observables or [])[:3]
                    if o.get("name") and str(o.get("claimed_value", "none")).lower() != "none" and parse_number(o.get("claimed_value")) is not None]
         for o in numeric:
@@ -1083,6 +1149,7 @@ def run(path, model, question, max_claims, out_dir, evidence_dir):
         settled = [{"observable": rp["observable"], "value": rp["claimed_value"], "band": rp["claimed_band"]}
                    for rp in reports if not rp.get("text") and synth in ("STABILIZED", "LOCKED") and rp["claimed_value"] is not None]
         e = {"quad_core": cores, "lock_level": lock, "synthesis": synth, "fit_account": fit, "neighbours": nbs, "downwind": dw,
+             "calibration": calib, "as_stated": as_stated,
              "turns": [t for rp in reports for t in (rp.get("turns") or [])], "settled": settled,
              "implication": judge.get("implication"), "ethics": judge.get("ethics"), "parent": parent, "depth": depth}
         log.write(run=run_id, claim=rid, pass_="EVALUATION_STATE", output=e, elapsed=round(time.time() - t, 1))
@@ -1188,6 +1255,15 @@ def render_summary(run_id, path, question, model, ev, results, elapsed):
             if len(rs) > 1:
                 L.append(f"  (fits if you mean this → {s})" if s in ("STABILIZED", "LOCKED") else f"  (does not fit if you mean this → {s})")
             L.append(f"  diagnosis: {e.get('quad_core', {}).get('outcome', {}).get('diagnosis', '')}")
+            cal = e.get("calibration") or {}
+            if cal.get("components"):
+                if cal.get("changed"):
+                    L.append(f"  calibrated: *{cal['calibrated']}*  (as stated: \"{cal['as_stated']}\")")
+                for cp in cal["components"]:
+                    L.append(f"    · '{cp['term']}' ({cp.get('kind')}) needs {cp.get('needs')}: {cp['status']}"
+                             + (f" → \"{cp['replacement']}\"" if cp['status'].startswith('replaced') else ""))
+                for ec in cal.get("empty_cells") or []:
+                    L.append(f"    · empty cell: '{ec['term']}' — {ec['next_route']}")
             for line in fit.splitlines():
                 L.append("  " + line)
             for nb in e.get("neighbours") or []:
