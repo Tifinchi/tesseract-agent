@@ -80,6 +80,24 @@ def search(query, n=5):
             errors.append(f"{url.split('/')[2]}: no results parsed")
         except Exception as ex:
             errors.append(f"{url.split('/')[2]}: {str(ex)[:60]}")
+    # Bing's HTML results, a different host with its own limits
+    try:
+        r = requests.get("https://www.bing.com/search", params={"q": query, "setlang": "en"}, headers=UA, timeout=30)
+        if r.status_code == 200:
+            out = []
+            for m in re.finditer(r'<li class="b_algo".*?<h2><a href="([^"]+)"[^>]*>(.*?)</a>', r.text, re.S):
+                href, title = m.group(1), html.unescape(re.sub(r"<[^>]+>", "", m.group(2))).strip()
+                if href.startswith("http"):
+                    out.append((title, href))
+                if len(out) >= n:
+                    break
+            if out:
+                return out
+            errors.append("bing: no results parsed")
+        else:
+            errors.append(f"bing: {r.status_code}")
+    except Exception as ex:
+        errors.append(f"bing: {str(ex)[:60]}")
     page = chrome_dom("https://html.duckduckgo.com/html/?q=" + urllib.parse.quote(query))
     if page:
         out = _parse_results(page, n)
@@ -234,8 +252,15 @@ def wayback_store(url, folder, at=None, max_chars=40000):
     open(os.path.join(folder, fn), "w", encoding="utf-8").write(body)
     return fn, f"snapshot of {when}"
 
+_last_search = [0.0]
+
 def search_and_store(query, folder, max_pages=3, n_results=6):
-    """Search, fetch the first max_pages readable results into evidence/, run the echo check. Returns the new filenames."""
+    """Search, fetch the first max_pages readable results into evidence/, run the echo check. Returns the new filenames.
+       Searches are paced (≥ 4 s apart): the engines refuse bursts."""
+    gap = time.time() - _last_search[0]
+    if gap < 4:
+        time.sleep(4 - gap)
+    _last_search[0] = time.time()
     added = []
     for title, url in search(query, n=n_results):
         try:

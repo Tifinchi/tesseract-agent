@@ -1471,7 +1471,11 @@ def sections(doc):
         level = len(raw) - len(raw.lstrip("#"))
         heading = raw.lstrip("# ").strip()
         out.append((("(title) " if level == 1 else "") + heading, parts[i + 1]))
-    return [(h, t) for h, t in out if t.strip()]
+    out = [(h, t) for h, t in out if t.strip()]
+    # a document with only a title and text under it (ask.py's claim documents): the text IS the claims section
+    if out and all(h.startswith("(title)") or h == "(preamble)" for h, _ in out):
+        out = [(h.replace("(title) ", "") if h.startswith("(title)") else "claims", t) for h, t in out]
+    return out
 
 # ----------------------------------------------------------------------------- locked ledger
 

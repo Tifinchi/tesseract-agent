@@ -45,7 +45,8 @@ Evidence now on file (filenames with their dates): {files}
 Write the question as a short claims document the engine can evaluate: a title line '# <question>', the line
 'as of: {today}', then ONE paragraph stating the answer you expect as a definite claim with its numbers and units
 (the engine will test it against the evidence; if you have no expectation, state the most specific candidate
-the evidence suggests and say 'candidate'). Do not cite files in the paragraph. Return JSON: {{"document": "..."}}"""
+the evidence suggests and say 'candidate'). Put the paragraph under a heading line '## The answer under test'.
+Do not cite files in the paragraph. Return JSON: {{"document": "..."}}"""
 
 def main():
     ap = argparse.ArgumentParser()
@@ -92,6 +93,9 @@ def main():
     doc = str(got.get("document") or f"# {a.question}\nas of: {today}\n\n{a.question}")
     if not doc.lstrip().startswith("#"):
         doc = f"# {a.question}\nas of: {today}\n\n" + doc
+    if not re.search(r"(?m)^##\s", doc):      # the claim paragraph must sit in a section, or extraction skips it as a title
+        head, _, body = doc.partition("\n\n")
+        doc = head + "\n\n## The answer under test\n\n" + (body or doc)
     qdoc = os.path.join(HERE, "claims", f"ask-{stamp}.md"); open(qdoc, "w", encoding="utf-8").write(doc + "\n")
     L += ["", "## claim document", "```", doc, "```", ""]
     print(f"\nclaim document: {qdoc}\n{doc}\n")
