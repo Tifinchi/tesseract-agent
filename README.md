@@ -160,6 +160,12 @@ python3 trial.py claims/khufu-run.md --runs 3       # the old sampling check, wh
 - **Calibration pass (v1.9)** and the rounding rule: a value written without its own tolerance inside a reading
   that states one inherits the reading's stated tolerance (921.2 m "to 0.05 %" is ±0.46 m, not ±0.05 m).
 - **Parser**: `h = a - b` (assignment form) and `²`/`³` accepted.
+- **Relation conflict** (from the trial-4 review): the model wrote `2*pi*b/h` for a square's perimeter ratio and
+  the route from it "disagreed" — a false rejection. Now, when two relations for one observable share inputs and
+  one reproduces the reading while the other does not, the disagreeing relation is recorded as a relation
+  conflict and troubleshot, not counted as a rejection; directly reported values still reject on their own.
+- **Chrome**: research.py falls back to headless Chrome on the box (`--dump-dom`) for pages a plain GET cannot
+  read (scripts, consent walls, bot checks).
 - **bot.py**: the engine from a phone over Telegram — `/pass`, `/trial`, `/research`, `/review`, `/history`,
   `/where`, `/status`, `/memory`, `/pull`, `/push`, `/stop`, and plain chat. Setup is at the top of the file
   (a bot token from @BotFather and your chat id; the bot answers only that id).

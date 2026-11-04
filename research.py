@@ -22,8 +22,9 @@ by process, and independence is counted by group root. Two rules keep the web fr
   2. Web files are provisional by status: they can stabilize a claim but cannot lock it until a primary record
      is on file. An average of what the web says is not a measurement.
 
-Search uses DuckDuckGo's HTML endpoint (no key). Pages are fetched with a plain GET and reduced to text; no
-JavaScript is run. Nothing here calls the model: this is retrieval, logged, with timestamps.
+Search uses DuckDuckGo's HTML endpoint (no key). Pages are fetched with a plain GET and reduced to text; if a
+page needs a browser (scripts, consent walls, bot checks) it is rendered in headless Chrome on this machine
+(google-chrome --headless --dump-dom) and the rendered DOM is reduced instead. Nothing here calls the model: this is retrieval, logged, with timestamps.
 """
 import argparse, datetime, glob, html, os, re, sys, time, urllib.parse
 import requests
@@ -86,12 +87,18 @@ def store(url, folder, max_chars=40000):
         head = open(p, encoding="utf-8", errors="replace").read(600)
         if f"url: {url}" in head:
             return None
-    r = requests.get(url, headers=UA, timeout=45)
-    r.raise_for_status()
-    if "html" not in r.headers.get("content-type", "") and "text" not in r.headers.get("content-type", ""):
-        return None
-    page = r.text
-    text = to_text(page)
+    page, text = "", ""
+    try:
+        r = requests.get(url, headers=UA, timeout=45)
+        r.raise_for_status()
+        if "html" in r.headers.get("content-type", "") or "text" in r.headers.get("content-type", ""):
+            page = r.text; text = to_text(page)
+    except Exception as ex:
+        print(f"  plain GET failed ({str(ex)[:60]}); trying Chrome")
+    if len(WORD.findall(text)) < 80:
+        page2 = chrome_dom(url)   # pages that need a browser (scripts, consent walls, bot checks)
+        if page2:
+            page = page2; text = to_text(page)
     if len(WORD.findall(text)) < 80:
         return None
     title = title_of(page, url)
@@ -101,6 +108,19 @@ def store(url, folder, max_chars=40000):
             + text[:max_chars] + ("\n\n[truncated by research.py]" if len(text) > max_chars else "") + "\n")
     open(os.path.join(folder, fn), "w", encoding="utf-8").write(body)
     return fn
+
+def chrome_dom(url, timeout=60):
+    """Render the page in headless Chrome on this machine and return the DOM, or '' if Chrome is not here."""
+    import shutil, subprocess
+    exe = next((shutil.which(x) for x in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "chrome") if shutil.which(x)), None)
+    if not exe:
+        return ""
+    try:
+        out = subprocess.run([exe, "--headless=new", "--disable-gpu", "--no-sandbox", "--virtual-time-budget=8000", "--dump-dom", url],
+                             capture_output=True, text=True, timeout=timeout)
+        return out.stdout if out.returncode == 0 else ""
+    except Exception:
+        return ""
 
 def shingles(text, k=12):
     w = [x.lower() for x in WORD.findall(text)]

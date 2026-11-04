@@ -446,7 +446,9 @@ Then name the ways this observable's value could be reached from evidence, WITHO
    the expression — if a unit term is written inside it, the engine reduces it by convention and keeps the
    cancelled term on record) that reach the observable from OTHER measurable quantities (neighbours), with, for
    each variable, its meaning and search phrases that would find its value in a source. Include unit
-   conversion factors as their own variables.
+   conversion factors as their own variables. Write only a relation you can justify by a definition or a law
+   and name it in "why" (a square's perimeter is 4 * side, not 2 * pi * side); a wrong relation makes a
+   false disagreement, and the engine records relations that disagree with each other.
 Return JSON:
 {{"card": {{"meaning": "...", "units": "...", "role": "amount|flow|momentum|effort|other", "field": "..."}},
   "direct_search": ["..."],
@@ -521,7 +523,7 @@ Evidence passages:
 ---
 {ctx}
 ---
-Return JSON: {{"implied": "number with units, or a sentence", "reported": {{"value_or_quote": "... or null", "file": "... or null", "quantity": "what the passage's number measures"}},
+Return JSON: {{"implied": "ONE number with units (e.g. '146.59 m'); only if no single number is implied, one short sentence", "reported": {{"value_or_quote": "... or null", "file": "... or null", "quantity": "what the passage's number measures"}},
   "lines_up": "yes|no|unknown", "reason": "one sentence naming the number or finding"}}"""
 
 P_DOWNWIND = """Reading: {reading}
@@ -854,11 +856,25 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
     for r in calc:
         diff = r["value"] - cv
         r["two_sigma"] = 2 * (r["band"] + cb); r["within_2sigma"] = abs(diff) <= r["two_sigma"]; r["cross_check_only"] = True
-    ind = independent_set(routes)
-    strict = independent_set(routes, ev, strict=True)
+    # relations that disagree with each other: if routes from relation A agree with the reading and routes from
+    # relation B, over inputs A also used, disagree, then A and B cannot both be right — the disagreement is a
+    # relation conflict, not a measurement against the reading. It is recorded and troubleshot, not counted as
+    # a rejection; the lookups (values reported directly) still reject on their own.
+    relation_conflicts = []
+    agreeing_rel = {r["relation"] for r in routes if r["type"] == "computation" and r["within_2sigma"]}
+    if agreeing_rel:
+        agree_inputs = set(i for r in routes if r["type"] == "computation" and r["within_2sigma"] for i in r.get("inputs") or [])
+        for r in routes:
+            if r["type"] == "computation" and not r["within_2sigma"] and r["relation"] not in agreeing_rel and (set(r.get("inputs") or []) & agree_inputs):
+                r["relation_conflict"] = True
+                relation_conflicts.append(f"'{r['relation']}' gives {r['value']:.6g} while {', '.join(sorted(agreeing_rel))[:80]} gives the reading's value from shared inputs")
+    counted = [r for r in routes if not r.get("relation_conflict")]
+    ind = independent_set(counted)
+    strict = independent_set(counted, ev, strict=True)
     agree = [r for r in ind if r["within_2sigma"]]; disagree = [r for r in ind if not r["within_2sigma"]]
     strict_agree = [r for r in strict if r["within_2sigma"]]
     report = {"observable": obs, "claimed": claimed, "claimed_value": cv, "claimed_band": cb, "claimed_band_kind": cbk,
+              "relation_conflicts": sorted(set(relation_conflicts)),
               "precision_needed": precision_needed, "all_routes": routes, "independent": ind,
               "independent_routes": len(ind), "agree": len(agree), "disagree": len(disagree),
               "strict_agree": len(strict_agree),
@@ -1023,6 +1039,8 @@ def fit_account(reports):
             L.append(f"  · cross-check only (not counted): the engine's own {cc['process'][:90]} → {cc['value']:.6g} {'agrees' if cc['agrees'] else 'DISAGREES'}")
         for d in rp["discarded"][:4]:
             L.append(f"  · discarded: {d['what']}: {d['why']}")
+        for rc in rp.get("relation_conflicts") or []:
+            L.append(f"  · relation conflict (recorded, not counted; troubleshoot the relation): {rc}")
     return "\n".join(L) if L else "no observable could be routed"
 
 def bears_on(quote, reading, extra=""):

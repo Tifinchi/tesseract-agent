@@ -40,6 +40,7 @@ POINTS_AT = [
     (r"no route reached", "evidence or relation gap: no cited value and no evaluable relation reached this observable (empty cell)"),
     (r"neighbour contradicts", "vertex misfit: a neighbour disagrees; resolve the datum's corner/cell/sign before it can stand"),
     (r"different kind of quantity", "dimension discipline: implied and reported values are different kinds of quantity; not compared"),
+    (r"relation conflict", "relation check: the model wrote two relations that cannot both be right; the disagreeing one is suspect, not the reading"),
     (r"not found in FILE|value/quote not found", "hallucinated neighbour citation: the quote is not in the file named; caught"),
 ]
 
@@ -77,6 +78,8 @@ def load(jsonl):
                 items["discard: " + norm_reason(str(d.get("why")))].append(f"{r.get('claim')}/{rep.get('observable')}: {str(d.get('why'))[:160]}")
             if not rep.get("text") and rep.get("independent_routes", 0) == 0:
                 items["no route reached the observable"].append(f"{r.get('claim')}: {rep.get('observable')} = {rep.get('claimed')}")
+            for rc in rep.get("relation_conflicts") or []:
+                items["relation conflict: two relations for one observable disagree"].append(f"{r.get('claim')}/{rep.get('observable')}: {rc[:150]}")
             if rep.get("cyclical"):
                 items["cyclical agreement: routes share " + (", ".join(rep.get("shared") or []) or "ancestry/inputs")].append(f"{r.get('claim')}/{rep.get('observable')}")
             if rep.get("from_ledger"):
