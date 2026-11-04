@@ -330,6 +330,14 @@ def number_in_text(value, text):
             return True
     return False
 
+def evidence_folders(spec):
+    """'all' (or '') = every evidence* folder beside agent.py, including evidence-private/; else a folder, or several
+       separated by commas. Nothing useful is left out by default."""
+    spec = (spec or "all").strip()
+    if spec == "all":
+        return sorted(os.path.join(HERE, d) for d in os.listdir(HERE) if d.startswith("evidence") and os.path.isdir(os.path.join(HERE, d)))
+    return [x.strip() for x in spec.split(",") if x.strip()]
+
 class Evidence:
     """A folder of text files. Each file may start with header lines:
          source: Petrie 1883, The Pyramids and Temples of Gizeh
@@ -337,10 +345,10 @@ class Evidence:
        `group` is the independence key (author/team). Files without one get their filename as group."""
     def __init__(self, folder):
         self.docs = []  # (name, group, source, text, paragraphs)
-        names = sorted(os.listdir(folder)) if os.path.isdir(folder) else []
-        for fn in names:
-            p = os.path.join(folder, fn)
-            if not os.path.isfile(p) or fn.startswith("."):
+        self.folders = evidence_folders(folder)
+        entries = sorted((fn, os.path.join(f, fn)) for f in self.folders if os.path.isdir(f) for fn in os.listdir(f))
+        for fn, p in entries:
+            if not os.path.isfile(p) or fn.startswith(".") or not fn.endswith(".md"):
                 continue
             text = open(p, encoding="utf-8", errors="replace").read()
             group, source, derives, status = os.path.splitext(fn)[0], fn, None, ""
@@ -1524,20 +1532,22 @@ def run(path, model, question, max_claims, out_dir, evidence_dir, research_on=Fa
     # fetch: directives in the document's head — the evidence a claim needs that lives online, pulled by the script
     # before extraction, dated, and logged: 'fetch: wayback <url> <YYYYMMDD>', 'fetch: url <url>', 'fetch: search <query>'
     fetched = []
+    web_dir = os.path.join(HERE, "evidence") if evidence_dir in ("all", "", None) else evidence_folders(evidence_dir)[0]
     for m in re.finditer(r"(?im)^fetch:\s*(wayback|url|search)\s+(.+)$", doc[:4000]):
         kind, arg = m.group(1).lower(), m.group(2).strip()
         try:
             if kind == "wayback":
-                parts = arg.split(); fn, note = research.wayback_store(parts[0], evidence_dir, parts[1] if len(parts) > 1 else None)
+                parts = arg.split(); fn, note = research.wayback_store(parts[0], web_dir, parts[1] if len(parts) > 1 else None)
                 fetched.append({"kind": kind, "arg": arg, "file": fn, "note": note})
             elif kind == "url":
-                fn = research.store(arg, evidence_dir); fetched.append({"kind": kind, "arg": arg, "file": fn, "note": "stored" if fn else "already stored or unreadable"})
+                fn = research.store(arg, web_dir); fetched.append({"kind": kind, "arg": arg, "file": fn, "note": "stored" if fn else "already stored or unreadable"})
             else:
-                added = research.search_and_store(arg, evidence_dir, max_pages=2); fetched.append({"kind": kind, "arg": arg, "file": added, "note": f"{len(added)} stored"})
+                added = research.search_and_store(arg, web_dir, max_pages=2); fetched.append({"kind": kind, "arg": arg, "file": added, "note": f"{len(added)} stored"})
         except Exception as ex:
             fetched.append({"kind": kind, "arg": arg, "file": None, "note": f"failed: {str(ex)[:160]}"})
         print(f"fetch {kind} {arg[:70]} → {fetched[-1]['file'] or '-'}: {fetched[-1]['note'][:100]}")
     ev = Evidence(evidence_dir)
+    print(f"evidence: {', '.join(os.path.basename(f) for f in ev.folders)} ({len(ev.docs)} files, {len(ev.groups)} groups)")
     undated = [fn for fn, mt in ev.meta.items() if mt.get("undated_reference")]
     if undated:
         print(f"chronology: claims taken as of {AS_OF_YEAR}; UNDATED reference material (edition not stated, provisional): {', '.join(undated)}")
@@ -1585,10 +1595,10 @@ def run(path, model, question, max_claims, out_dir, evidence_dir, research_on=Fa
         if research_on and depth == 0:
             for o in numeric[:2]:
                 try:
-                    added = research.search_and_store(f"{o['name']} {reading}"[:120], os.path.join(HERE, "evidence"), max_pages=2)
+                    added = research.search_and_store(f"{o['name']} {reading}"[:120], web_dir, max_pages=2)
                     log.write(run=run_id, claim=rid, pass_="RESEARCH_STATE", query=o["name"], added=added)
                     if added:
-                        ev.__init__(os.path.join(HERE, "evidence"))
+                        ev.__init__(evidence_dir)
                 except Exception as ex:
                     log.write(run=run_id, claim=rid, pass_="RESEARCH_STATE", query=o["name"], error=str(ex)[:300])
                     print(f"    research unavailable for '{o['name']}': {str(ex)[:90]} (the run continues on the evidence on file)")
@@ -1666,7 +1676,7 @@ def run(path, model, question, max_claims, out_dir, evidence_dir, research_on=Fa
         # meaning spelled out (the same move as calibration, made after the evidence has shown which meaning fits)
         refine = None
         for rp in reports:
-            if rp.get("meaning_ladder") and rp["independent_routes"] == 0:
+            if rp.get("meaning_ladder") and (rp["independent_routes"] == 0 or rp["disagree"] > 0):
                 fits = [m for m in rp["meaning_ladder"] if m["agrees"]]
                 if len(fits) == 1:
                     refine = f"{reading} (where '{rp['observable']}' means {fits[0]['meaning']})"
@@ -1832,7 +1842,7 @@ if __name__ == "__main__":
     ap.add_argument("--model", default=os.environ.get("MODEL", "qwen2.5:14b"))
     ap.add_argument("--question", default="")
     ap.add_argument("--max-claims", type=int, default=10)
-    ap.add_argument("--evidence", default=os.path.join(HERE, "evidence"))
+    ap.add_argument("--evidence", default="all", help="'all' (every evidence* folder, default), one folder, or several comma-separated")
     ap.add_argument("--out", default=os.path.join(HERE, "logs"))
     ap.add_argument("--as-of", default=None, help="the date the claims are taken as of (YYYY-MM-DD); references dated after it cannot govern them; default: 'as of:' line in the document, else today")
     ap.add_argument("--research", action="store_true", help="search the web for each numeric observable and add what is found to evidence/ (with url and retrieval time) before the routes are sought")

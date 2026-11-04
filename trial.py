@@ -54,7 +54,7 @@ def main():
     ap.add_argument("--max-claims", type=int, default=4)
     ap.add_argument("--model", default=os.environ.get("MODEL", "qwen2.5:14b"))
     ap.add_argument("--question", default="")
-    ap.add_argument("--evidence", default=os.path.join(HERE, "evidence"), help="evidence folder (e.g. evidence-motor for claims/motor-m1.md)")
+    ap.add_argument("--evidence", default="all", help="'all' = every evidence* folder (default, including evidence-private/); or one folder; or several comma-separated")
     a = ap.parse_args()
     ver = version(); stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     print(f"TRIAL at version {ver}: {a.runs} runs of {a.source}, {a.max_claims} claims each")
@@ -63,8 +63,9 @@ def main():
     # calendar year, or now with --research; a changed edition marks the file superseded before the run reads it
     try:
         import currency
-        for line in currency.check(a.evidence, force=a.research):
-            print("currency:", line)
+        for folder in agent.evidence_folders(a.evidence):
+            for line in currency.check(folder, force=a.research):
+                print("currency:", line)
     except Exception as ex:
         print(f"currency check skipped: {str(ex)[:120]}")
     # Strictly one run at a time: each call below blocks until that run has written its summary and reflection

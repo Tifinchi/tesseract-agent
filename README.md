@@ -228,6 +228,30 @@ fault, not the data).
 python3 trial.py claims/motor-m1.md --max-claims 8 --evidence evidence-motor
 ```
 
+## v2.6: set loose — ask, and it researches, stores, verifies
+
+```
+python3 ask.py "What is the full-load current of a 10 hp 460 V three-phase motor per the current NEC?"
+python3 chat.py --evidence            # then type /ask <question> for the same, inside a conversation
+```
+
+`ask.py`: the model turns the question into search phrases and, where a date matters, Wayback requests; the
+script runs them (DuckDuckGo → pages → `evidence/web-*.md` with url and retrieval time; Wayback snapshots with
+their archive date; echo check so copies count once); the model may ask for a second round; then it writes the
+question as a claims document (the answer it expects, as a definite claim with numbers) and `agent.run` evaluates
+it against EVERY evidence folder — calibration, meaning ladder, routes by independent source, bands, neighbours,
+down-wind, chronology, the locked ledger, verdict by rule — and the answer is the summary with its routes and
+"where the data lives", plus the self-review. Everything is logged under `logs/ask-<stamp>.md`.
+
+In `chat.py` the model can also ask for data itself: a line `SEARCH: <phrase>` or `WAYBACK: <url> <YYYYMMDD>` at
+the end of a reply is run by the script, the pages stored and dated, and the model answers again from what is on
+file. The model never browses; the script fetches, stores and dates, and only what is on file can be cited.
+
+Nothing useful is withheld: `--evidence all` (the default everywhere now) reads `evidence/`, `evidence-motor/`,
+`evidence-private/` and any other `evidence*` folder; the web and the Wayback Machine are reachable; the
+currency check keeps safety references current. What stays withheld is the one thing the method forbids: a
+citation that is not verbatim on file.
+
 ## Motor pass 2 (v2.4 at b75b991; 5 claims, 38 min) and v2.5
 
 No false rejection on a wrong meaning this time, but the ladder swallowed too much: 0 STABILIZED, 5 UNSTABLE,

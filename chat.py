@@ -5,7 +5,8 @@
     python3 chat.py --with-run      # also load the latest run's summary and trace, so you can ask about it
     python3 chat.py --with-run <id> # a specific run
     python3 chat.py --no-method     # the bare model, no standing orders (a control)
-    python3 chat.py --evidence      # also load the evidence folder, so it can cite it
+    python3 chat.py --evidence      # also load EVERY evidence folder (evidence/, evidence-motor/, evidence-private/), so it can cite them
+    /ask <question>                 # inside chat: research online, store dated, run the full engine on the question, answer with the verdict
 
 Type a line and press Enter; `/save` writes the transcript; `/quit` or an empty line ends.
 `/history <words of a claim>` prints that claim's EXACT verdict history from the logs (the record, not the model's
@@ -15,7 +16,7 @@ archive date) and hand them to the model for this conversation. The model never 
 stores, and dates every page, and the model may only cite what is on file.
 Transcripts are saved to logs/chat-<stamp>.md. Nothing said here is evidence of anything; it is a conversation.
 """
-import argparse, datetime, os, sys
+import argparse, datetime, os, re, sys
 import requests
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -54,7 +55,11 @@ def main():
                      "About your own history: quote the process memory and the /history record verbatim with run ids; never "
                      "reconstruct a sequence of verdicts from recollection. About ambiguity: when a word in a question has no "
                      "reference ('big', 'similar', 'near'), say so and name the reference that would fix it before answering. "
-                     "About citations: name the file and quote it verbatim, or say you have no file for it.\n\n" + method_text())
+                     "About citations: name the file and quote it verbatim, or say you have no file for it. "
+                     "You may ask the script to find data: put a line 'SEARCH: <3-8 word phrase>' or 'WAYBACK: <url> <YYYYMMDD>' "
+                     "(for what a page said at a date) at the END of your reply; the script fetches, stores and dates the pages "
+                     "and hands them back, and you answer again from what is on file. Use it whenever the evidence on file does "
+                     "not settle the question, rather than answering from training.\n\n" + method_text())
     else:
         parts.append("You are a helpful assistant.")
     if not a.no_memory:
@@ -68,10 +73,10 @@ def main():
         summary = open(summary_path, encoding="utf-8").read() if os.path.exists(summary_path) else "(no summary)"
         parts.append(f"A RUN YOU JUST DID (summary by the script):\n{summary[:9000]}\n\nCONDENSED TRACE:\n{debrief.condensed_trace(jsonl)}")
     if a.evidence:
-        evd = os.path.join(HERE, "evidence")
-        for fn in sorted(os.listdir(evd)):
-            if fn.endswith(".md") and not fn.startswith("."):
-                parts.append(f"EVIDENCE [{fn}]:\n" + open(os.path.join(evd, fn), encoding="utf-8").read()[:4000])
+        sys.path.insert(0, HERE); import agent as eng
+        ev = eng.Evidence("all")
+        for fn, group, source, text, paras in ev.docs:
+            parts.append(f"EVIDENCE [{fn}] ({ev.where(fn)[:160]}):\n" + text[:4000])
     system = "\n\n".join(parts)
     messages = [{"role": "system", "content": system}]
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -114,6 +119,13 @@ def main():
                 messages.append({"role": "system", "content": f"EVIDENCE FETCHED NOW [{fn}] (cite it verbatim by this filename; its header gives url and time):\n{t[:6000]}"})
                 lines += [f"\n**you:** {q}\n", f"**fetched:** {fn} — {t.splitlines()[0][:120]}\n"]
             print(f"[stored and loaded: {', '.join(added)}]"); continue
+        if q.startswith("/ask "):
+            import subprocess
+            print("[researching, storing, verifying — this runs the full engine; minutes]")
+            r_ = subprocess.run([sys.executable, os.path.join(HERE, "ask.py"), q[5:].strip(), "--model", a.model], text=True, capture_output=True)
+            out = (r_.stdout or "")[-9000:] + (("\n[stderr] " + r_.stderr[-800:]) if r_.returncode else "")
+            print(out); messages.append({"role": "system", "content": "RESULT OF /ask (the engine's verified answer; cite it, do not restate it from memory):\n" + out})
+            lines += [f"\n**you:** {q}\n", f"**engine:**\n```\n{out}\n```\n"]; continue
         if q.startswith("/where "):
             sys.path.insert(0, HERE); import agent as eng
             ev = eng.Evidence(os.path.join(HERE, "evidence")); fn = q[7:].strip()
@@ -125,6 +137,31 @@ def main():
             ans = ask(a.model, messages)
         except Exception as ex:
             print(f"(model error: {ex})"); messages.pop(); continue
+        # the model may ask for data itself: a line 'SEARCH: <phrase>' or 'WAYBACK: <url> <YYYYMMDD>' is run by the
+        # script, the pages stored and dated in evidence/, and the result handed back for a second answer (one round)
+        reqs = re.findall(r"(?im)^(SEARCH|WAYBACK):\s*(.+)$", ans)
+        if reqs and not a.no_method:
+            sys.path.insert(0, HERE); import research
+            evd = os.path.join(HERE, "evidence"); notes = []
+            for kind, arg in reqs[:3]:
+                try:
+                    if kind.upper() == "SEARCH":
+                        added = research.search_and_store(arg.strip(), evd, max_pages=2)
+                    else:
+                        parts = arg.split(); fn, note = research.wayback_store(parts[0], evd, parts[1] if len(parts) > 1 else None); added = [fn] if fn else []
+                    for fn in added:
+                        t = open(os.path.join(evd, fn), encoding="utf-8").read()
+                        notes.append(f"[{fn}] (cite verbatim by this filename)\n{t[:5000]}")
+                    print(f"[{kind.lower()} '{arg[:60]}' → {', '.join(added) or 'nothing stored'}]")
+                except Exception as ex:
+                    notes.append(f"{kind} {arg}: failed ({str(ex)[:120]})")
+            messages.append({"role": "assistant", "content": ans})
+            messages.append({"role": "system", "content": "FETCHED BY THE SCRIPT at " + now_line() + ":\n\n" + ("\n\n".join(notes) or "nothing readable") + "\n\nNow answer the question from what is on file, citing filenames and verbatim quotes; say plainly what is still missing."})
+            lines += [f"\n**you:** {q}\n", f"**agent (requested data):** {ans}\n"]
+            try:
+                ans = ask(a.model, messages)
+            except Exception as ex:
+                print(f"(model error: {ex})"); continue
         messages.append({"role": "assistant", "content": ans})
         print(f"\nagent> {ans}")
         lines += [f"\n**you:** {q}\n", f"**agent:** {ans}\n"]
