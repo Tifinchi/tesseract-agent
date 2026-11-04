@@ -297,10 +297,43 @@ _FUN = {"sqrt": math.sqrt, "abs": abs, "log": math.log, "log10": math.log10, "ex
         "sin": math.sin, "cos": math.cos, "tan": math.tan, "atan": math.atan, "min": min, "max": max}
 _CONST = {"pi": math.pi, "e": math.e}
 
+_UNIT_IN_EXPR = re.compile(r"(?<![A-Za-z_])(\d+(?:\.\d+)?)\s*(meters?|metres?|m|cm|mm|km|inches|inch|in|ft|feet|s|sec|seconds?|kg|g|hz|pa|v|a|w|j|n|%)(?![A-Za-z_])", re.I)
+
+def reduce_expr(expr):
+    """Reduction with the cancelled terms kept (PRF pass 7: reduce only if the derivation can rebuild it).
+       A unit written inside an expression ('1 meter / 1 meter') is not a variable; by convention it cancels to 1.
+       The cancellation is NOT discarded: what was written, what it reduced to, and the dimension it carried are
+       returned beside the reduced expression, so the route records the un-reduced form and the dimension can be
+       checked against the declared result units. Returns (reduced_expr, ledger)."""
+    ledger = []
+    def rep(m):
+        ledger.append({"written": m.group(0), "reduced_to": m.group(1), "carried": m.group(2).lower()})
+        return m.group(1)
+    reduced = _UNIT_IN_EXPR.sub(rep, expr)
+    if ledger:
+        units = [l["carried"] for l in ledger]
+        # a ratio of like units is dimensionless; anything else carries dimension the result must declare
+        dims = {}
+        for l, side in zip(ledger, _sides(expr, ledger)):
+            dims[l["carried"]] = dims.get(l["carried"], 0) + side
+        net = {u: n for u, n in dims.items() if n}
+        return reduced, {"written": expr, "cancelled": [f"{l['written']} -> {l['reduced_to']} (unit {l['carried']} carried)" for l in ledger],
+                         "net_dimension": "dimensionless" if not net else " ".join(f"{u}^{n}" for u, n in net.items()),
+                         "note": "unit terms reduced by convention; kept here so the un-reduced form can be rebuilt"}
+    return reduced, None
+
+def _sides(expr, ledger):
+    """+1 if a unit term sits in a numerator, -1 if it follows a '/', by position (coarse, but enough to tell m/m from m)."""
+    out, pos = [], 0
+    for l in ledger:
+        i = expr.find(l["written"], pos); pos = i + 1
+        before = expr[:i].rstrip()
+        out.append(-1 if before.endswith("/") else +1)
+    return out
+
 def evaluate(expr, variables):
     expr = expr.replace("^", "**").replace("×", "*").replace("÷", "/").replace("√", "sqrt").replace("·", "*")
-    expr = re.sub(r"(?<![A-Za-z_])(\d+(?:\.\d+)?)\s*(meters?|metres?|m|cm|mm|km|inches|inch|in|ft|feet|s|sec|seconds?|kg|g|hz|pa|v|a|w|j|n|%)(?![A-Za-z_])",
-                  r"\1", expr, flags=re.I)   # '1 meter / 1 meter' -> '1 / 1': unit words after numbers are not variables
+    expr, _ = reduce_expr(expr)
     expr = re.sub(r"(\d)\s*([A-Za-z(])", r"\1*\2", expr)      # 4b, 2(…)  -> 4*b, 2*(…)
     expr = re.sub(r"\)\s*\(", ")*(", expr)                      # (a)(b)    -> (a)*(b)
     expr = re.sub(r"\)\s*([A-Za-z\d])", r")*\1", expr)          # (a)b      -> (a)*b
@@ -382,8 +415,9 @@ fields match by role and dimensions, never by a shared letter.
 Then name the ways this observable's value could be reached from evidence, WITHOUT using the reading's own number.
 1. direct: search phrases (3–6 words each) that would find a passage reporting this observable directly.
 2. relations: arithmetic expressions over named variables ONLY (use sqrt, pi, ** for powers; write every
-   multiplication with *; no unit words or annotations inside the expression — units go in the variable's
-   "units" field) that reach the observable from OTHER measurable quantities (neighbours), with, for
+   multiplication with *; put units in each variable's "units" field and in result_units rather than inside
+   the expression — if a unit term is written inside it, the engine reduces it by convention and keeps the
+   cancelled term on record) that reach the observable from OTHER measurable quantities (neighbours), with, for
    each variable, its meaning and search phrases that would find its value in a source. Include unit
    conversion factors as their own variables.
 Return JSON:
@@ -683,10 +717,18 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
             relb = math.sqrt(sum((v["band"] / abs(v["value"])) ** 2 for v in combo if v["value"]))
             groups = sorted(set(v["group"] for v in combo))
             proc = f"computed {expr} from " + ", ".join(f"{nm}={v['value']:g} [{v['file']}, {v['process']}]" for nm, v in zip(names, combo))
+            _, reduction = reduce_expr(expr)
+            if reduction:
+                want = str(r.get("result_units") or card.get("units") or "").strip().lower()
+                declared_dimless = want in ("", "ratio", "unitless", "dimensionless", "1", "none", "-")
+                reduction["checks_against_declared_units"] = ("yes" if (reduction["net_dimension"] == "dimensionless") == declared_dimless
+                                                             else f"NO: expression carries {reduction['net_dimension']}, result declared '{want or 'unitless'}'")
+                proc += f"; reduced by convention: {'; '.join(reduction['cancelled'])} -> net {reduction['net_dimension']} (kept on record)"
             if sensitive:
                 routes.append({"type": "computation", "value": result, "band": abs(result) * relb, "band_kind": "propagated (quadrature)",
                                "relation": expr, "groups": groups, "inputs": [f"{v['file']}:{v['value']:.6g}" for v in combo],
-                               "provisional": any(v.get("provisional") for v in combo), "kind": "calculation", "process": proc})
+                               "provisional": any(v.get("provisional") for v in combo), "kind": "calculation", "process": proc,
+                               **({"reduction": reduction} if reduction else {})})
             else:
                 routes.append({"type": "definition", "value": result, "band": abs(result) * 1e-6, "band_kind": "exact (definition)",
                                "relation": expr, "groups": ["definition:" + expr], "process": "definition: " + expr + " (result does not depend on the cited inputs)"})

@@ -58,7 +58,11 @@ claim in any domain: physics, a motor, a building, a text, a plan.
 6. REVISION — on REJECTED: fold (keep the question, drop the mechanism). On UNSTABLE: name the
    empty cell and the measurement that fills it. Predict misinterpretation; prove, don't prune.
 7. REDUCTION — a stabilized claim may be reduced only if the reduction can be rebuilt from the
-   kept derivation. Simplifying is lossy; keep the un-reduced terms on record.
+   kept derivation. Simplifying is lossy; keep the un-reduced terms on record. This includes terms
+   that cancel by convention (a unit ratio m/m, the cross terms of a product that sum to zero): the
+   convention says they vanish, the method says they are recorded, because the cancelled terms are
+   what tell the shape when the result has to be rebuilt from its smallest components. Two
+   derivations that reach the same value by different processes are kept as two, never merged.
 8. FINALIZATION or HALT — output, refusal, or silence. Then archive the trace.
 
 ## 2. The calculator steps, inside the passes
