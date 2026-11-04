@@ -23,6 +23,7 @@ Every pass writes one immutable JSON line to logs/run-<stamp>.jsonl; a summary g
 import argparse, ast, datetime, json, math, operator, os, re, sys, time, uuid
 import requests
 import memory as process_memory
+import research
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 METHOD = "\n\n".join(open(os.path.join(HERE, "method", f), encoding="utf-8").read()
@@ -31,9 +32,16 @@ OLLAMA = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 
 # ----------------------------------------------------------------------------- model
 
+def now_line():
+    """The clock, stated in every prompt: the model has no clock of its own, and every datum needs a chronological
+       reference point (when it was retrieved, when it was published, when the run happened)."""
+    t = datetime.datetime.now().astimezone()
+    return (f"CURRENT DATE AND TIME: {t.strftime('%A %Y-%m-%d %H:%M %Z (UTC%z)')}. Everything you know from training is "
+            f"older than this; a dated evidence file is as old as its 'retrieved:' or 'published:' line says; 'now' means this moment.")
+
 def ask(model, system, user, num_ctx=8192, temperature=0.1, retries=2):
     body = {"model": model, "format": "json", "stream": False,
-            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
+            "messages": [{"role": "system", "content": now_line() + "\n\n" + system}, {"role": "user", "content": user}],
             "options": {"temperature": temperature, "num_ctx": num_ctx, "num_predict": 4096}}
     for attempt in range(retries + 1):
         r = requests.post(f"{OLLAMA}/api/chat", json=body, timeout=600)
@@ -216,7 +224,11 @@ class Evidence:
                 continue
             text = open(p, encoding="utf-8", errors="replace").read()
             group, source, derives, status = os.path.splitext(fn)[0], fn, None, ""
-            for line in text.splitlines()[:8]:
+            meta = {}
+            for line in text.splitlines()[:10]:
+                for key in ("url", "retrieved", "published", "location"):
+                    if line.lower().startswith(key + ":"):
+                        meta[key] = line.split(":", 1)[1].strip()
                 if line.lower().startswith("status:"):
                     status = line.split(":", 1)[1].strip().lower()
                 if line.lower().startswith("group:"):
@@ -230,15 +242,28 @@ class Evidence:
                 self.derives[group] = derives
             paras = [q.strip() for q in re.split(r"\n\s*\n", text) if q.strip()]
             self.docs.append((fn, group, source, text, paras))
+            self.meta = getattr(self, "meta", {}); self.meta[fn] = meta | {"source": source, "status": status}
             self.provisional = getattr(self, "provisional", set())
-            if any(w in status for w in ("compiled", "from memory", "unverified", "paraphrase", "tertiary")):
+            if any(w in status for w in ("compiled", "from memory", "unverified", "paraphrase", "tertiary", "web")):
                 self.provisional.add(fn)
         self.groups = sorted(set(d[1] for d in self.docs))
         self.derives = getattr(self, "derives", {})
         self.provisional = getattr(self, "provisional", set())
+        self.meta = getattr(self, "meta", {})
 
     def is_provisional(self, fn):
         return fn in self.provisional
+
+    def where(self, fn):
+        """Where this datum lives: file, source, url, when retrieved/published, status. Printed under every summary."""
+        m = self.meta.get(fn, {})
+        bits = [f"{fn}: {m.get('source', fn)}"]
+        if m.get("url"): bits.append(f"url {m['url']}")
+        if m.get("location"): bits.append(f"location {m['location']}")
+        if m.get("published"): bits.append(f"published {m['published']}")
+        if m.get("retrieved"): bits.append(f"retrieved {m['retrieved']}")
+        if m.get("status"): bits.append(f"status: {m['status']}")
+        return " · ".join(bits)
 
     def root_of(self, group):
         """Follow derives_from to the primary source; shared roots are not independent."""
@@ -332,7 +357,9 @@ def _sides(expr, ledger):
     return out
 
 def evaluate(expr, variables):
+    expr = re.sub(r"^\s*[A-Za-z_]\w*\s*=\s*(?!=)", "", expr)        # 'h = a - b' -> 'a - b' (the assignment target is the result)
     expr = expr.replace("^", "**").replace("×", "*").replace("÷", "/").replace("√", "sqrt").replace("·", "*")
+    expr = expr.replace("²", "**2").replace("³", "**3")
     expr, _ = reduce_expr(expr)
     expr = re.sub(r"(\d)\s*([A-Za-z(])", r"\1*\2", expr)      # 4b, 2(…)  -> 4*b, 2*(…)
     expr = re.sub(r"\)\s*\(", ")*(", expr)                      # (a)(b)    -> (a)*(b)
@@ -808,6 +835,12 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
     routes = [r for r in routes if r["type"] not in ("definition", "calculator")] + defs[:1]
     # compare each route with the reading's value at 2σ of the combined band
     cv = parse_number(claimed); cb, cbk = parse_band(claimed, cv)
+    # the truth of rounding: a value written without its own tolerance, inside a reading that states one
+    # ("… 921.2 m … to 0.05 %"), carries the reading's stated tolerance, not half its last digit
+    if cbk == "half last digit" and re.search(r"±|\bto\s+\d+(?:\.\d+)?\s*%", _norm(reading)):
+        rb, rbk = parse_band(reading, cv)
+        if rbk.startswith("stated") and rb > cb:
+            cb, cbk = rb, rbk + " (inherited from the reading's stated tolerance)"
     need = parse_number(precision_needed) if precision_needed else None
     need_rel = (need / 100) if (need and "%" in str(precision_needed)) else ((need / abs(cv)) if (need and cv) else None)
     for r in routes:
@@ -961,10 +994,17 @@ def check_downwind(model, ev, cid, reading, log, run_id):
     log.write(run=run_id, claim=cid, pass_="IMPLICATION_STATE", downwind=out)
     return out
 
+def fit_account_ledger(rp):
+    return (f"{rp['observable']}: HELD from the locked ledger — {rp['claimed_value']:.6g} ± {rp['claimed_band']:.3g} [{rp['claimed_band_kind']}]; "
+            f"{len(rp['ledger_routes'])} route(s) locked it; re-checked against {len(rp['rechecked'])} value(s) now in the evidence, none conflict\n"
+            + "\n".join(f"  · locked by: {r}" for r in rp["ledger_routes"][:4]))
+
 def fit_account(reports):
     """The script's deterministic explanation of the fit, printed under every verdict."""
     L = []
     for rp in reports:
+        if rp.get("from_ledger"):
+            L.append(fit_account_ledger(rp)); continue
         if rp.get("text"):
             L.append(f"reading as stated: {rp['independent_routes']} independent statement route(s): {rp['agree']} support "
                      f"({rp['fine_agree']} cover the whole reading" + (f"; partial: {', '.join(rp['partial_support'])}" if rp['partial_support'] else "") +
@@ -1062,6 +1102,8 @@ def synthesis_by_rule(reports, judge, ev, neighbours=None, downwind=None, readin
         diag = "the inverse turn does not return to the cited inputs (the relation or an input is wrong)"
     elif provisional_only and synth in ("STABILIZED", "LOCKED"):
         diag = "agreement rests only on provisional (unverified-transcription) sources"
+    elif reports and all(r.get("from_ledger") for r in reports) and synth in ("STABILIZED", "LOCKED"):
+        diag = "held from the locked ledger; re-checked against neighbours, down-wind and the evidence now on file, no conflict"
     elif any(r.get("cyclical") for r in reports):
         sh = sorted(set(x for r in reports for x in (r.get("shared") or [])))
         diag = ("agreeing routes share " + (", ".join(sh) if sh else "ancestry or inputs") +
@@ -1087,11 +1129,60 @@ def sections(doc):
         out.append((("(title) " if level == 1 else "") + heading, parts[i + 1]))
     return [(h, t) for h, t in out if t.strip()]
 
+# ----------------------------------------------------------------------------- locked ledger
+
+class Ledger:
+    """Priority flags: values this engine LOCKED, with the routes that locked them (logs/locked.json).
+       A held value is not recomputed on the next run; it is re-checked against what is near it, and any
+       conflict reopens it (the lock is demoted, the conflict recorded, the full process runs again)."""
+    def __init__(self, path):
+        self.path = path
+        self.items = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else []
+
+    def _save(self):
+        json.dump(self.items, open(self.path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+    def get(self, observable, reading):
+        for it in self.items:
+            if it.get("open"):
+                continue
+            # the observable must match in order, not as a bag of words: 'height/perimeter' is the inverse of
+            # 'perimeter/height' (the same room flipped inside out) and must never inherit its lock
+            if process_memory.norm(observable) == process_memory.norm(it["observable"]) and process_memory.similar(reading, it["reading"]) >= 0.5:
+                return it
+        return None
+
+    def lock(self, observable, reading, value, band, run_id, routes, neighbours, downwind):
+        self.items = [it for it in self.items if not (it["observable"] == observable and it["reading"] == reading)]
+        self.items.append({"observable": observable, "reading": reading, "value": value, "band": band, "run": run_id,
+                           "locked_at": datetime.datetime.now().astimezone().isoformat(timespec="minutes"),
+                           "routes": routes, "neighbours": [n.get("status") for n in (neighbours or [])],
+                           "downwind": [d.get("status") for d in (downwind or [])], "open": False, "reopened": []})
+        self._save()
+
+    def reopen(self, observable, reading, conflicts, run_id):
+        for it in self.items:
+            if process_memory.norm(observable) == process_memory.norm(it["observable"]) and process_memory.similar(reading, it["reading"]) >= 0.5:
+                it["open"] = True; it["reopened"].append({"run": run_id, "conflicts": conflicts,
+                                                        "at": datetime.datetime.now().astimezone().isoformat(timespec="minutes")})
+        self._save()
+
+    def as_report(self, held, o, rechecked):
+        cv = held["value"]; cb = held["band"]
+        return {"observable": o["name"], "claimed": o.get("claimed_value"), "claimed_value": cv, "claimed_band": cb,
+                "claimed_band_kind": f"held from the locked ledger (run {held['run']}, {held['locked_at']})", "precision_needed": o.get("precision_needed"),
+                "all_routes": [], "independent": [], "independent_routes": len(held["routes"]), "agree": len(held["routes"]), "disagree": 0,
+                "strict_agree": len(held["routes"]), "cyclical": False, "shared": [], "fine_agree": len(held["routes"]), "disagreeing": [],
+                "discarded": [], "turns": [], "card": {}, "calculator_cross_checks": [], "kinds": ["ledger"], "from_ledger": True,
+                "rechecked": [{"value": d["value"], "file": d["file"]} for d in rechecked],
+                "ledger_routes": held["routes"]}
+
 # ----------------------------------------------------------------------------- run
 
-def run(path, model, question, max_claims, out_dir, evidence_dir):
+def run(path, model, question, max_claims, out_dir, evidence_dir, research_on=False):
     doc = open(path, encoding="utf-8").read()
     ev = Evidence(evidence_dir)
+    ledger = Ledger(os.path.join(out_dir, "locked.json"))
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     run_id = f"{stamp}-{uuid.uuid4().hex[:6]}"
     os.makedirs(out_dir, exist_ok=True)
@@ -1131,7 +1222,31 @@ def run(path, model, question, max_claims, out_dir, evidence_dir):
         observables = list(observables or []) + calib["observables_added"]
         numeric = [o for o in (observables or [])[:3]
                    if o.get("name") and str(o.get("claimed_value", "none")).lower() != "none" and parse_number(o.get("claimed_value")) is not None]
+        if research_on and depth == 0:
+            for o in numeric[:2]:
+                try:
+                    added = research.search_and_store(f"{o['name']} {reading}"[:120], os.path.join(HERE, "evidence"), max_pages=2)
+                    log.write(run=run_id, claim=rid, pass_="RESEARCH_STATE", query=o["name"], added=added)
+                    if added:
+                        ev.__init__(os.path.join(HERE, "evidence"))
+                except Exception as ex:
+                    log.write(run=run_id, claim=rid, pass_="RESEARCH_STATE", query=o["name"], error=str(ex)[:300])
         for o in numeric:
+            # priority: a value this engine already LOCKED is not recomputed; it is re-checked against what is near it
+            # (neighbours, down-wind, any value now in the evidence that disagrees). A conflict reopens the lock.
+            held = ledger.get(o["name"], reading)
+            if held:
+                direct, _ = gather_values(model, ev, o["name"], unit_of(o["claimed_value"]), [o["name"]], log, run_id, rid, f"{o['name']} (ledger re-check)",
+                                          expected_unit=unit_of(o["claimed_value"]))
+                conflict = [d for d in direct if abs(d["value"] - held["value"]) > 2 * (d["band"] + held["band"])]
+                if not conflict:
+                    reports.append(ledger.as_report(held, o, direct)); print(f"    ledger: {o['name']} held LOCKED from run {held['run']}; {len(direct)} value(s) re-checked, none conflict")
+                    log.write(run=run_id, claim=rid, pass_="LEDGER_STATE", observable=o["name"], held=held, rechecked=len(direct), reopened=False)
+                    continue
+                log.write(run=run_id, claim=rid, pass_="LEDGER_STATE", observable=o["name"], held=held, reopened=True,
+                          conflict=[{"value": d["value"], "file": d["file"]} for d in conflict])
+                ledger.reopen(o["name"], reading, [f"{d['file']}:{d['value']:.6g}" for d in conflict], run_id)
+                print(f"    ledger: {o['name']} REOPENED — new value(s) conflict with the lock: " + ", ".join(f"{d['value']:g} [{d['file']}]" for d in conflict))
             reports.append(find_routes(model, ev, rid, reading, o["name"], o["claimed_value"], o.get("precision_needed"), log, run_id))
         if not numeric:
             reports.append(find_text_routes(model, ev, rid, reading, log, run_id))
@@ -1148,6 +1263,11 @@ def run(path, model, question, max_claims, out_dir, evidence_dir):
         synth, cores, lock = synthesis_by_rule(reports, judge, ev, nbs, dw, reading)
         settled = [{"observable": rp["observable"], "value": rp["claimed_value"], "band": rp["claimed_band"]}
                    for rp in reports if not rp.get("text") and synth in ("STABILIZED", "LOCKED") and rp["claimed_value"] is not None]
+        if synth == "LOCKED":
+            for rp in reports:
+                if not rp.get("text") and rp["claimed_value"] is not None and not rp.get("from_ledger"):
+                    ledger.lock(rp["observable"], reading, rp["claimed_value"], rp["claimed_band"], run_id,
+                                [r["process"] for r in rp["independent"]], nbs, dw)
         e = {"quad_core": cores, "lock_level": lock, "synthesis": synth, "fit_account": fit, "neighbours": nbs, "downwind": dw,
              "calibration": calib, "as_stated": as_stated,
              "turns": [t for rp in reports for t in (rp.get("turns") or [])], "settled": settled,
@@ -1237,7 +1357,8 @@ def render_summary(run_id, path, question, model, ev, results, elapsed):
     for c, rs in results:
         for _, _, s, *_ in rs:
             counts[s] = counts.get(s, 0) + 1
-    L = [f"# Run {run_id}", f"claims: {os.path.basename(path)} · evidence groups: {', '.join(ev.groups) or 'NONE'} · "
+    L = [f"# Run {run_id}", f"run clock: {datetime.datetime.now().astimezone().strftime('%Y-%m-%d %H:%M %Z')}",
+         f"claims: {os.path.basename(path)} · evidence groups: {', '.join(ev.groups) or 'NONE'} · "
          f"model: {model} · agreement: 2σ of combined bands · question: {question or '(none)'} · "
          f"{len(results)} claims, {sum(len(rs) for _, rs in results)} readings · {elapsed/60:.1f} min",
          "", "counts (by reading): " + ", ".join(f"{k} {v}" for k, v in sorted(counts.items())), "",
@@ -1311,6 +1432,11 @@ def render_summary(run_id, path, question, model, ev, results, elapsed):
         L.append("")
     n_disc = sum(len(rp["discarded"]) for _, rs in results for *_, reports, _ in rs for rp in reports)
     L.append(f"## Discards: {n_disc} candidate citation(s) the script threw out (proposed by the model, not in the evidence as cited)")
+    L.append("\n## Where the data lives (every file cited above; url and retrieval time where it came from the web)")
+    cited = sorted(set(re.findall(r"[\w\-]+\.md", "\n".join(L))))
+    for fn in cited:
+        if fn in ev.meta:
+            L.append(f"- {ev.where(fn)}")
     return "\n".join(L) + "\n"
 
 if __name__ == "__main__":
@@ -1321,9 +1447,10 @@ if __name__ == "__main__":
     ap.add_argument("--max-claims", type=int, default=10)
     ap.add_argument("--evidence", default=os.path.join(HERE, "evidence"))
     ap.add_argument("--out", default=os.path.join(HERE, "logs"))
+    ap.add_argument("--research", action="store_true", help="search the web for each numeric observable and add what is found to evidence/ (with url and retrieval time) before the routes are sought")
     a = ap.parse_args()
     try:
         requests.get(f"{OLLAMA}/api/tags", timeout=5)
     except Exception:
         sys.exit(f"Ollama not reachable at {OLLAMA}. Start it: `ollama serve` (and `ollama pull {a.model}`).")
-    run(a.source, a.model, a.question, a.max_claims, a.out, a.evidence)
+    run(a.source, a.model, a.question, a.max_claims, a.out, a.evidence, research_on=a.research)

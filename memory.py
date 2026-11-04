@@ -114,7 +114,8 @@ def digest(memory=None, max_chars=9000):
     if memory is None:
         p = os.path.join(LOGS, "memory.json")
         memory = json.load(open(p, encoding="utf-8")) if os.path.exists(p) else build()
-    L = [f"# Process memory — {len(memory['runs'])} run(s): {', '.join(memory['runs'][-6:])}", ""]
+    L = [f"# Process memory — {len(memory['runs'])} run(s): {', '.join(memory['runs'][-6:])}",
+         "(run ids begin with the run's date and time, YYYYMMDD-HHMMSS, local clock; this digest is the record, quote it, do not reconstruct it)", ""]
     L.append("## Changes of mind (verdict differed between runs; old and new reasons kept)")
     if not memory["changes"]:
         L.append("- none recorded")
@@ -162,6 +163,28 @@ def settled_values(observable, reading, memory=None, threshold=0.6):
                 out.append({"value": float(sv["value"]), "band": float(sv.get("band") or abs(float(sv["value"])) * 0.01),
                             "run": sv.get("run"), "verdict": sv.get("verdict"), "text": c["text"]})
     return out[-3:]
+
+def history(text, memory=None, threshold=0.5):
+    """EXACT history of a claim like this one: every run, in order, with run id, verdict and the logged reason.
+       This is the record itself, not the model's recollection of it; the chat and the bot print it verbatim."""
+    if memory is None:
+        p = os.path.join(LOGS, "memory.json")
+        memory = json.load(open(p, encoding="utf-8")) if os.path.exists(p) else build()
+    best, score = None, 0.0
+    for c in memory["claims"]:
+        s = similar(text, c["text"])
+        if s > score:
+            best, score = c, s
+    if not best or score < threshold:
+        return f"no claim on record matching '{text[:80]}'"
+    L = [f"claim: {best['text']}", f"runs seen: {len(set(h['run'] for h in best['history']))}; evaluations: {len(best['history'])}"]
+    changes = 0
+    for a, b in zip(best["history"], best["history"][1:]):
+        changes += a["verdict"] != b["verdict"]
+    L.append(f"verdict changed between consecutive evaluations {changes} time(s); current: {best['current']}")
+    for h in best["history"]:
+        L.append(f"- {h['run']} [{h['cid']}]: {h['verdict']} — {(h.get('reason') or h.get('why') or '(no reason logged)')[:220]}")
+    return "\n".join(L)
 
 def previous_on(text, memory=None, threshold=0.6):
     """Earlier verdicts on a claim like this one (for the engine to see before it judges again)."""

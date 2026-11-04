@@ -128,6 +128,42 @@ write them); a neighbour is compared only when its implied value is a single num
 the same test the down-wind check uses) or it is recorded and not counted; the trial report counts base
 readings and fold children separately; and a "cyclical" verdict names what the routes share.
 
+## v2.0: single pass, self-review, research, the locked ledger, the clock, the phone
+
+One command now does what the three-run trial plus a human reviewer did:
+
+```
+python3 trial.py claims/khufu-run.md                # ONE run, then review.py → logs/pass-<stamp>.md
+python3 trial.py claims/khufu-run.md --research     # same, with web research into evidence/ first
+python3 trial.py claims/khufu-run.md --runs 3       # the old sampling check, when a verdict is in doubt
+```
+
+- **review.py** reads the run log and counts, by kind, everything the script threw out, could not check or
+  reversed — hallucinated citations caught, paraphrased quotes, unit mismatches, unevaluable relations,
+  neighbours it could not compare, rejections it did not count, calibration empty cells, inverse turns that
+  did not return, changes of mind against process memory, ledger events — ranks them, and names the component
+  each points at. The agenda at the end is the next revision's to-do list. It does not call the model.
+- **research.py** finds data online (DuckDuckGo HTML, no key) and stores pages in `evidence/web-*.md` with
+  `url:`, `retrieved:` (local time with zone), `published:` where the page states it, `group: web:<domain>`,
+  `status: web` (provisional: can stabilize, cannot lock). The echo check marks pages that share long verbatim
+  passages as deriving from the earlier one, so copies count once. `--research` on a run searches each
+  numeric observable before the routes; `python3 research.py "query"` does it by hand.
+- **The locked ledger** (`logs/locked.json`): a LOCKED value is held with its routes and the time it locked, not
+  recomputed next pass; it is re-checked against neighbours, down-wind and any value now on file, and a
+  conflict reopens it with the conflicting source recorded. Matching is on the observable's exact wording —
+  `height/perimeter` never inherits `perimeter/height`'s lock.
+- **The clock**: every prompt begins with the current date and time; every summary states its run clock and
+  ends with "Where the data lives" (file, source, url, published, retrieved, status) for every file cited.
+- **Exact memory**: `memory.history(words)` prints a claim's verdict history verbatim from the logs;
+  `/history …` in chat.py and the bot hands it to the model, which is told to quote, not reconstruct. (In the
+  chat after trial 4 the model recited the Big Void history shifted by one run; the record is now the answer.)
+- **Calibration pass (v1.9)** and the rounding rule: a value written without its own tolerance inside a reading
+  that states one inherits the reading's stated tolerance (921.2 m "to 0.05 %" is ±0.46 m, not ±0.05 m).
+- **Parser**: `h = a - b` (assignment form) and `²`/`³` accepted.
+- **bot.py**: the engine from a phone over Telegram — `/pass`, `/trial`, `/research`, `/review`, `/history`,
+  `/where`, `/status`, `/memory`, `/pull`, `/push`, `/stop`, and plain chat. Setup is at the top of the file
+  (a bot token from @BotFather and your chat id; the bot answers only that id).
+
 ## Trial 4 (v1.8.1 at a11cecd; 3 × 4 claims; 52 min) and v1.9: calibration as a standing pass
 
 Base extraction held at 5/5/5 with no drift; fold children 3/5/5. But only 2 of 10 readings were seen in

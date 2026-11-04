@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Trial: the same version, the same input, N times, then the variance — before anything is changed.
+"""Pass: one run, then the self-review and the comparison with every earlier run of the same claims (process memory).
+Trial: the same version N times (--runs 3), then the variance — the sampling check, when a verdict is in doubt.
 
-    python3 trial.py claims/khufu-run.md                 # 3 runs, 4 claims each
-    python3 trial.py claims/khufu-run.md --runs 3 --max-claims 4
+    python3 trial.py claims/khufu-run.md                 # ONE run (single pass), 4 claims, then review.py
+    python3 trial.py claims/khufu-run.md --research      # same, with web research into evidence/ before the routes
+    python3 trial.py claims/khufu-run.md --runs 3        # the old three-run trial, for a sampling check
 
 Each run is a normal run (its own log, summary, reflection). Afterwards the readings are matched across
 runs by wording and every verdict is listed side by side. A reading whose verdict differs between identical
@@ -53,7 +55,8 @@ def load(run_id):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("source")
-    ap.add_argument("--runs", type=int, default=3)
+    ap.add_argument("--runs", type=int, default=1)
+    ap.add_argument("--research", action="store_true", help="web research into evidence/ during the run (research.py)")
     ap.add_argument("--max-claims", type=int, default=4)
     ap.add_argument("--model", default=os.environ.get("MODEL", "qwen2.5:14b"))
     ap.add_argument("--question", default="")
@@ -67,7 +70,7 @@ def main():
     try:
         for i in range(a.runs):
             print(f"\n================ run {i+1} of {a.runs} (sequential; the next starts only after this one returns) ================")
-            rid = agent.run(a.source, a.model, a.question, a.max_claims, os.path.join(HERE, "logs"), os.path.join(HERE, "evidence"))
+            rid = agent.run(a.source, a.model, a.question, a.max_claims, os.path.join(HERE, "logs"), os.path.join(HERE, "evidence"), research_on=a.research)
             ids.append(rid)
             settle(a.model)
             print(f"================ run {i+1} finished and settled: {rid} ================")
@@ -75,6 +78,16 @@ def main():
         print(f"\nstopped by hand after {len(ids)} completed run(s)")
     if not ids:
         sys.exit("no completed runs; nothing to compare")
+    import review
+    memory.build()
+    rev = review.report([os.path.join(HERE, "logs", f"run-{rid}.jsonl") for rid in ids])
+    if a.runs == 1:
+        # single pass: the review is the report; the cross-run comparison comes from process memory, which already
+        # holds every earlier run of these claims (changes of mind are listed in the review)
+        out = os.path.join(HERE, "logs", f"pass-{stamp}.md")
+        open(out, "w", encoding="utf-8").write(f"# Pass {stamp} — version {ver}, run {ids[0]}, {(time.time()-t0)/60:.1f} min\n\n" + rev)
+        print("\n" + rev + f"\npass report: {out}")
+        return
     entries = [e for rid in ids for e in load(rid)]
     groups = memory.group_claims(entries, threshold=0.55)
     L = [f"# Trial {stamp} — version {ver}, {a.runs} identical runs of {os.path.basename(a.source)}, {a.max_claims} claims each, {(time.time()-t0)/60:.1f} min",
@@ -97,7 +110,7 @@ def main():
     L.append(f"- readings seen in every run: {seen_in_all}/{total} (the rest were extracted in some runs only: extraction drift)")
     L.append(f"- readings with the same verdict every time they appeared: {stable}/{total}")
     L.append(f"- rule: a reading that is UNSTABLE BY SAMPLING cannot support a diagnosis from one run, and a prompt change cannot be credited for changing its verdict.")
-    report = "\n".join(L) + "\n"
+    report = "\n".join(L) + "\n\n" + rev
     out = os.path.join(HERE, "logs", f"trial-{stamp}.md")
     open(out, "w", encoding="utf-8").write(report)
     print("\n" + report + f"\ntrial report: {out}")

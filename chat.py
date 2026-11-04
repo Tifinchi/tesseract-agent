@@ -7,7 +7,9 @@
     python3 chat.py --no-method     # the bare model, no standing orders (a control)
     python3 chat.py --evidence      # also load the evidence folder, so it can cite it
 
-Type a line and press Enter; a line of just `/save` writes the transcript; `/quit` or an empty line ends.
+Type a line and press Enter; `/save` writes the transcript; `/quit` or an empty line ends.
+`/history <words of a claim>` prints that claim's EXACT verdict history from the logs (the record, not the model's
+recollection) and hands it to the model; `/where <file.md>` prints where a datum lives (source, url, retrieved).
 Transcripts are saved to logs/chat-<stamp>.md. Nothing said here is evidence of anything; it is a conversation.
 """
 import argparse, datetime, os, sys
@@ -20,7 +22,12 @@ def method_text():
     return "\n\n".join(open(os.path.join(HERE, "method", f), encoding="utf-8").read()
                        for f in ("method.md", "cube.md", "multimodal.md"))
 
+def now_line():
+    t = datetime.datetime.now().astimezone()
+    return f"CURRENT DATE AND TIME: {t.strftime('%A %Y-%m-%d %H:%M %Z (UTC%z)')}. Your training is older than this; dated files are as old as their retrieved/published lines say."
+
 def ask(model, messages, temperature=0.4):
+    messages = [{"role": "system", "content": now_line() + "\n\n" + messages[0]["content"]}] + messages[1:]
     r = requests.post(f"{OLLAMA}/api/chat", json={"model": model, "stream": False, "messages": messages,
                                                    "options": {"temperature": temperature, "num_ctx": 16384, "num_predict": 1500}}, timeout=900)
     r.raise_for_status()
@@ -40,7 +47,11 @@ def main():
         parts.append("You are a reasoning engine running under the standing orders below. In conversation you may speak "
                      "plainly and in the first person, but you keep the orders' discipline: structure before sequence, "
                      "no confident language about anything not established by independent routes, say 'I don't have a "
-                     "route to that' rather than guess, and name the measurement that would settle a question.\n\n" + method_text())
+                     "route to that' rather than guess, and name the measurement that would settle a question. "
+                     "About your own history: quote the process memory and the /history record verbatim with run ids; never "
+                     "reconstruct a sequence of verdicts from recollection. About ambiguity: when a word in a question has no "
+                     "reference ('big', 'similar', 'near'), say so and name the reference that would fix it before answering. "
+                     "About citations: name the file and quote it verbatim, or say you have no file for it.\n\n" + method_text())
     else:
         parts.append("You are a helpful assistant.")
     if not a.no_memory:
@@ -74,6 +85,18 @@ def main():
             break
         if q == "/save":
             open(out_path, "w", encoding="utf-8").write("\n".join(lines)); print(f"saved {out_path}"); continue
+        if q.startswith("/history "):
+            import memory as process_memory
+            rec = process_memory.history(q[9:].strip())
+            print(f"\n[record]\n{rec}")
+            messages.append({"role": "system", "content": "EXACT RECORD (from the logs; quote it, do not reconstruct it):\n" + rec})
+            lines += [f"\n**you:** {q}\n", f"**record:**\n```\n{rec}\n```\n"]; continue
+        if q.startswith("/where "):
+            sys.path.insert(0, HERE); import agent as eng
+            ev = eng.Evidence(os.path.join(HERE, "evidence")); fn = q[7:].strip()
+            w = ev.where(fn) if fn in ev.meta else f"no evidence file named {fn}; files: {', '.join(sorted(ev.meta))[:600]}"
+            print(f"\n[where] {w}"); messages.append({"role": "system", "content": "WHERE THE DATUM LIVES: " + w})
+            lines += [f"\n**you:** {q}\n", f"**where:** {w}\n"]; continue
         messages.append({"role": "user", "content": q})
         try:
             ans = ask(a.model, messages)

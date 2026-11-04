@@ -157,6 +157,26 @@ Routes agreeing is necessary, not sufficient. Two failures look like agreement:
   all three neighbours lined up. Every verdict names which of these it is: independent agreement, cyclical,
   incomplete (neighbours unchecked), or contradicted by a neighbour.
 
+## 5c. Learning without an echo chamber (new data, old locks, and the clock)
+
+- **The clock.** Every prompt states the current date and time. Every datum carries its own time: when it was
+  published, when it was retrieved, when the run happened. A value with no time is a value with an unknown
+  age. Nothing learned from training is newer than the clock says.
+- **Found data is evidence only once it is on file.** What is found online is stored with its url and
+  retrieval time and cited verbatim from the file, like any other evidence. A web page is secondary until the
+  primary record is on file: it can stabilize, it cannot lock.
+- **Copies are one source.** Pages that share long verbatim passages derive from one another; they count once.
+  Agreement among copies is cyclical agreement. The average of what is said is not a measurement, and the
+  number of pages that repeat a value is not a route to it. Independence is by root, as always.
+- **Priority flags: the locked ledger.** A value this engine LOCKED is held with the routes that locked it and
+  is not recomputed on the next pass. It is re-checked, not re-derived: against its neighbours, down-wind,
+  and against any value now on file that was not there when it locked. If nothing near it conflicts, it holds.
+  If anything does, the lock is REOPENED, the conflict recorded with its source and time, and the full process
+  runs again — because new data near a locked corner is exactly where a confidently-wrong lock would show.
+  A lock is a flag with a date, never a fact beyond checking.
+- **The engine's own memory is a record, not a recollection.** When asked about its history it quotes the
+  log (run id, verdict, reason); it never reconstructs a sequence from memory of the sequence.
+
 ## 6. Halt conditions
 
 Irreversible harm, consent violated, power asymmetry increased, contradiction that cannot be
