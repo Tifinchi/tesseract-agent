@@ -3173,6 +3173,461 @@
      "closed": false
     }
    ]
+  },
+  {
+   "text": "Motor M1 is a 10 HP, 460 V, 60 Hz, three-phase NEMA Design B squirrel-cage induction motor.",
+   "history": [
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s1c1r1",
+     "verdict": "REJECTED",
+     "reason": "voltage: measurement in ieee112-test-m1.md: \"Locked-rotor test at reduced voltage: voltage 91.0 V, current 12.29 A, input power 507 W.\" → 91 vs claimed 460",
+     "why": "The voltage is provisionally accepted based on the nameplate and the computed voltage, but the locked-rotor test at reduced voltage shows a significant discrepancy."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "Locked-rotor test voltage",
+     "next_route": "ieee112-test-m1.md: 'Locked-rotor test at reduced voltage: voltage 91.0 V, current 12.29 A, input power 507 W.'",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s1c1r1f",
+     "verdict": "REJECTED",
+     "reason": "measured voltage: computed voltage = current * resistance from current=12.29 [engine-run-m1.md, computed_output], resistance=0.4139 [ieee112-test-m1.md, measurement] → 5.08683 vs claimed 91; measured voltage: definition in ieee112-test-m1.md: \"Motor M1, 10 HP, 4-pole, 460 V.\" → 460 vs claimed 91",
+     "why": "The voltage measurement from the locked-rotor test agrees within the stated uncertainty, but the computed voltage from current and resistance disagrees significantly."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "voltage from current * resistance",
+     "next_route": "Measure the current and resistance independently and compute the voltage.",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "Its plate reads full-load speed 1775 rpm, full-load current 12.4 A, code letter G, NEMA Premium nominal efficiency 91.7 %, power factor 0.83, service factor 1.15, insulation class F.",
+   "history": [
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s1c2r1",
+     "verdict": "REJECTED",
+     "reason": "current: published_analysis in engine-run-m1.md: \"line current 12.29 A\" → 12.29 vs claimed 12.4; current: measurement in ieee112-test-m1.md: \"current 5.40 A\" → 5.4 vs claimed 12.4; current: definition in nec-430.md: \"10 HP at 460 V: 14 A.\" → 14 vs claimed 12.4",
+     "why": "The full-load current measurement from the nameplate does not align with the measurement from the published analysis, leading to a REJECTED verdict."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "full-load current",
+     "next_route": "An independent measurement of full-load current.",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s1c2r1f",
+     "verdict": "REJECTED",
+     "reason": "Full-load current measurement: published_analysis in nec-430.md: \"Table 430.250 (full-load current, three-phase AC motors, induction type, for sizing conductors and overcurrent devices): 10 HP at 460 V: 14 \" → 14 vs claimed 12.29; Full-load current measurement: measurement in nameplate-m1.md: \"Full-",
+     "why": "The claim of 12.29 A is supported by two independent routes, but it disagrees with the NEC Table 430.250 and the nameplate value."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "full-load current from NEC Table 430.250",
+     "next_route": "published_analysis in nec-430.md: 'Table 430.250 (full-load current, three-phase AC motors, induction type, for sizing conductors and overcurrent devices): 10 HP at 460 V: 14 '",
+     "closed": false
+    },
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "full-load current from nameplate",
+     "next_route": "definition in nameplate-m1.md: 'Full-load amps 12.4 A.'",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "The NEC table current for a 10 HP 460 V motor is 14 A.",
+   "history": [
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s1c3r1",
+     "verdict": "REJECTED",
+     "reason": "down-wind mismatch: if true, The NEC table current for a 10 HP 460 V motor is 14 A. — but ieee112-test-m1.md: \"Motor M1, 10 HP, 4-pole, 460 V. No-load test at rated voltage: current 5.40 A, input power 296 W. Lo\"",
+     "why": "The NEC table value of 14 A is the only direct reference, but it is not independently verified."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "full-load current",
+     "next_route": "Direct measurement or another independent source",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s1c3r1f",
+     "verdict": "REJECTED",
+     "reason": "down-wind mismatch: if true, The NEC table current for a 10 HP 460 V motor is 14 A, which is consistent with NEC guidelines. — but ieee112-test-m1.md: \"Motor M1, 10 HP, 4-pole, 460 V. No-load test at rated voltage: current 5.40 A, input power 296 W. Lo\"",
+     "why": "The nameplate measurement of 12.4 A is consistent with the motor's specifications, while the NEC table value of 14 A does not align within the expected range."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "NEC table current for 10 HP 460 V motor",
+     "next_route": "Independent verification of NEC Table 430.250 value.",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "The NEMA Premium table efficiency for 10 HP 4-pole is 91.7 %.",
+   "history": [
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s1c3r2",
+     "verdict": "REJECTED",
+     "reason": "NEMA Premium efficiency for 10 HP 4-pole motor: computed output_power / input_power * 100 from output_power=296 [ieee112-test-m1.md, published_analysis], input_power=296 [ieee112-test-m1.md, published_analysis] → 100 vs claimed 91.7",
+     "why": "The claim agrees with two independent sources but disagrees with a computed value, leading to an unstable verdict."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "output_power",
+     "next_route": "output_power=296 [ieee112-test-m1.md, published_analysis]",
+     "closed": false
+    },
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "input_power",
+     "next_route": "input_power=296 [ieee112-test-m1.md, published_analysis]",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s1c3r2f",
+     "verdict": "STABILIZED",
+     "reason": "NEMA nominal efficiency: 3 independent route(s) agree (strict 3)",
+     "why": "The efficiency of 91.7% fits the NEMA nominal efficiency standard and the computed circuit efficiency."
+    }
+   ],
+   "current": "STABILIZED",
+   "settled": [
+    {
+     "observable": "NEMA nominal efficiency",
+     "value": 91.7,
+     "band": 0.05,
+     "run": "20261103-215601-0f75df",
+     "verdict": "STABILIZED"
+    }
+   ],
+   "open_cells": [
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "output_power",
+     "next_route": "nameplate-m1.md or reference-motor.md",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "The synchronous speed is 1800 rpm and the motor has 4 poles.",
+   "history": [
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s2c1r1",
+     "verdict": "UNSTABLE",
+     "reason": "synchronous speed: 1 independent route(s) agree (strict 0); number of poles: 1 independent route(s) agree (strict 0); synchronous speed: 1 independent route(s) agree (strict 0)",
+     "why": "The synchronous speed and number of poles are consistent with the given definitions and motor specifications."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "synchronous speed",
+     "next_route": "direct evidence from nameplate-m1.md",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s2c1r1f",
+     "verdict": "UNSTABLE",
+     "reason": "synchronous speed: 2 independent route(s) agree (strict 1); number of poles: 1 independent route(s) agree (strict 0)",
+     "why": "The synchronous speed of 1800 rpm fits the definition provided in reference-motor.md and aligns with the full-load speed measurement in nameplate-m1.md."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "synchronous speed",
+     "next_route": "an independent measurement of synchronous speed from a reliable source.",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "The no-load current is about 5 A.",
+   "history": [
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s2c2r1",
+     "verdict": "REJECTED",
+     "reason": "full-load slip: computed (synchronous_speed - actual_speed) / synchronous_speed * 100 from synchronous_speed=1775 [nameplate-m1.md, definition], actual_speed=1775 [nameplate-m1.md, measurement] → 0 vs claimed 1.4",
+     "why": "The claim is REJECTED because one of the routes to the slip value disagrees with the others, indicating a potential error in the computation."
+    },
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s2c3r1",
+     "verdict": "REJECTED",
+     "reason": "input power: measurement; converted w → kw (×0.001; the value as written kept on record) in ieee112-test-m1.md: \"No-load test at rated voltage: current 5.40 A, input power 296 W.\" → 0.296 vs claimed 8.1; input power at full load: published_analysis in ieee112-test-m1.md: \"No-load test at rated volta",
+     "why": "The claim of 8100 W disagrees with the measured input power of 296 W from the no-load test."
+    },
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s2c4r1",
+     "verdict": "REJECTED",
+     "reason": "down-wind mismatch: if true, The full-load power factor of 0.83 would imply a specific full-load current from the NEC table. — but nec-430.md: \"Table 430.250 (full-load current, three-phase AC motors, induction type, for sizing conductors and o\"",
+     "why": "The claim of 0.82 is rejected because it does not align with the precise measurements and analyses available."
+    },
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s2c7r1",
+     "verdict": "REJECTED",
+     "reason": "down-wind mismatch: if true, The no-load current is 14.5 A, which implies a higher than typical full-load current and thus higher conductor and breaker sizing requirements. — but nec-430.md: \"Table 430.250 (full-load current, three-phase AC motors, induction type, for sizing conductors and o\"",
+     "why": "The claim is REJECTED because there is only one independent route to confirm the no-load current, which is insufficient for stabilization."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "computed slip value",
+     "next_route": "Measure the actual speed and synchronous speed of the motor to verify the slip calculation.",
+     "closed": false
+    },
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "input power at full load",
+     "next_route": "Find an independent measurement for the full load input power.",
+     "closed": false
+    },
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "full-load power factor",
+     "next_route": "an independent measurement or analysis of the power factor at full load",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s2c2r1f",
+     "verdict": "REJECTED",
+     "reason": "down-wind mismatch: if true, The synchronous speed is 1775 rpm. — but reference-motor.md: \"Synchronous speed in rpm: n_s = 120 f / p, where f is the supply frequency in Hz and p the number of\"",
+     "why": "The full-load slip of 1.42% is supported by the analysis of the solved circuit, but the computation of synchronous speed using the nameplate data is inconsistent."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "synchronous_speed",
+     "next_route": "definition in reference-motor.md: 'Synchronous speed in rpm: n_s = 120 f / p, where f is the supply frequency in Hz and p the number of poles. At 60 Hz: 2 poles 3600 rpm, 4 poles 1800 rpm.'",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s2c3r1f",
+     "verdict": "REJECTED",
+     "reason": "down-wind mismatch: if true, The motor's full-load input power is 13200 W. — but ieee112-test-m1.md: \"Motor M1, 10 HP, 4-pole, 460 V. No-load test at rated voltage: current 5.40 A, input power 296 W. Lo\"; down-wind mismatch: if true, The motor's full-load input power is 13200 W. — but nameplate-m1.m",
+     "why": "The full load current from the circuit analysis agrees with the efficiency and power factor data, but disagrees with the NEC Table 430.250 and the nameplate data."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "Voltage",
+     "next_route": "IEEE 112 test data for motor M1, 10 HP, 4-pole, 460 V.",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s2c4r1f",
+     "verdict": "UNSTABLE",
+     "reason": "the reading as stated: 0 independent route(s) agree (strict 0)",
+     "why": "The claim does not have any independent routes or support, hence it is UNSTABLE"
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "cos(θ) = P / (V * I)",
+     "next_route": "Independent measurement or route that supports or contradicts the claim",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "The rated shaft torque is about 40 N·m.",
+   "history": [
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s2c5r1",
+     "verdict": "UNSTABLE",
+     "reason": "rated shaft torque: 0 independent route(s) agree (strict 0); rated shaft torque: 0 independent route(s) agree (strict 0)",
+     "why": "The claim is unstable due to lack of evidence to verify the rated shaft torque."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "rated shaft torque",
+     "next_route": "Find a document or survey that provides the rated shaft torque value.",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "The locked-rotor current is between 70 A and 79 A.",
+   "history": [
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s2c6r1",
+     "verdict": "REJECTED",
+     "reason": "down-wind mismatch: if true, The locked-rotor current is 77.9 A, which is significantly higher than the full-load current of 12.29 A. — but ieee112-test-m1.md: \"Motor M1, 10 HP, 4-pole, 460 V. No-load test at rated voltage: current 5.40 A, input power 296 W. Lo\"; down-wind mismatch: if true, The loc",
+     "why": "The claim of 77.9 A for the locked-rotor current is rejected because it disagrees with the measurement of 12.29 A from the IEEE 112 test."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "locked-rotor current",
+     "next_route": "Find an independent measurement or calculation that confirms the value of 77.9 A.",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s2c6r1f",
+     "verdict": "REJECTED",
+     "reason": "full-load current: published_analysis in engine-run-m1.md: \"Rated operating point from the solved circuit: efficiency 91.63 %, line current 12.29 A, power factor 0.832, slip 1.42 % (rotor speed 1774 r\" → 12.29 vs claimed 77.9; full-load current: published_analysis in nec-430.md: \"Table 430.250 (full",
+     "why": "The full-load current is 12.29 A, which is significantly lower than the locked-rotor current of 77.9 A, as per the published analysis and IEEE 112 test results."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "full-load current from nameplate",
+     "next_route": "direct measurement of full-load current",
+     "closed": false
+    },
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "full-load current from NEC Table 430.250",
+     "next_route": "direct measurement of full-load current",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-215601-0f75df",
+     "cid": "s2c7r1f",
+     "verdict": "REJECTED",
+     "reason": "no-load current: published_analysis in nec-430.md: \"Table 430.250: 10 HP at 460 V: 14 A.\" → 14 vs claimed 5.4",
+     "why": "The claim of 5.4 A for the no-load current is rejected because it disagrees with the NEC Table 430.250 value of 14 A, which is outside the 2σ range."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-215601-0f75df",
+     "observable": "no-load current from NEC Table 430.250",
+     "next_route": "conduct a no-load test to confirm the current",
+     "closed": false
+    }
+   ]
   }
  ],
  "changes": [
@@ -4046,6 +4501,7 @@
   "20261103-173647-57e048",
   "20261103-183306-91f012",
   "20261103-184512-349745",
-  "20261103-190528-0e1eb8"
+  "20261103-190528-0e1eb8",
+  "20261103-215601-0f75df"
  ]
 }

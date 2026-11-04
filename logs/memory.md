@@ -1,4 +1,5 @@
-# Process memory — 19 run(s): 20261103-171150-2cf9c9, 20261103-172309-f26c46, 20261103-173647-57e048, 20261103-183306-91f012, 20261103-184512-349745, 20261103-190528-0e1eb8
+# Process memory — 20 run(s): 20261103-172309-f26c46, 20261103-173647-57e048, 20261103-183306-91f012, 20261103-184512-349745, 20261103-190528-0e1eb8, 20261103-215601-0f75df
+(run ids begin with the run's date and time, YYYYMMDD-HHMMSS, local clock; this digest is the record, quote it, do not reconstruct it)
 
 ## Changes of mind (verdict differed between runs; old and new reasons kept)
 - The only writing in the Great Pyramid is Khufu's name in red ochre gang marks.
@@ -51,12 +52,11 @@
 - [STABILIZED] (4 run(s): STABILIZED→STABILIZED→STABILIZED→STABILIZED) Hetepheres I (Snefru's queen) buried at Giza, not Dahshur, in a hidden shaft sealed with Khufu's name; sarcophagus sealed, unforced, empty; 
 - [REJECTED] (4 run(s): STABILIZED→STABILIZED→STABILIZED→REJECTED) Prevailing north wind on the north face, lee suction on the south: ~80 Pa across 120 m of 20 cm duct gives a ~2.5 m/s draft through the King
 - [REJECTED] (4 run(s): REJECTED→STABILIZED→REJECTED→REJECTED) The King's Chamber is off-axis ~11 m south, floor at 43.0 m where the horizontal section has exactly half the base area.
+- [REJECTED] (1 run(s): REJECTED→REJECTED→REJECTED→REJECTED) The no-load current is about 5 A.
 - [UNSTABLE] (3 run(s): UNSTABLE→STABILIZED→UNSTABLE) Khufu's name in red ochre gang marks in the five relieving chambers scores highest on effort-per-apparent-value.
 - [REJECTED] (3 run(s): STABILIZED→UNSTABLE→REJECTED) Sun on the south casing adds a solar-chimney term (~8 Pa, ~0.8 m/s), reversing at night.
 - [STABILIZED] (3 run(s): ?→STABILIZED→STABILIZED) Queen's Chamber (the ka's room, misnamed by medieval Arabs): on the axis over the natural knoll, floor at 21.2 m ≈ H/7 (20.9), shafts sealed
 - [STABILIZED] (3 run(s): STABILIZED→REJECTED→STABILIZED) The only writing in the Great Pyramid is Khufu's name in red ochre gang marks.
 - [UNSTABLE] (3 run(s): UNSTABLE→UNSTABLE→UNSTABLE) The Big Void above the Grand Gallery (≥30 m, air by muon contrast): a borehole. Prior: structural, like every other sealed cavity found so f
-- [UNSTABLE] (3 run(s): UNSTABLE→UNSTABLE→UNSTABLE) the pyramid cannot function as a pump, flood retainer, or trap due to the absence of water above it, the dissolution of gypsum mortar, and t
-- [UNSTABLE] (3 run(s): UNSTABLE→UNSTABLE→UNSTABLE) red paint as blood (hematite, quarry-painted)
-- [STABILIZED] (2 run(s): REJECTED→STABILIZED) Khafre
+- [UNSTABLE] (3 run(s): UNSTABLE→UNSTABLE→UNSTABLE) the pyramid cannot function as a pump, flood retainer, or trap
 …(memory digest truncated)
