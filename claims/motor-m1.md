@@ -1,4 +1,5 @@
 # Motor M1: from the given to the unknown
+as of: 2026-11-03
 
 ## Given: the classical, obvious information
 

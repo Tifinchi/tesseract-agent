@@ -168,6 +168,16 @@ python3 trial.py claims/khufu-run.md --runs 3       # the old sampling check, wh
   area, both factors must be in the file, and the factors stay on record. Unit synonyms for square/cubic units.
 - **Card-unit sanity**: a length-named observable whose quantity card declares area or volume units (trial 4:
   "height" wanted square meters, 22 discards) falls back to the reading's own unit; the card is recorded.
+- **Chronological validity (v2.2)**: every evidence file carries the year it speaks from (`edition:` /
+  `published:` / `valid_from:`, else a year in the source line); a code or standard with none is UNDATED and
+  provisional (cannot lock), and the run says so in its first line. Claims are taken "as of" a date (`as of:`
+  line in the document, `--as-of`, else today). A reference dated after the as-of date is discarded as unable
+  to govern; among several editions of one code the latest in force at the as-of date governs and earlier
+  ones are discarded as superseded. Retrieval passages are marked `(dated 1925)` / `(UNDATED)` so the model
+  sees the chronology. The NEC and NEMA excerpts in `evidence-motor/` now say plainly that their edition was
+  not verified — which is the truth of how they were compiled, and the engine treats them accordingly. To
+  make them count, replace each with an excerpt from the edition in force (e.g. `nec-2023.md` with
+  `edition: 2023`; if your jurisdiction has adopted a different edition, that one).
 - **Electrical units** (for the motor trial): N·m / N⋅m / Nm, amps/volts/watts/ohms synonyms, and SI-prefix
   conversion between the same base (8135 W cited where kW is wanted → 8.135 kW, the value as written kept on
   record and the band scaled with it). No conversion across bases: 12.4 A is never "compatible" with watts.

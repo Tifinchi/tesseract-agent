@@ -124,6 +124,12 @@ UNIT_SYN = {"nm": "n·m", "n-m": "n·m", "newton-metres": "n·m", "newton-meters
 
 STOP = {"to", "of", "and", "or", "per", "at", "by", "the", "for", "with", "is", "palms", "cubit", "from", "vs"}
 
+def clean_fn(x):
+    """A cited filename as the model may write it: '[cole-1925.md]', 'cole-1925.md (dated 1925)', 'cole-1925.md, 1925'."""
+    x = str(x or "").strip("[] ")
+    m = re.search(r"[\w\-]+\.md", x)
+    return m.group(0) if m else x.split(",")[0].split(" ")[0]
+
 def unit_of(s):
     """The unit token written after the last number (so '43.0 ± 0.1 m' -> m), normalized; '' if none."""
     if not isinstance(s, str):
@@ -173,6 +179,7 @@ _UNIT_DIM = {"m": {"L": 1}, "in": {"L": 1}, "ft": {"L": 1}, "km": {"L": 1}, "cm"
              "n·m": {"M": 1, "L": 2, "T": -2}, "ka": {"I": 1}, "kv": {"M": 1, "L": 2, "T": -3, "I": -1}, "khz": {"T": -1}, "mw": {"M": 1, "L": 2, "T": -3},
              "times": {}, "poles": {}, "x": {}}
 ROLES = {"amount", "flow", "momentum", "effort", "other"}
+AS_OF_YEAR = None   # set by run(): the year the claims are taken as of; references dated after it cannot govern them
 
 def dimension_of(units):
     """'m/s' -> {L:1,T:-1}; 'kg·m/s²' -> {M:1,L:1,T:-2}. Unknown tokens -> None (cannot check)."""
@@ -248,8 +255,8 @@ class Evidence:
             text = open(p, encoding="utf-8", errors="replace").read()
             group, source, derives, status = os.path.splitext(fn)[0], fn, None, ""
             meta = {}
-            for line in text.splitlines()[:10]:
-                for key in ("url", "retrieved", "published", "location"):
+            for line in text.splitlines()[:12]:
+                for key in ("url", "retrieved", "published", "location", "edition", "valid_from", "superseded_by"):
                     if line.lower().startswith(key + ":"):
                         meta[key] = line.split(":", 1)[1].strip()
                 if line.lower().startswith("status:"):
@@ -265,6 +272,26 @@ class Evidence:
                 self.derives[group] = derives
             paras = [q.strip() for q in re.split(r"\n\s*\n", text) if q.strip()]
             self.docs.append((fn, group, source, text, paras))
+            # chronology: the year the material speaks from. edition: or published: if stated; else a year in the
+            # source line (Petrie 1883, Cole 1925); else UNDATED — and an undated reference cannot lock anything,
+            # because a table or code with no edition has no known period of validity.
+            year, declared_unknown = None, False
+            for key in ("edition", "published", "valid_from"):
+                val = (meta.get(key, "") or "").strip().lower()
+                if val.startswith(("not stated", "unknown", "unverified", "not verified", "none")):
+                    declared_unknown = True; continue           # 'edition: not stated — … 2017, 2020 …' names years but states none
+                m = re.search(r"\b(1[5-9]\d{2}|20\d{2})\b", val)
+                if m: year = int(m.group(1)); break
+            if year is None and not declared_unknown:
+                m = re.search(r"\b(1[5-9]\d{2}|20\d{2})\b", source)
+                if m: year = int(m.group(1)); meta["dated_by"] = "a year in the source line"
+            meta["year"] = year
+            src_l = " " + (source + " " + fn).lower() + " "
+            is_code = any(w in src_l for w in (" code", " nec", "nfpa", "nema", " iec ", " iec,", "ieee", " iso ", "astm", " ul ")) and "textbook" not in src_l
+            meta["is_code"] = is_code
+            if year is None and (is_code or declared_unknown):
+                meta["undated_reference"] = True
+                self.provisional = getattr(self, "provisional", set()); self.provisional.add(fn)
             self.meta = getattr(self, "meta", {}); self.meta[fn] = meta | {"source": source, "status": status}
             self.provisional = getattr(self, "provisional", set())
             if any(w in status for w in ("compiled", "from memory", "unverified", "paraphrase", "tertiary", "web")):
@@ -281,6 +308,10 @@ class Evidence:
         """Where this datum lives: file, source, url, when retrieved/published, status. Printed under every summary."""
         m = self.meta.get(fn, {})
         bits = [f"{fn}: {m.get('source', fn)}"]
+        if m.get("edition"): bits.append(f"edition {m['edition']}")
+        elif m.get("year"): bits.append(f"dated {m['year']}" + (" (from the source line)" if m.get("dated_by") else ""))
+        if m.get("undated_reference"): bits.append("EDITION NOT STATED — period of validity unknown; provisional (cannot lock)")
+        if m.get("superseded_by"): bits.append(f"superseded by {m['superseded_by']}")
         if m.get("url"): bits.append(f"url {m['url']}")
         if m.get("location"): bits.append(f"location {m['location']}")
         if m.get("published"): bits.append(f"published {m['published']}")
@@ -308,7 +339,8 @@ class Evidence:
         for s, fn, p in scored[:k]:
             if s == 0:
                 break
-            out.append(f"[{fn}] {p}")
+            y = (self.meta.get(fn) or {}).get("year")
+            out.append(f"[{fn}] ({'dated ' + str(y) if y else 'UNDATED: edition not stated'}) {p}")
             n += len(p)
             if n > max_chars:
                 break
@@ -425,7 +457,9 @@ SYSTEM = (
     "You are a reasoning engine. You reason ONLY by the method below and answer in strict JSON. "
     "You never do arithmetic: you name relations and cite values; the script computes. "
     "A value is evidence ONLY if it appears in an evidence file you cite by its [filename]; a number that "
-    "appears only in the claim is a prediction, never evidence. Where a list has no entries, return [].\n\n"
+    "appears only in the claim is a prediction, never evidence. Every evidence passage is marked with its date "
+    "(or UNDATED): a code, table or standard speaks only for its edition; an undated one has an unknown period of "
+    "validity, say so when you cite it; never cite a later edition for an earlier claim. Where a list has no entries, return [].\n\n"
     + METHOD
 )
 
@@ -673,7 +707,7 @@ def gather_values(model, ev, meaning, units, searches, log, run_id, cid, tag, ex
     got = ask(model, SYSTEM, P_VALUES.format(meaning=meaning, units=units or "", ctx=ctx, role=role or "other", field=field or "unspecified"))
     ok, bad = [], []
     for v in got.get("values", []) or []:
-        fn, val = (str(v.get("file") or "")).strip("[] "), v.get("value")
+        fn, val = clean_fn(v.get("file")), v.get("value")
         num = parse_number(val)
         by = re.match(r"\s*(-?\d+(?:\.\d+)?)\s*([a-zA-Z]*)\s*(?:by|×|x)\s*(-?\d+(?:\.\d+)?)\s*([a-zA-Z]*)\s*$", str(val or ""))
         if by and expected_unit and ("²" in expected_unit or "square" in expected_unit.lower() or expected_unit.lower() in ("m2", "ft2", "in2")):
@@ -689,6 +723,9 @@ def gather_values(model, ev, meaning, units, searches, log, run_id, cid, tag, ex
             bad.append({"what": tag, "why": f"file '{fn}' not in evidence", "raw": v}); continue
         if not v.get("reduced_from") and not ev.contains_number(val, fn):
             bad.append({"what": tag, "why": f"{val} not found in {fn}", "raw": v}); continue
+        fy = (ev.meta.get(fn) or {}).get("year")
+        if AS_OF_YEAR and fy and fy > AS_OF_YEAR:
+            bad.append({"what": tag, "why": f"chronology: {fn} is dated {fy}, after the date the claims are taken as of ({AS_OF_YEAR}); a later edition cannot govern an earlier claim", "raw": v}); continue
         if expected_unit is not None and not units_compatible(expected_unit, str(val)):
             e_u = UNIT_SYN.get(expected_unit.lower().strip(), expected_unit.lower().strip())
             conv, note = convert_unit(num, unit_of(str(val)), e_u)
@@ -707,6 +744,25 @@ def gather_values(model, ev, meaning, units, searches, log, run_id, cid, tag, ex
         ok.append({"value": num, "band": b, "band_kind": bk, "as_written": v.get("as_written_before_conversion") or val, "file": fn, "group": ev.group_of(fn),
                    "provisional": ev.is_provisional(fn), "role": vrole,
                    "process": v.get("process") or "reported", "quote": (v.get("quote") or "")[:200]})
+    # the legal version: when more than one edition of a code or standard is on file (same root group, different
+    # years), the edition in force as of the claim's date governs — the latest dated at or before AS_OF_YEAR.
+    # Earlier editions are superseded (recorded, not counted); later ones were already excluded above.
+    by_root = {}
+    for d in ok:
+        mt = ev.meta.get(d["file"]) or {}
+        if mt.get("is_code") and mt.get("year"):
+            by_root.setdefault(ev.root_of(d["group"]), set()).add(mt["year"])
+    governing = {root: max(y for y in ys if not AS_OF_YEAR or y <= AS_OF_YEAR) for root, ys in by_root.items() if any(not AS_OF_YEAR or y <= AS_OF_YEAR for y in ys)}
+    kept = []
+    for d in ok:
+        mt = ev.meta.get(d["file"]) or {}
+        root = ev.root_of(d["group"])
+        if mt.get("is_code") and mt.get("year") and root in governing and mt["year"] < governing[root]:
+            bad.append({"what": tag, "why": f"superseded: {d['file']} is the {mt['year']} edition; the {governing[root]} edition is the one in force as of {AS_OF_YEAR} and governs", "raw": d["as_written"]}); continue
+        if mt.get("is_code") and mt.get("year") and root in governing:
+            d["process"] = (d.get("process") or "reported") + f"; {mt['year']} edition, in force as of {AS_OF_YEAR}"
+        kept.append(d)
+    ok = kept
     log.write(run=run_id, claim=cid, pass_="VALUE_STATE", quantity=tag, input=ctx, model_proposal=got, verified=ok, discarded=bad)
     return ok, bad
 
@@ -935,7 +991,7 @@ def find_text_routes(model, ev, cid, reading, log, run_id):
     got = ask(model, SYSTEM, P_STATEMENTS.format(reading=reading, ctx=ctx)) if ctx else {"statements": []}
     routes, discarded = [], []
     for st in got.get("statements", []) or []:
-        fn, quote = (str(st.get("file") or "")).strip("[] "), st.get("quote") or ""
+        fn, quote = clean_fn(st.get("file")), st.get("quote") or ""
         if ev.group_of(fn) is None:
             discarded.append({"what": "statement", "why": f"file '{fn}' not in evidence", "raw": st}); continue
         if not ev.contains_quote(quote, fn):
@@ -973,7 +1029,7 @@ def calibrate(model, ev, cid, reading, log, run_id):
         term, ref, rep = str(c["term"]), c.get("reference") or {}, c.get("replacement")
         status = "no reference in evidence"
         if ref and ref.get("file") and ref.get("quote"):
-            fn = str(ref["file"]).strip("[] ")
+            fn = clean_fn(ref["file"])
             if ev.contains_quote(ref["quote"], fn):
                 if rep and term.lower() in cal.lower():
                     i = cal.lower().find(term.lower()); cal = cal[:i] + str(rep) + cal[i + len(term):]
@@ -1009,7 +1065,7 @@ def check_neighbours(model, ev, cid, reading, anchor, log, run_id):
         got = ask(model, SYSTEM, P_NEIGHBOUR.format(reading=reading, corner=anchor.get("corner"), cell=anchor.get("cell"),
                                                    held=anchor.get("held_axis"), neighbour=label, units=units_ or "unknown", ctx=ctx)) if ctx else {}
         rep = got.get("reported") or {}
-        fn, rv = (str(rep.get("file") or "")).strip("[] "), rep.get("value_or_quote")
+        fn, rv = clean_fn(rep.get("file")), rep.get("value_or_quote")
         status, note = "unchecked", got.get("reason", "")
         if rv and ev.group_of(fn) is not None:
             iv, nv = parse_number(got.get("implied")), parse_number(rv)
@@ -1040,7 +1096,7 @@ def check_downwind(model, ev, cid, reading, log, run_id):
     out = []
     for c in (got.get("consequences") or [])[:3]:
         seen = c.get("seen") or {}
-        fn, q = (str(seen.get("file") or "")).strip("[] "), seen.get("quote") or ""
+        fn, q = clean_fn(seen.get("file")), seen.get("quote") or ""
         verified = ev.group_of(fn) is not None and (ev.contains_quote(q, fn) or ev.contains_number(q, fn))
         cw = lambda t: set(w for w in WORD.findall((t or "").lower()) if len(w) >= 5)
         relevant = len(cw(c.get("if_true")) & cw(q)) >= 2 or len(cw(reading) & cw(q)) >= 3
@@ -1131,7 +1187,7 @@ def synthesis_by_rule(reports, judge, ev, neighbours=None, downwind=None, readin
         c = dict(judge.get(k)) if isinstance(judge.get(k), dict) else {}
         v = c.get("verdict", "NO_DATA")
         if k == "alternative":
-            fn = (str(c.get("file") or "")).strip("[] ")
+            fn = clean_fn(c.get("file"))
             if v == "REJECT" and not ev.contains_quote(c.get("quote") or "", fn):
                 c["recorded_not_counted"] = "REJECT without a verbatim quote from an evidence file"; v = "NOT_REJECT"
             elif v == "REJECT" and not bears_on(c.get("quote"), reading, c.get("alternative")):
@@ -1139,7 +1195,7 @@ def synthesis_by_rule(reports, judge, ev, neighbours=None, downwind=None, readin
             elif v == "NO_DATA":
                 c["note"] = "no competing explanation found in evidence"; v = "NOT_REJECT"
         elif k == "constraint" and v == "REJECT":
-            fn = (str(c.get("file") or "")).strip("[] ")
+            fn = clean_fn(c.get("file"))
             if not ev.contains_quote(c.get("quote") or "", fn):
                 c["downgraded"] = "REJECT without a verbatim quote from an evidence file"; v = "NO_DATA"
             elif not bears_on(c.get("quote"), reading, c.get("transformation")):
@@ -1239,9 +1295,16 @@ class Ledger:
 
 # ----------------------------------------------------------------------------- run
 
-def run(path, model, question, max_claims, out_dir, evidence_dir, research_on=False):
+def run(path, model, question, max_claims, out_dir, evidence_dir, research_on=False, as_of=None):
+    global AS_OF_YEAR
     doc = open(path, encoding="utf-8").read()
+    # the date the claims are taken as of: 'as of: YYYY-MM-DD' in the document's first lines, else --as-of, else today
+    m = re.search(r"(?im)^as of:\s*(\d{4})(?:-\d{2}-\d{2})?", doc[:600])
+    AS_OF_YEAR = int(m.group(1)) if m else (int(str(as_of)[:4]) if as_of else datetime.date.today().year)
     ev = Evidence(evidence_dir)
+    undated = [fn for fn, mt in ev.meta.items() if mt.get("undated_reference")]
+    if undated:
+        print(f"chronology: claims taken as of {AS_OF_YEAR}; UNDATED reference material (edition not stated, provisional): {', '.join(undated)}")
     ledger = Ledger(os.path.join(out_dir, "locked.json"))
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     run_id = f"{stamp}-{uuid.uuid4().hex[:6]}"
@@ -1417,7 +1480,9 @@ def render_summary(run_id, path, question, model, ev, results, elapsed):
     for c, rs in results:
         for _, _, s, *_ in rs:
             counts[s] = counts.get(s, 0) + 1
-    L = [f"# Run {run_id}", f"run clock: {datetime.datetime.now().astimezone().strftime('%Y-%m-%d %H:%M %Z')}",
+    undated = [fn for fn, mt in ev.meta.items() if mt.get("undated_reference")]
+    L = [f"# Run {run_id}", f"run clock: {datetime.datetime.now().astimezone().strftime('%Y-%m-%d %H:%M %Z')} · claims taken as of {AS_OF_YEAR}"
+         + (f" · UNDATED reference material (edition not stated; provisional, cannot lock): {', '.join(undated)}" if undated else ""),
          f"claims: {os.path.basename(path)} · evidence groups: {', '.join(ev.groups) or 'NONE'} · "
          f"model: {model} · agreement: 2σ of combined bands · question: {question or '(none)'} · "
          f"{len(results)} claims, {sum(len(rs) for _, rs in results)} readings · {elapsed/60:.1f} min",
@@ -1521,10 +1586,11 @@ if __name__ == "__main__":
     ap.add_argument("--max-claims", type=int, default=10)
     ap.add_argument("--evidence", default=os.path.join(HERE, "evidence"))
     ap.add_argument("--out", default=os.path.join(HERE, "logs"))
+    ap.add_argument("--as-of", default=None, help="the date the claims are taken as of (YYYY-MM-DD); references dated after it cannot govern them; default: 'as of:' line in the document, else today")
     ap.add_argument("--research", action="store_true", help="search the web for each numeric observable and add what is found to evidence/ (with url and retrieval time) before the routes are sought")
     a = ap.parse_args()
     try:
         requests.get(f"{OLLAMA}/api/tags", timeout=5)
     except Exception:
         sys.exit(f"Ollama not reachable at {OLLAMA}. Start it: `ollama serve` (and `ollama pull {a.model}`).")
-    run(a.source, a.model, a.question, a.max_claims, a.out, a.evidence, research_on=a.research)
+    run(a.source, a.model, a.question, a.max_claims, a.out, a.evidence, research_on=a.research, as_of=a.as_of)

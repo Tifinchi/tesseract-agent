@@ -174,6 +174,15 @@ Routes agreeing is necessary, not sufficient. Two failures look like agreement:
   If anything does, the lock is REOPENED, the conflict recorded with its source and time, and the full process
   runs again — because new data near a locked corner is exactly where a confidently-wrong lock would show.
   A lock is a flag with a date, never a fact beyond checking.
+- **Chronological validity of reference material.** A code, table or standard speaks only for its edition.
+  Every evidence file carries the year it speaks from (its edition or publication; failing that, the year in
+  its source line); a code or standard with no edition stated is UNDATED, its period of validity unknown,
+  and it is provisional: it can inform, it cannot lock. The claims are taken as of a date (the document's
+  "as of:" line, else the run's clock). A reference dated after that date cannot govern the claim. When more
+  than one edition of one code is on file, the legal version governs — the latest edition in force at the
+  as-of date — and earlier editions are superseded: recorded, not counted. (Which edition a jurisdiction
+  has adopted is itself a datum: when it is known, it is the edition in force, whatever the latest printed
+  one is.)
 - **The engine's own memory is a record, not a recollection.** When asked about its history it quotes the
   log (run id, verdict, reason); it never reconstructs a sequence from memory of the sequence.
 
