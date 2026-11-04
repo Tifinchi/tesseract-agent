@@ -10,6 +10,9 @@
 Type a line and press Enter; `/save` writes the transcript; `/quit` or an empty line ends.
 `/history <words of a claim>` prints that claim's EXACT verdict history from the logs (the record, not the model's
 recollection) and hands it to the model; `/where <file.md>` prints where a datum lives (source, url, retrieved).
+`/search <query>`, `/web <url>`, `/wayback <url> [YYYYMMDD]` fetch pages into evidence/ (url, retrieval time,
+archive date) and hand them to the model for this conversation. The model never browses; the script fetches,
+stores, and dates every page, and the model may only cite what is on file.
 Transcripts are saved to logs/chat-<stamp>.md. Nothing said here is evidence of anything; it is a conversation.
 """
 import argparse, datetime, os, sys
@@ -91,6 +94,26 @@ def main():
             print(f"\n[record]\n{rec}")
             messages.append({"role": "system", "content": "EXACT RECORD (from the logs; quote it, do not reconstruct it):\n" + rec})
             lines += [f"\n**you:** {q}\n", f"**record:**\n```\n{rec}\n```\n"]; continue
+        if q.startswith(("/search ", "/web ", "/wayback ")):
+            sys.path.insert(0, HERE); import research
+            evd = os.path.join(HERE, "evidence")
+            try:
+                if q.startswith("/search "):
+                    added = research.search_and_store(q[8:].strip(), evd, max_pages=3)
+                elif q.startswith("/web "):
+                    fn = research.store(q[5:].strip(), evd); added = [fn] if fn else []
+                else:
+                    parts = q[9:].split(); fn, note = research.wayback_store(parts[0], evd, parts[1] if len(parts) > 1 else None)
+                    print(f"[wayback] {note}"); added = [fn] if fn else []
+            except Exception as ex:
+                print(f"[research failed: {str(ex)[:160]}]"); continue
+            if not added:
+                print("[nothing stored]"); continue
+            for fn in added:
+                t = open(os.path.join(evd, fn), encoding="utf-8").read()
+                messages.append({"role": "system", "content": f"EVIDENCE FETCHED NOW [{fn}] (cite it verbatim by this filename; its header gives url and time):\n{t[:6000]}"})
+                lines += [f"\n**you:** {q}\n", f"**fetched:** {fn} — {t.splitlines()[0][:120]}\n"]
+            print(f"[stored and loaded: {', '.join(added)}]"); continue
         if q.startswith("/where "):
             sys.path.insert(0, HERE); import agent as eng
             ev = eng.Evidence(os.path.join(HERE, "evidence")); fn = q[7:].strip()

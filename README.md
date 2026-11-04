@@ -196,6 +196,12 @@ python3 trial.py claims/khufu-run.md --runs 3       # the old sampling check, wh
 - **Electrical units** (for the motor trial): N·m / N⋅m / Nm, amps/volts/watts/ohms synonyms, and SI-prefix
   conversion between the same base (8135 W cited where kW is wanted → 8.135 kW, the value as written kept on
   record and the band scaled with it). No conversion across bases: 12.4 A is never "compatible" with watts.
+- **Internet access, by the script.** The model never browses; `research.py` fetches, dates and stores, and the
+  model may cite only what is on file. `--research` on a run; `python3 research.py "query"`; `--url`; and the
+  **Wayback Machine**: `--snapshots <url>` lists what the archive holds, `--wayback <url> --at YYYYMMDD` stores the
+  snapshot nearest that date as evidence with `archived:` (the date the page speaks for) beside `retrieved:`;
+  repeat `--at` to store two dates of one page for a comparison across time (same group, so never counted as
+  independent — two dated readings of one source). In chat.py: `/search`, `/web`, `/wayback`.
 - **Chrome**: research.py falls back to headless Chrome on the box (`--dump-dom`) for pages a plain GET cannot
   read (scripts, consent walls, bot checks).
 - **From the phone**: remote in rather than a bot. A terminal on the box (SSH over Tailscale, or any SSH app on

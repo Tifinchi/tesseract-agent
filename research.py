@@ -4,6 +4,8 @@
     python3 research.py "Great Pyramid base length Cole 1925"            # search, fetch the top pages, store them
     python3 research.py --url https://en.wikipedia.org/wiki/Great_Pyramid_of_Giza
     python3 research.py --echo                                            # re-run the echo-chamber check on evidence/
+    python3 research.py --snapshots https://www.nfpa.org/nec              # what the Wayback Machine holds for a page
+    python3 research.py --wayback https://www.nfpa.org/nec --at 20200101 --at 20240101   # two dated snapshots, for comparison
 
 What goes in evidence/web-<host>-<slug>.md:
     source: <page title>
@@ -200,6 +202,43 @@ def echo_check(folder, min_shared=6):
             found.append((os.path.basename(copy["path"]), os.path.basename(orig["path"]), shared))
     return found
 
+def wayback_snapshots(url, limit=12):
+    """Snapshots the Wayback Machine holds for a url (CDX API): [(timestamp YYYYMMDDhhmmss, archive_url)], oldest first."""
+    r = requests.get("https://web.archive.org/cdx/search/cdx", params={"url": url, "output": "json", "fl": "timestamp,original,statuscode",
+                                                                       "filter": "statuscode:200", "collapse": "timestamp:6", "limit": limit}, headers=UA, timeout=45)
+    r.raise_for_status()
+    rows = r.json()[1:] if r.text.strip() else []
+    return [(row[0], f"https://web.archive.org/web/{row[0]}/{row[1]}") for row in rows]
+
+def wayback_store(url, folder, at=None, max_chars=40000):
+    """Store the Wayback Machine's snapshot of url nearest to `at` (YYYYMMDD; default: the latest) as evidence.
+       The file's chronological reference point is `archived:` — the time the page was captured, which is what the
+       snapshot speaks for; `retrieved:` is when we fetched it. Two snapshots of one page are two dated readings of
+       one source (same group, so they never count as independent), which is what a comparison across time needs."""
+    r = requests.get("https://archive.org/wayback/available", params={"url": url, "timestamp": at or ""}, headers=UA, timeout=45)
+    r.raise_for_status()
+    snap = (r.json().get("archived_snapshots") or {}).get("closest") or {}
+    if not snap.get("url"):
+        return None, "no snapshot held by the Wayback Machine for that url" + (f" near {at}" if at else "")
+    ts, aurl = snap.get("timestamp", ""), snap["url"].replace("http://", "https://", 1)
+    r2 = requests.get(aurl, headers=UA, timeout=60)
+    r2.raise_for_status()
+    page = r2.text
+    page = re.sub(r"(?is)<!-- BEGIN WAYBACK TOOLBAR INSERT -->.*?<!-- END WAYBACK TOOLBAR INSERT -->", " ", page)
+    text = to_text(page)
+    if len(WORD.findall(text)) < 60:
+        return None, "snapshot held but unreadable as text"
+    title = title_of(page, url)
+    when = f"{ts[:4]}-{ts[4:6]}-{ts[6:8]} {ts[8:10]}:{ts[10:12]} UTC" if len(ts) >= 12 else ts
+    fn = f"web-{slug(domain(url))}-{slug(title)}-{ts[:8]}.md"
+    body = (f"source: {title} — Wayback Machine snapshot of {url}\nurl: {aurl}\noriginal_url: {url}\narchived: {when}\n"
+            f"retrieved: {now()}\npublished: {published_date(page)}\ngroup: web:{domain(url)}\n"
+            f"status: web, archived snapshot (the page as it was on {when[:10]}); secondary unless the page is the primary record\n\n"
+            + text[:max_chars] + ("\n\n[truncated by research.py]" if len(text) > max_chars else "") + "\n")
+    os.makedirs(folder, exist_ok=True)
+    open(os.path.join(folder, fn), "w", encoding="utf-8").write(body)
+    return fn, f"snapshot of {when}"
+
 def search_and_store(query, folder, max_pages=3, n_results=6):
     """Search, fetch the first max_pages readable results into evidence/, run the echo check. Returns the new filenames."""
     added = []
@@ -222,11 +261,21 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("query", nargs="?", default="")
     ap.add_argument("--url", default=None)
+    ap.add_argument("--wayback", default=None, help="store the Wayback Machine snapshot of this url (use --at YYYYMMDD for a date; repeat --at to compare)")
+    ap.add_argument("--at", action="append", default=[], help="snapshot date YYYYMMDD for --wayback (repeatable)")
+    ap.add_argument("--snapshots", default=None, help="list the snapshots the Wayback Machine holds for this url")
     ap.add_argument("--echo", action="store_true")
     ap.add_argument("--pages", type=int, default=3)
     ap.add_argument("--evidence", default=os.path.join(HERE, "evidence"))
     a = ap.parse_args()
-    if a.url:
+    if a.snapshots:
+        for ts, u in wayback_snapshots(a.snapshots):
+            print(ts[:8], u)
+    elif a.wayback:
+        for at in (a.at or [None]):
+            fn, note = wayback_store(a.wayback, a.evidence, at)
+            print(f"{fn or 'not stored'}: {note}")
+    elif a.url:
         print(store(a.url, a.evidence) or "already stored / unreadable")
     elif a.echo:
         for c, o, s in echo_check(a.evidence):
