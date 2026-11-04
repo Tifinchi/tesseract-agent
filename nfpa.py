@@ -21,6 +21,14 @@ Use:
         → navigates by the words on screen: clicks each text in turn in the viewer (the chapter, then the
           article, then the table), scrolls the content so lazy sections render, then saves. If a step is not
           found it saves a screenshot in evidence-private/ so you can see what it saw.
+    python3 nfpa.py <url> --path "Chapter 4" "430 Motors" --ocr
+        → the viewer draws the code pages as IMAGES, so there is no text to save: --ocr collects every page
+          image in the article (the <img>/<canvas> elements, at their own resolution; screenshots as fallback),
+          saves them to evidence-private/nfpa-70-2026-pages/, runs Tesseract over each, and writes the text as
+          the evidence file with the image filename marked beside each page. OCR can misread a digit, so the
+          file's status says "OCR, unverified" (provisional: it can stabilize, not lock) until you check the
+          rows you rely on against the page image and change the status line to say so.
+          Needs: sudo apt install -y tesseract-ocr && pip3 install --break-system-packages pytesseract pillow
     python3 nfpa.py <url> --find "430.250"
         → after opening, types the term into the viewer's search box if one is found, then saves.
 
@@ -40,12 +48,14 @@ def now():
 def slug(s):
     return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")[:48] or "page"
 
+STATUS_NOTE = "text as shown by the NFPA LiNK viewer on the retrieval date; personal-use excerpt, not for redistribution"
+
 def save(url, title, text, edition, find=None):
     os.makedirs(OUT, exist_ok=True)
     fn = f"nfpa-70-{edition}-{slug(find or title)}.md"
     body = (f"source: NFPA 70, National Electrical Code, {edition} edition — NFPA LiNK free access ({title})\n"
             f"edition: {edition}\nurl: {url}\nretrieved: {now()}\ngroup: nec\nwatch: NFPA 70 National Electrical Code current edition\nsafety: yes\n"
-            f"status: text as shown by the NFPA LiNK viewer on the retrieval date; personal-use excerpt, not for redistribution\n\n"
+            f"status: {STATUS_NOTE}; personal-use excerpt, not for redistribution\n\n"
             + text.strip() + "\n")
     p = os.path.join(OUT, fn)
     open(p, "w", encoding="utf-8").write(body)
@@ -58,6 +68,7 @@ def main():
     ap.add_argument("--find", default=None, help="a term to type into the viewer's search box after opening (e.g. 430.250)")
     ap.add_argument("--path", nargs="+", default=None, help="texts to click in order, e.g. --path 'Chapter 4' '430' 'Table 430.250'")
     ap.add_argument("--show", action="store_true", help="run with a visible Chrome window (watch it navigate)")
+    ap.add_argument("--ocr", action="store_true", help="the pages are images: save them and OCR them (tesseract)")
     ap.add_argument("--edition", default=None, help="edition year (default: the last number in the url)")
     ap.add_argument("--wait", type=int, default=20, help="seconds to let the viewer load")
     a = ap.parse_args()
@@ -149,8 +160,60 @@ def main():
         title = page.title() or "NFPA LiNK"
         text = page.evaluate("() => document.body.innerText") or ""
         url_now = page.url
+        images = []
+        if a.ocr:
+            import base64
+            pages_dir = os.path.join(OUT, f"nfpa-70-{edition}-pages"); os.makedirs(pages_dir, exist_ok=True)
+            # 1. image elements at their own resolution (data: or http src), 2. canvases, 3. screenshots of the content
+            srcs = page.evaluate("""() => [...document.querySelectorAll('img')].map(i => ({src: i.currentSrc || i.src, w: i.naturalWidth, h: i.naturalHeight}))
+                                           .filter(i => i.w >= 400 && i.h >= 400)""")
+            n = 0
+            for it in srcs:
+                src = it["src"]
+                try:
+                    if src.startswith("data:"):
+                        data = base64.b64decode(src.split(",", 1)[1])
+                    else:
+                        resp = page.request.get(src); data = resp.body()
+                    n += 1; fn = os.path.join(pages_dir, f"page-{n:03d}.png"); open(fn, "wb").write(data); images.append(fn)
+                except Exception:
+                    continue
+            if not images:
+                canv = page.evaluate("""() => [...document.querySelectorAll('canvas')].filter(c => c.width >= 400).map(c => { try { return c.toDataURL('image/png') } catch (e) { return null } }).filter(Boolean)""")
+                for d in canv:
+                    n += 1; fn = os.path.join(pages_dir, f"page-{n:03d}.png"); open(fn, "wb").write(base64.b64decode(d.split(",", 1)[1])); images.append(fn)
+            if not images:
+                # screenshots: scroll the content from the top, one viewport at a time
+                page.evaluate("() => window.scrollTo(0, 0)"); time.sleep(1)
+                last = -1
+                for i in range(300):
+                    n += 1; fn = os.path.join(pages_dir, f"shot-{n:03d}.png"); page.screenshot(path=fn, full_page=False); images.append(fn)
+                    y = page.evaluate("() => window.scrollY"); page.mouse.wheel(0, 900); time.sleep(0.8)
+                    if page.evaluate("() => window.scrollY") == y:
+                        break
+            print(f"  {len(images)} page image(s) saved in {pages_dir}")
         browser.close()
+    if a.ocr and images:
+        try:
+            import pytesseract
+            from PIL import Image
+        except ImportError:
+            sys.exit("OCR needs: sudo apt install -y tesseract-ocr && pip3 install --break-system-packages pytesseract pillow")
+        parts = []
+        for fn in images:
+            try:
+                t = pytesseract.image_to_string(Image.open(fn), config="--psm 6")
+            except Exception as ex:
+                t = f"(OCR failed: {ex})"
+            parts.append(f"[page image {os.path.basename(fn)}]\n{t.strip()}")
+        text = "\n\n".join(parts)
+        global STATUS_NOTE
+        STATUS_NOTE = ("OCR of the viewer's page images (Tesseract), UNVERIFIED transcription — a digit can be misread; the page images are "
+                       f"in {os.path.basename(os.path.dirname(images[0]))}/; check each row you rely on against its image, then edit this line to "
+                       "'OCR, verified by hand against the page images on <date>' so the engine may count it fully")
     words = len(re.findall(r"[A-Za-z0-9]+", text))
+    if (words < 80 or text.strip().lower() in ("loading...", "loading…")) and not (a.ocr and images):
+        print("hint: if the viewer draws the pages as images, run again with --ocr")
     if words < 80 or text.strip().lower() in ("loading...", "loading…"):
         sys.exit(f"the viewer did not show readable text ({words} words). Try --manual, a longer --wait, or navigate to the section first.")
     if a.path and not re.search(re.escape(a.path[-1].split()[-1]), text):
