@@ -17,6 +17,10 @@ Use:
         → opens a visible Chrome window; YOU sign in and navigate to the section you want (e.g. Table 430.250),
           then press Enter in this terminal and the script saves what is on screen. Use this if the automatic
           sign-in does not find the form (the site's layout is not known to this script).
+    python3 nfpa.py <url> --path "Chapter 4" "430" "Table 430.250"
+        → navigates by the words on screen: clicks each text in turn in the viewer (the chapter, then the
+          article, then the table), scrolls the content so lazy sections render, then saves. If a step is not
+          found it saves a screenshot in evidence-private/ so you can see what it saw.
     python3 nfpa.py <url> --find "430.250"
         → after opening, types the term into the viewer's search box if one is found, then saves.
 
@@ -52,6 +56,8 @@ def main():
     ap.add_argument("url")
     ap.add_argument("--manual", action="store_true", help="you sign in and navigate; the script saves what is on screen when you press Enter")
     ap.add_argument("--find", default=None, help="a term to type into the viewer's search box after opening (e.g. 430.250)")
+    ap.add_argument("--path", nargs="+", default=None, help="texts to click in order, e.g. --path 'Chapter 4' '430' 'Table 430.250'")
+    ap.add_argument("--show", action="store_true", help="run with a visible Chrome window (watch it navigate)")
     ap.add_argument("--edition", default=None, help="edition year (default: the last number in the url)")
     ap.add_argument("--wait", type=int, default=20, help="seconds to let the viewer load")
     a = ap.parse_args()
@@ -64,7 +70,7 @@ def main():
     if not a.manual and not (user and pw):
         sys.exit("set NFPA_USER and NFPA_PASS in the environment, or use --manual")
     with sync_playwright() as p:
-        browser = p.chromium.launch(channel="chrome", headless=not a.manual)
+        browser = p.chromium.launch(channel="chrome", headless=not (a.manual or a.show))
         ctx = browser.new_context(viewport={"width": 1400, "height": 1000})
         page = ctx.new_page()
         page.goto(a.url, wait_until="domcontentloaded", timeout=90000)
@@ -96,6 +102,28 @@ def main():
             if "free-access" in a.url and page.url != a.url:
                 page.goto(a.url, wait_until="domcontentloaded", timeout=90000)
             time.sleep(a.wait)
+            if a.path:
+                os.makedirs(OUT, exist_ok=True)
+                for step in a.path:
+                    clicked = False
+                    for loc in (page.get_by_role("link", name=re.compile(re.escape(step), re.I)),
+                                page.get_by_role("button", name=re.compile(re.escape(step), re.I)),
+                                page.get_by_text(re.compile(re.escape(step), re.I))):
+                        try:
+                            if loc.count():
+                                loc.first.scroll_into_view_if_needed(timeout=5000); loc.first.click(timeout=8000); clicked = True
+                                print(f"  clicked '{step}'"); time.sleep(6); break
+                        except Exception:
+                            continue
+                    if not clicked:
+                        shot = os.path.join(OUT, f"nfpa-lost-at-{slug(step)}.png")
+                        page.screenshot(path=shot, full_page=False)
+                        print(f"  could not find '{step}' on the page; screenshot saved: {shot} — send it and the step can be named by what is there")
+                        break
+                # scroll the content so sections that render on demand are loaded
+                for _ in range(12):
+                    page.mouse.wheel(0, 1600); time.sleep(0.7)
+                time.sleep(3)
             if a.find:
                 for sel in ("input[type=search]", "input[placeholder*=earch]", "input[aria-label*=earch]"):
                     try:
@@ -110,7 +138,7 @@ def main():
     words = len(re.findall(r"[A-Za-z0-9]+", text))
     if words < 80 or text.strip().lower() in ("loading...", "loading…"):
         sys.exit(f"the viewer did not show readable text ({words} words). Try --manual, a longer --wait, or navigate to the section first.")
-    path = save(url_now, title, text, edition, a.find)
+    path = save(url_now, title, text, edition, a.find or (a.path[-1] if a.path else None))
     print(f"saved {path}  ({words} words; edition {edition}; retrieved {now()})")
     print("check it: open the file and confirm the section you need is there and verbatim; the engine cites only what is in it.")
 
