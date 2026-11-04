@@ -202,7 +202,10 @@ Routes agreeing is necessary, not sufficient. Two failures look like agreement:
   meanings the evidence distinguishes and says which the reading fits and which would make it wrong — "fits
   if you mean the locked-rotor test voltage; does not fit if you mean the rated voltage" — and, when exactly
   one meaning fits, re-enters once with that meaning spelled out. When several fit, the reading is ambiguous
-  and must say which; when none fit, it is wrong under every meaning.
+  and must say which; when none fit, it is wrong under every meaning. The words beside a number are part of
+  the datum: "no-load test: input power 296 W" is not a value of the full-load input power, whatever the
+  model proposes, and a mismatch between those words and the quantity named is read as a different meaning,
+  never as a disagreement.
 - **The engine's own memory is a record, not a recollection.** When asked about its history it quotes the
   log (run id, verdict, reason); it never reconstructs a sequence from memory of the sequence.
 

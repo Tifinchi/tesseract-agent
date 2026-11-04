@@ -84,6 +84,9 @@ def parse_number(s):
     if not isinstance(s, str):
         return None
     t = _norm(s)
+    rg = parse_range(s)
+    if rg:
+        return rg[0]
     mpi = re.search(r"(-?\d+(?:\.\d+)?)?\s*π", t)
     if mpi and not re.search(r"\d+(?:\.\d+)?\s*(?:%|m\b|cm\b|in\b|hz\b)", t.split("π")[0]):
         return (float(mpi.group(1)) if mpi.group(1) else 1.0) * math.pi
@@ -103,6 +106,9 @@ def parse_band(s, value):
     if not isinstance(s, str) or value is None:
         return (abs(value) * 0.1 if value else 0.0, "assumed 10 %")
     t = _norm(s)
+    rg = parse_range(s)
+    if rg and abs(rg[0] - value) <= rg[1] + 1e-9:
+        return (rg[1], f"stated range {rg[0]-rg[1]:g} to {rg[0]+rg[1]:g}")
     m = re.search(r"±\s*(\d+(?:\.\d+)?)\s*(%?)", t)
     if m:
         b = float(m.group(1))
@@ -128,7 +134,8 @@ def parse_band(s, value):
         return (0.5, "half last digit")
     return (abs(value) * 0.1, "assumed 10 %")
 
-UNIT_SYN = {"nm": "n·m", "n-m": "n·m", "newton-metres": "n·m", "newton-meters": "n·m", "amps": "a", "amperes": "a", "amp": "a", "volts": "v", "watts": "w",
+UNIT_SYN = {"poles": "", "pole": "", "times": "", "phases": "", "turns": "", "x": "",
+            "nm": "n·m", "n-m": "n·m", "newton-metres": "n·m", "newton-meters": "n·m", "amps": "a", "amperes": "a", "amp": "a", "volts": "v", "watts": "w",
             "kilowatts": "kw", "ohms": "ω", "ohm": "ω", "rev/min": "rpm", "r/min": "rpm", "inches": "in", "inch": "in", "metres": "m", "meters": "m", "metre": "m", "meter": "m", "feet": "ft", "foot": "ft",
             "square meters": "m²", "square metres": "m²", "sq m": "m²", "m2": "m²", "cubic meters": "m³", "cubic metres": "m³", "m3": "m³",
             "square feet": "ft²", "sq ft": "ft²", "ft2": "ft²", "square inches": "in²", "in2": "in²",
@@ -175,8 +182,13 @@ def convert_unit(num, from_u, to_u):
         return None, None
     return num * fa / fb, f"converted {from_u} → {to_u} (×{fa / fb:g}; the value as written kept on record)"
 
+def clean_unit(u):
+    """'W (Watts)' -> 'w'; 'V (Volts)' -> 'v'; 'm²' stays."""
+    u = re.sub(r"\(.*?\)", "", str(u or "")).strip().lower()
+    return UNIT_SYN.get(u, u)
+
 def units_compatible(expected, written):
-    e, w = (UNIT_SYN.get((expected or "").lower().strip(), (expected or "").lower().strip())), unit_of(written)
+    e, w = clean_unit(expected), unit_of(written)
     if not e or not w:
         return True if (not e and not w) or e else (w == "%")  # claimed unitless: only a bare number or a percentage may match
     return e == w
@@ -231,6 +243,54 @@ def single_number(s):
     t = re.sub(r"(±|to)\s*-?\d+(?:\.\d+)?\s*%?", " ", _norm(s))
     t = re.sub(r"\(\s*-?\d+(?:\.\d+)?\s*[a-z%°]*\s*\)", " ", t)   # a parenthesized conversion, e.g. (146.71 m)
     return len(NUM.findall(t)) == 1 or ("π" in s and len(NUM.findall(t)) <= 1)
+
+QUALIFIERS = ["no-load", "no load", "locked-rotor", "locked rotor", "full-load", "full load", "rated", "synchronous", "table",
+              "nameplate", "nominal", "minimum", "maximum", "peak", "breakdown", "pull-out", "starting", "typical", "mean", "average",
+              "original", "present", "current", "measured", "computed", "reduced", "line", "phase", "input", "output", "shaft",
+              "north", "south", "east", "west", "upper", "lower", "inner", "outer", "base", "casing", "core"]
+_QUAL_RE = re.compile(r"\b(" + "|".join(re.escape(q) for q in QUALIFIERS) + r")\b", re.I)
+
+def qualifiers_of(text):
+    return set(m.group(1).lower().replace(" ", "-") for m in _QUAL_RE.finditer(text or ""))
+
+def sentence_with(value, text):
+    """The sentence (or clause) of text that carries this value, for reading the words beside the number."""
+    v = parse_number(value)
+    for sent in re.split(r"(?<=[.;])\s+", text or ""):
+        if v is not None and number_in_text(value, sent):
+            return sent
+    return text or ""
+
+def qualifier_mismatch(quantity, quote, value=None):
+    """A value is for a DIFFERENT meaning when the words beside it name a qualifier the quantity does not have, or
+       the quantity names one the quote lacks ('input power at full load' vs 'No-load test …: input power 296 W').
+       Returns the quote's distinguishing qualifier(s) as a phrase, or None when they agree."""
+    sent = sentence_with(value, quote) if value is not None else (quote or "")
+    sent = re.sub(r"\bat\s+(rated|reduced|full|no|nominal)[- ]?(load|voltage|speed|frequency)\b", " ", sent, flags=re.I)  # test conditions, not the quantity
+    qq, sq = qualifiers_of(quantity), qualifiers_of(sent)
+    weak = {"current", "line", "phase", "input", "output", "measured", "computed", "present", "mean", "average"}
+    syn = {"rated": "full-load", "nameplate": "full-load"}       # the rated point is the full-load point
+    strong_q = {syn.get(x, x) for x in qq - weak}; strong_s = {syn.get(x, x) for x in sq - weak}
+    if strong_q & strong_s:
+        return None                                            # the sentence names our quantity, whatever else it mentions
+    if strong_s:
+        return " ".join(sorted(strong_s))
+    return None
+
+def parse_range(s):
+    """'between 70 A and 79 A', '1 to 3 percent', '70–79 A' -> (mid, half-width); None if not a range.
+       'x to y %' with y < x is a tolerance, not a range."""
+    if not isinstance(s, str):
+        return None
+    t = _norm(s)
+    m = re.search(r"between\s+(-?\d+(?:\.\d+)?)\s*[a-z%°]*\s+and\s+(-?\d+(?:\.\d+)?)", t, re.I) or \
+        re.search(r"(?<![\d.])(-?\d+(?:\.\d+)?)\s*[a-z%°]*\s*(?:to|-|–)\s*(-?\d+(?:\.\d+)?)\s*(?:[a-z%°]|percent)", t, re.I)
+    if not m:
+        return None
+    a, b = float(m.group(1)), float(m.group(2))
+    if b <= a:
+        return None
+    return ((a + b) / 2, (b - a) / 2)
 
 def is_bound(s):
     return bool(isinstance(s, str) and re.search(r"[≥≤<>]|at least|at most|more than|less than", s))
@@ -764,8 +824,12 @@ def gather_values(model, ev, meaning, units, searches, log, run_id, cid, tag, ex
         src = v.get("as_written_before_conversion") or str(val)
         b0, bk = parse_band(src, parse_number(src) or num)
         b = b0 * (abs(num) / abs(parse_number(src))) if v.get("as_written_before_conversion") and parse_number(src) else b0
+        refines = (str(v["refines"]).strip() if v.get("refines") and str(v.get("refines")).lower() not in ("null", "none", "") else None)
+        qm = qualifier_mismatch(meaning, v.get("quote") or "", src)
+        if qm and not refines:
+            refines = f"the {qm} {re.sub(r'^the ', '', meaning.split(' (')[0]).strip()} (by the words beside the number: '{(v.get('quote') or '')[:60]}')"
         ok.append({"value": num, "band": b, "band_kind": bk, "as_written": v.get("as_written_before_conversion") or val, "file": fn, "group": ev.group_of(fn),
-                   "refines": (str(v["refines"]).strip() if v.get("refines") and str(v.get("refines")).lower() not in ("null", "none", "") else None),
+                   "refines": refines,
                    "provisional": ev.is_provisional(fn), "role": vrole,
                    "process": v.get("process") or "reported", "quote": (v.get("quote") or "")[:200]})
     # the legal version: when more than one edition of a code or standard is on file (same root group, different
@@ -862,7 +926,12 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
     # computations: every combination of verified variable values
     for r in (rel.get("relations") or [])[:4]:
         expr, vars_ = r.get("relation") or "", r.get("variables") or {}
-        if not expr or not vars_:
+        mt = re.match(r"^\s*([A-Za-z_]\w*)\s*=\s*(?!=)", expr)
+        if mt and mt.group(1) in vars_:
+            vars_ = {k: v for k, v in vars_.items() if k != mt.group(1)}   # 'P = V * I': P is the result, not an input
+            r["variables"] = vars_
+        if not expr or not vars_ or not re.search(r"[A-Za-z_]\w*", re.sub(r"^\s*[A-Za-z_]\w*\s*=", "", expr).replace("sqrt", "").replace("pi", "")):
+            if expr: discarded.append({"what": obs, "why": f"relation '{expr}' has no input variables (a constant or a restatement), not a route", "raw": None})
             continue
         pools = {}
         for name, spec in list(vars_.items())[:4]:
@@ -874,6 +943,10 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
             discarded += bad
             if not vals:
                 discarded.append({"what": f"{obs}: {name}", "why": f"no evidence value for variable '{name}' in relation {expr}", "raw": None})
+                pools = None; break
+            vals = [v for v in vals if not v.get("refines")] or vals and []
+            if not vals:
+                discarded.append({"what": obs, "why": f"{name}: only values for a differently-qualified meaning were found (kept on the ladder, not used as inputs)", "raw": None})
                 pools = None; break
             pools[name] = vals; all_pools.setdefault(name, []).extend(vals)
         if not pools:
@@ -898,8 +971,17 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
                 except Exception:
                     pass
             relb = math.sqrt(sum((v["band"] / abs(v["value"])) ** 2 for v in combo if v["value"]))
+            ru, cu_ = clean_unit(r.get("result_units") or ""), unit_of(claimed)
+            if ru and cu_ and ru != cu_:
+                conv, note = convert_unit(result, ru, cu_)
+                if conv is not None:
+                    result = conv; expr_note = f" [{note}]"
+                else:
+                    expr_note = ""
+            else:
+                expr_note = ""
             groups = sorted(set(v["group"] for v in combo))
-            proc = f"computed {expr} from " + ", ".join(f"{nm}={v['value']:g} [{v['file']}, {v['process']}]" for nm, v in zip(names, combo))
+            proc = f"computed {expr} from " + ", ".join(f"{nm}={v['value']:g} [{v['file']}, {v['process']}]" for nm, v in zip(names, combo)) + expr_note
             _, reduction = reduce_expr(expr)
             if reduction:
                 want = str(r.get("result_units") or card.get("units") or "").strip().lower()
@@ -973,9 +1055,12 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
             cb, cbk = rb, rbk + " (inherited from the reading's stated tolerance)"
     need = parse_number(precision_needed) if precision_needed else None
     need_rel = (need / 100) if (need and "%" in str(precision_needed)) else ((need / abs(cv)) if (need and cv) else None)
+    need_abs = (need_rel * abs(cv)) if (need_rel and cv) else 0.0
     for r in routes:
         diff = r["value"] - cv
-        r["two_sigma"] = 2 * (r["band"] + cb)
+        r["two_sigma"] = max(2 * (r["band"] + cb), need_abs)   # agreement is judged at the precision the question needs, if that is coarser
+        if need_abs and need_abs > 2 * (r["band"] + cb):
+            r["compared_at"] = f"the precision needed ({precision_needed})"
         if is_bound(claimed):
             r["within_2sigma"] = (diff >= -r["two_sigma"]) if re.search(r"[≥>]|at least|more than", claimed) else (diff <= r["two_sigma"])
         else:
@@ -1066,6 +1151,9 @@ def calibrate(model, ev, cid, reading, log, run_id):
             continue
         term, ref, rep = str(c["term"]), c.get("reference") or {}, c.get("replacement")
         status = "no reference in evidence"
+        if re.fullmatch(r"(about|roughly|approximately|approx\.?|around|nearly|~|≈|some|circa)", term.strip().lower()):
+            comps.append({"term": term, "kind": "hedge", "needs": None, "reference": None, "replacement": None,
+                          "status": "a hedge is a band (±10 % unless stated), not a term to replace; kept as written"}); continue
         if ref and ref.get("file") and ref.get("quote"):
             fn = clean_fn(ref["file"])
             if ev.contains_quote(ref["quote"], fn):
@@ -1139,10 +1227,23 @@ def check_downwind(model, ev, cid, reading, log, run_id):
         cw = lambda t: set(w for w in WORD.findall((t or "").lower()) if len(w) >= 5)
         relevant = len(cw(c.get("if_true")) & cw(q)) >= 2 or len(cw(reading) & cw(q)) >= 3
         lu = str(c.get("lines_up", "unknown")).lower()
+        note = ""
+        if lu == "no" and verified:
+            # the words beside the quoted number must name the same quantity the consequence names
+            qm = qualifier_mismatch(c.get("if_true") or "", q, q)
+            if qm:
+                relevant = False; note = f"the quote's number is for a differently-qualified quantity ({qm}); not a verified mismatch"
+            else:
+                # a numeric consequence is compared by script: if the implied and quoted numbers agree, the model's 'no' is overruled
+                iv, qv = parse_number(c.get("if_true")), parse_number(q)
+                if iv is not None and qv is not None and units_compatible(unit_of(c.get("if_true")), q):
+                    ib, _ = parse_band(c.get("if_true"), iv); qb, _ = parse_band(q, qv)
+                    if abs(iv - qv) <= 2 * (ib + qb) + 0.1 * abs(iv):
+                        lu = "yes"; note = f"the model said 'no' but the numbers agree ({show(iv, ib)} vs {show(qv, qb)}); overruled by arithmetic"
         status = ("verified_mismatch" if (lu == "no" and verified and relevant) else "weak_mismatch" if (lu == "no" and verified)
                   else "asserted_mismatch" if lu == "no"
                   else "lines_up" if (lu == "yes" and verified) else "asserted_ok" if lu == "yes" else "unknown")
-        out.append({"if_true": c.get("if_true"), "status": status, "file": fn or None, "quote": q[:160], "reason": c.get("reason", "")})
+        out.append({"if_true": c.get("if_true"), "status": status, "file": fn or None, "quote": q[:160], "reason": (c.get("reason", "") + (" — " + note if note else ""))})
     log.write(run=run_id, claim=cid, pass_="IMPLICATION_STATE", downwind=out)
     return out
 
@@ -1252,7 +1353,7 @@ def synthesis_by_rule(reports, judge, ev, neighbours=None, downwind=None, readin
             if contra:
                 outcome = "NO_DATA"; lock = min(lock, 1)
                 reason = [f"neighbour contradicts: {n['neighbour']} ({n['note']})" for n in contra]
-            elif turn_fail and not turn_ok:
+            elif turn_fail and not turn_ok and strict < 1:
                 outcome = "NO_DATA"; lock = min(lock, 1)
                 reason = [f"inverse turn does not return: {t['note']}" for t in turn_fail[:2]]
             else:
@@ -1271,6 +1372,8 @@ def synthesis_by_rule(reports, judge, ev, neighbours=None, downwind=None, readin
                 c["recorded_not_counted"] = "REJECT without a verbatim quote from an evidence file"; v = "NOT_REJECT"
             elif v == "REJECT" and not bears_on(c.get("quote"), reading, c.get("alternative")):
                 c["recorded_not_counted"] = "REJECT with a verbatim quote that does not bear on the reading"; v = "NOT_REJECT"
+            elif v == "REJECT" and qualifier_mismatch(reading, c.get("quote") or "", c.get("quote")):
+                c["recorded_not_counted"] = f"REJECT on a quote whose number is for a differently-qualified quantity ({qualifier_mismatch(reading, c.get('quote') or '', c.get('quote'))})"; v = "NOT_REJECT"
             elif v == "NO_DATA":
                 c["note"] = "no competing explanation found in evidence"; v = "NOT_REJECT"
         elif k == "constraint" and v == "REJECT":
@@ -1279,6 +1382,8 @@ def synthesis_by_rule(reports, judge, ev, neighbours=None, downwind=None, readin
                 c["downgraded"] = "REJECT without a verbatim quote from an evidence file"; v = "NO_DATA"
             elif not bears_on(c.get("quote"), reading, c.get("transformation")):
                 c["downgraded"] = "REJECT with a verbatim quote that does not bear on the reading (recorded, not counted)"; v = "NOT_REJECT"
+            elif qualifier_mismatch(reading, c.get("quote") or "", c.get("quote")):
+                c["downgraded"] = f"REJECT on a quote whose number is for a differently-qualified quantity ({qualifier_mismatch(reading, c.get('quote') or '', c.get('quote'))}); recorded, not counted"; v = "NOT_REJECT"
         c["verdict"] = v; cores[k] = c
     if any(c["verdict"] == "REJECT" for c in cores.values()):
         synth = "REJECTED"

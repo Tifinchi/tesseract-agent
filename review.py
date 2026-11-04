@@ -40,6 +40,8 @@ POINTS_AT = [
     (r"no route reached", "evidence or relation gap: no cited value and no evaluable relation reached this observable (empty cell)"),
     (r"neighbour contradicts", "vertex misfit: a neighbour disagrees; resolve the datum's corner/cell/sign before it can stand"),
     (r"different kind of quantity", "dimension discipline: implied and reported values are different kinds of quantity; not compared"),
+    (r"differently-qualified|ladder", "meaning: a value for a differently-qualified quantity (no-load vs full-load, table vs nameplate); kept on the meaning ladder, not used as a route"),
+    (r"no input variables|restatement", "relation form: the model wrote a constant or a restatement instead of a relation over inputs"),
     (r"relation conflict", "relation check: the model wrote two relations that cannot both be right; the disagreeing one is suspect, not the reading"),
     (r"not found in FILE|value/quote not found", "hallucinated neighbour citation: the quote is not in the file named; caught"),
 ]

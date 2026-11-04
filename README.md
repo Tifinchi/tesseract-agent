@@ -217,6 +217,29 @@ fault, not the data).
 python3 trial.py claims/motor-m1.md --max-claims 8 --evidence evidence-motor
 ```
 
+## Motor pass 1 (v2.1.2 at ad22e8d; 10 claims, 67 min) and v2.4
+
+16 REJECTED, 1 STABILIZED, 4 UNSTABLE on a closed, correct test — a failure of the engine, and the review
+named it: almost every rejection came from a value for the WRONG MEANING of a quantity. "Input power at full
+load" was compared with the no-load test's 296 W; "full-load current" with the locked-rotor test's 12.29 A at
+91 V and with the NEC table's 14 A; "synchronous speed" with the plate's full-load 1775 rpm; the down-wind check
+"verified" mismatches on the same wrong-meaning quotes; a constraint REJECT said 8.1 kW "does not survive the
+change of scale" from a 296 W no-load test. Beside that: computed watts compared with claimed kilowatts without
+conversion; "W (Watts)" refused as a unit; "between 70 A and 79 A" read as 70 ± 5; "about 1.4 %" calibrated into
+"1.42% 1.4 %"; and 39 failed inverse turns from constant "relations" (`frequency = 60 Hz`) demoting good verdicts.
+
+v2.4 — one helper and its uses. `qualifier_mismatch(quantity, quote)` reads the words beside the number: a
+sentence that names a load state, a source or a speed the quantity does not name (no-load, locked-rotor,
+full-load/rated, table, nameplate, synchronous, …; test conditions like "at rated voltage" ignored) is a value
+for a DIFFERENT meaning. Such a value goes on the meaning ladder ("fits if you mean the no-load …"), never into a
+route or a relation's inputs; a down-wind or constraint/alternative REJECT resting on such a quote is recorded,
+not counted. Also: numeric down-wind consequences are compared by script and the model's "no" is overruled when
+the numbers agree; agreement is judged at the precision the question needs when that is coarser than the bands;
+computed results are converted to the claimed unit by SI prefix; unit strings are cleaned ("W (Watts)" → W);
+count nouns (poles, times) are unitless; ranges parse as mid ± half-width; a hedge ("about") is a band, never
+replaced by calibration; relations with no input variables are discarded as restatements; an assignment target
+is dropped from the inputs; failed inverse turns no longer demote a verdict that a strict route supports.
+
 ## Trial 4 (v1.8.1 at a11cecd; 3 × 4 claims; 52 min) and v1.9: calibration as a standing pass
 
 Base extraction held at 5/5/5 with no drift; fold children 3/5/5. But only 2 of 10 readings were seen in
