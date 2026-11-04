@@ -24,15 +24,9 @@ def version():
         return "unknown"
 
 def settle(model, wait=3):
-    """Full stop between runs: wait, then confirm the model server has no request in flight for this model."""
+    """Full stop between runs. Our model calls are synchronous, so a returned run has no request in flight; the pause is
+       for the server to settle before the next run starts."""
     time.sleep(wait)
-    try:
-        import requests
-        ps = requests.get(f"{agent.OLLAMA}/api/ps", timeout=10).json().get("models", [])
-        busy = [m for m in ps if m.get("name", "").startswith(model.split(":")[0]) and m.get("size_vram") and False]
-        # /api/ps reports loaded models, not in-flight requests; our calls are synchronous, so a returned run has none.
-    except Exception:
-        pass
 
 def load(run_id):
     p = os.path.join(HERE, "logs", f"run-{run_id}.jsonl")

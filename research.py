@@ -90,19 +90,6 @@ def search(query, n=5):
         errors.append("chrome: not available or no page")
     raise RuntimeError("search refused: " + "; ".join(errors))
 
-def _unused_search(query, n=5):
-    r = None
-    out = []
-    for m in re.finditer(r'<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)</a>', r.text, re.S):
-        href, title = m.group(1), re.sub(r"<[^>]+>", "", m.group(2))
-        if "uddg=" in href:  # DDG redirect wrapper
-            href = urllib.parse.unquote(re.search(r"uddg=([^&]+)", href).group(1))
-        if href.startswith("http") and not any(href.startswith(b) for b in ("https://duckduckgo.com",)):
-            out.append((html.unescape(title).strip(), href))
-        if len(out) >= n:
-            break
-    return out
-
 def to_text(page):
     page = re.sub(r"(?is)<(script|style|noscript|nav|footer|header|aside)[^>]*>.*?</\1>", " ", page)
     page = re.sub(r"(?i)<br\s*/?>|</p>|</div>|</li>|</h\d>|</tr>", "\n", page)
@@ -204,25 +191,33 @@ def echo_check(folder, min_shared=6):
 
 def wayback_snapshots(url, limit=12):
     """Snapshots the Wayback Machine holds for a url (CDX API): [(timestamp YYYYMMDDhhmmss, archive_url)], oldest first."""
-    r = requests.get("https://web.archive.org/cdx/search/cdx", params={"url": url, "output": "json", "fl": "timestamp,original,statuscode",
-                                                                       "filter": "statuscode:200", "collapse": "timestamp:6", "limit": limit}, headers=UA, timeout=45)
-    r.raise_for_status()
+    r = _get("https://web.archive.org/cdx/search/cdx", params={"url": url, "output": "json", "fl": "timestamp,original,statuscode",
+                                                                "filter": "statuscode:200", "collapse": "timestamp:6", "limit": limit})
     rows = r.json()[1:] if r.text.strip() else []
     return [(row[0], f"https://web.archive.org/web/{row[0]}/{row[1]}") for row in rows]
+
+def _get(url, **kw):
+    """GET with backoff on 429/5xx (archive.org rate-limits the availability API)."""
+    for attempt in range(5):
+        r = requests.get(url, headers=UA, timeout=60, **kw)
+        if r.status_code in (429, 502, 503, 504):
+            time.sleep(6 * (attempt + 1)); continue
+        r.raise_for_status()
+        return r
+    r.raise_for_status()
+    return r
 
 def wayback_store(url, folder, at=None, max_chars=40000):
     """Store the Wayback Machine's snapshot of url nearest to `at` (YYYYMMDD; default: the latest) as evidence.
        The file's chronological reference point is `archived:` — the time the page was captured, which is what the
        snapshot speaks for; `retrieved:` is when we fetched it. Two snapshots of one page are two dated readings of
        one source (same group, so they never count as independent), which is what a comparison across time needs."""
-    r = requests.get("https://archive.org/wayback/available", params={"url": url, "timestamp": at or ""}, headers=UA, timeout=45)
-    r.raise_for_status()
+    r = _get("https://archive.org/wayback/available", params={"url": url, "timestamp": at or ""})
     snap = (r.json().get("archived_snapshots") or {}).get("closest") or {}
     if not snap.get("url"):
         return None, "no snapshot held by the Wayback Machine for that url" + (f" near {at}" if at else "")
     ts, aurl = snap.get("timestamp", ""), snap["url"].replace("http://", "https://", 1)
-    r2 = requests.get(aurl, headers=UA, timeout=60)
-    r2.raise_for_status()
+    r2 = _get(aurl)
     page = r2.text
     page = re.sub(r"(?is)<!-- BEGIN WAYBACK TOOLBAR INSERT -->.*?<!-- END WAYBACK TOOLBAR INSERT -->", " ", page)
     text = to_text(page)

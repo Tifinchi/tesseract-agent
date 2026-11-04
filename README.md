@@ -65,7 +65,7 @@ A paper always agrees with itself, so the document under test is never allowed t
 - `method/prf-full.txt` — the Portable Reasoning Framework, sections 0–20, in full. Source of truth.
 - `examples/motor/` — the motor calculator (the built page, its manual, the engine source) and
   `WHY-IT-WORKS.md`: how it instantiates the method and how each result is reached by more than one route.
-- `agent.py` — v1, the triangulating loop. `agent_v0.py` — the first version, kept for the record.
+- `agent.py` — the triangulating loop (v0 is in the git history).
 - `claims/` — documents under test. `evidence/` — independent sources with `source:`/`group:` headers.
 - `logs/` — one `run-<stamp>.jsonl` (every pass, every claim, every route proposal and what the script
   did with it) and one `run-<stamp>-summary.md` per run. Lines are never edited.
@@ -227,6 +227,31 @@ fault, not the data).
 ```
 python3 trial.py claims/motor-m1.md --max-claims 8 --evidence evidence-motor
 ```
+
+## Motor pass 2 (v2.4 at b75b991; 5 claims, 38 min) and v2.5
+
+No false rejection on a wrong meaning this time, but the ladder swallowed too much: 0 STABILIZED, 5 UNSTABLE,
+4 REJECTED. The qualifier check read a whole sentence, so "Rated operating point …: efficiency 91.63 %, …,
+locked-rotor current 6.34 ×" made the efficiency a "locked-rotor pull-out" meaning, and the plate's "nominal
+efficiency" a refinement, leaving no route to the efficiency. The one remaining false rejection was the plate's
+12.4 A against the circuit's 12.29 A: gap 0.11 vs 2σ 0.11, a coin-flip rejection at the band edge. Two neighbour
+"contradictions" compared implied values with a BOUND ("full-load slip less than 5 percent") as if 5 were a
+value. The calibration pass listed "460 V" and "10 HP" as ambiguous. The model wrote `P = √3·V·I·pf` for I.
+
+v2.5: the qualifier check reads only the words BEFORE the number in its sentence; rated/nominal are the
+default operating point and never refine a bare name; typical/maximum/minimum are modifiers that always do;
+"table" refines only current-type quantities (the code's sizing value); the model's own `refines` tag counts
+only when the script's reading agrees. The **marginal zone**: outside 2σ but inside 4σ is neither agreement
+nor rejection — recorded, and it holds the reading at UNSTABLE until the band or the value is resolved. A
+neighbour's reported bound ("less than 5 percent") is compared as a bound. Calibration never lists a number
+with its unit or a design letter. Relations must be written solved for the observable. `fetch:` lines in a
+claims document pull dated pages (wayback/url/search) into the evidence folder before extraction, logged in
+ENTRY_STATE. Dead code removed (`agent_v0.py`, the v0 test document, an unused search path).
+
+`claims/motor-m2.md`: three motor questions that need the 2026 NEC on file (table current vs plate current
+for sizing; LRA from code G under the 430.251(B) maximum; efficiency by three routes and the no-load fraction)
+and two statements about which NEC edition was current in 2016 and 2021 — answerable only from Wayback
+Machine snapshots, fetched by the document's own `fetch:` lines.
 
 ## Motor pass 1 (v2.1.2 at ad22e8d; 10 claims, 67 min) and v2.4
 

@@ -251,7 +251,8 @@ QUALIFIERS = ["no-load", "no load", "locked-rotor", "locked rotor", "full-load",
 _QUAL_RE = re.compile(r"\b(" + "|".join(re.escape(q) for q in QUALIFIERS) + r")\b", re.I)
 
 def qualifiers_of(text):
-    return set(m.group(1).lower().replace(" ", "-") for m in _QUAL_RE.finditer(text or ""))
+    text = re.sub(r"\btypically\b", "typical", text or "", flags=re.I)
+    return set(m.group(1).lower().replace(" ", "-") for m in _QUAL_RE.finditer(text))
 
 def sentence_with(value, text):
     """The sentence (or clause) of text that carries this value, for reading the words beside the number."""
@@ -267,14 +268,31 @@ def qualifier_mismatch(quantity, quote, value=None):
        Returns the quote's distinguishing qualifier(s) as a phrase, or None when they agree."""
     sent = sentence_with(value, quote) if value is not None else (quote or "")
     sent = re.sub(r"\bat\s+(rated|reduced|full|no|nominal)[- ]?(load|voltage|speed|frequency)\b", " ", sent, flags=re.I)  # test conditions, not the quantity
-    qq, sq = qualifiers_of(quantity), qualifiers_of(sent)
+    head = sent
+    if value is not None:
+        # only the words BEFORE the number in its sentence frame it ("Rated operating point …: efficiency 91.63 %, …, locked-rotor
+        # current 6.34 ×": the locked-rotor clause after the number does not qualify the efficiency)
+        m = NUM.search(_norm(str(value)))
+        if m:
+            mm = re.search(re.escape(m.group(0)), sent)
+            if mm and mm.start() > 2:
+                head = sent[:mm.start()]
+    qq, sq = qualifiers_of(quantity), qualifiers_of(head)
     weak = {"current", "line", "phase", "input", "output", "measured", "computed", "present", "mean", "average"}
-    syn = {"rated": "full-load", "nameplate": "full-load"}       # the rated point is the full-load point
+    syn = {"rated": "full-load", "nominal": "full-load"}           # the rated (nominal) point is the full-load point
+    load = {"no-load", "locked-rotor", "full-load", "synchronous", "starting", "breakdown", "pull-out", "original"}
+    modifier = {"typical", "maximum", "minimum", "peak"}        # a typical or limiting value is not the motor's value
     strong_q = {syn.get(x, x) for x in qq - weak}; strong_s = {syn.get(x, x) for x in sq - weak}
-    if strong_q & strong_s:
-        return None                                            # the sentence names our quantity, whatever else it mentions
-    if strong_s:
-        return " ".join(sorted(strong_s))
+    if (strong_s & modifier) - strong_q:
+        return " ".join(sorted((strong_s & modifier) - strong_q))
+    lq, ls = strong_q & load, strong_s & load
+    if ls and lq and not (lq & ls):
+        return " ".join(sorted(ls))                            # a different load state is a different meaning
+    if ls and not lq and ls - {"full-load"}:
+        return " ".join(sorted(ls - {"full-load"}))            # a bare name against a no-load/locked-rotor/typical/maximum value
+    # a source-class word ('table') is a different meaning for currents: the code's table current is a sizing value, not the motor's
+    if "table" in strong_s - strong_q and re.search(r"\b(current|amp|amps|ampacity|amperes)\b", quantity.lower()):
+        return "table"
     return None
 
 def parse_range(s):
@@ -293,7 +311,7 @@ def parse_range(s):
     return ((a + b) / 2, (b - a) / 2)
 
 def is_bound(s):
-    return bool(isinstance(s, str) and re.search(r"[≥≤<>]|at least|at most|more than|less than", s))
+    return bool(isinstance(s, str) and re.search(r"[≥≤<>]|at least|at most|more than|less than|not more than|not less than|not exceed|\bmaximum\b|\bminimum\b", s, re.I))
 
 def number_in_text(value, text):
     v = parse_number(value)
@@ -580,7 +598,9 @@ Then name the ways this observable's value could be reached from evidence, WITHO
    the expression — if a unit term is written inside it, the engine reduces it by convention and keeps the
    cancelled term on record) that reach the observable from OTHER measurable quantities (neighbours), with, for
    each variable, its meaning and search phrases that would find its value in a source. Include unit
-   conversion factors as their own variables. Write only a relation you can justify by a definition or a law
+   conversion factors as their own variables. Write each relation SOLVED FOR THE OBSERVABLE: the expression
+   alone evaluates to it (I = P / (sqrt(3) * V * pf), never P = sqrt(3) * V * I * pf when I is the observable).
+   Write only a relation you can justify by a definition or a law
    and name it in "why" (a square's perimeter is 4 * side, not 2 * pi * side); a wrong relation makes a
    false disagreement, and the engine records relations that disagree with each other.
 Return JSON:
@@ -639,7 +659,9 @@ detection, not a size). For each: the reference that would fix it (what known qu
 against), and whether THESE passages supply that reference — if so the [filename], a VERBATIM quote, and
 the value with units; if not, null. Then write the calibrated reading: the same sentence with each
 component that has a supplied reference replaced by its measured form (keep the sentence's logic and
-every other word; do not add claims; a component without a reference stays as written). Do not judge the
+every other word; do not add claims; a component without a reference stays as written). A number with its
+unit ("460 V", "10 HP", "1775 rpm") is already measured: never list it as a component; nor a proper name or a
+design letter ("Design B", "three-phase"). Do not judge the
 reading; do not say whether it fits.
 
 Return JSON: {{"components": [{{"term": "...", "kind": "...", "needs": "a reference <what>",
@@ -826,8 +848,10 @@ def gather_values(model, ev, meaning, units, searches, log, run_id, cid, tag, ex
         b = b0 * (abs(num) / abs(parse_number(src))) if v.get("as_written_before_conversion") and parse_number(src) else b0
         refines = (str(v["refines"]).strip() if v.get("refines") and str(v.get("refines")).lower() not in ("null", "none", "") else None)
         qm = qualifier_mismatch(meaning, v.get("quote") or "", src)
-        if qm and not refines:
-            refines = f"the {qm} {re.sub(r'^the ', '', meaning.split(' (')[0]).strip()} (by the words beside the number: '{(v.get('quote') or '')[:60]}')"
+        if qm:
+            refines = refines or f"the {qm} {re.sub(r'^the ', '', meaning.split(' (')[0]).strip()} (by the words beside the number: '{(v.get('quote') or '')[:60]}')"
+        elif refines:
+            v = dict(v, model_refines_ignored=refines); refines = None     # the model's tag is not backed by the words beside the number
         ok.append({"value": num, "band": b, "band_kind": bk, "as_written": v.get("as_written_before_conversion") or val, "file": fn, "group": ev.group_of(fn),
                    "refines": refines,
                    "provisional": ev.is_provisional(fn), "role": vrole,
@@ -1065,6 +1089,8 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
             r["within_2sigma"] = (diff >= -r["two_sigma"]) if re.search(r"[≥>]|at least|more than", claimed) else (diff <= r["two_sigma"])
         else:
             r["within_2sigma"] = abs(diff) <= r["two_sigma"]
+            # the marginal zone: outside 2σ but inside 4σ is neither agreement nor a rejection; it holds the reading
+            r["marginal"] = (not r["within_2sigma"]) and abs(diff) <= 2 * r["two_sigma"]
         r["coarse"] = bool(need_rel is not None and cv and (r["band"] / abs(cv)) > need_rel)
     for r in calc:
         diff = r["value"] - cv
@@ -1084,7 +1110,8 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
     counted = [r for r in routes if not r.get("relation_conflict")]
     ind = independent_set(counted)
     strict = independent_set(counted, ev, strict=True)
-    agree = [r for r in ind if r["within_2sigma"]]; disagree = [r for r in ind if not r["within_2sigma"]]
+    agree = [r for r in ind if r["within_2sigma"]]; disagree = [r for r in ind if not r["within_2sigma"] and not r.get("marginal")]
+    marginal = [r for r in ind if r.get("marginal")]
     strict_agree = [r for r in strict if r["within_2sigma"]]
     ladder = []
     for meaning, ds in meanings.items():
@@ -1095,7 +1122,7 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
                          "process": f"{d['process']} in {d['file']}: \"{d['quote'][:100]}\""})
         ladder.append({"meaning": meaning, "agrees": all(r["agrees"] for r in rows), "groups": len(set(r["group"] for r in rows)), "values": rows})
     report = {"observable": obs, "claimed": claimed, "claimed_value": cv, "claimed_band": cb, "claimed_band_kind": cbk,
-              "relation_conflicts": sorted(set(relation_conflicts)), "meaning_ladder": ladder,
+              "relation_conflicts": sorted(set(relation_conflicts)), "meaning_ladder": ladder, "marginal": len(marginal),
               "precision_needed": precision_needed, "all_routes": routes, "independent": ind,
               "independent_routes": len(ind), "agree": len(agree), "disagree": len(disagree),
               "strict_agree": len(strict_agree),
@@ -1204,8 +1231,14 @@ def check_neighbours(model, ev, cid, reading, anchor, log, run_id):
                     status, note = "unchecked", f"reported value is a different kind of quantity ('{ru or 'unitless'}' vs implied '{iu or 'unitless'}'); not compared"
                 else:
                     ib, _ = parse_band(str(got.get("implied")), iv); nbnd, _ = parse_band(str(rv), nv)
-                    status = "lined_up" if abs(iv - nv) <= 2 * (ib + nbnd) else "contradicts"
-                    note = f"{datum}: implied {iv:.6g} vs reported {nv:.6g} in {fn}"
+                    if is_bound(str(rv)):
+                        upper = bool(re.search(r"[≤<]|at most|less than|not more than|not exceed|maximum", str(rv), re.I))
+                        ok_ = (iv <= nv + 2 * (ib + nbnd)) if upper else (iv >= nv - 2 * (ib + nbnd))
+                        status = "lined_up" if ok_ else "contradicts"
+                        note = f"{datum}: implied {iv:.6g} vs reported bound {'≤' if upper else '≥'} {nv:.6g} in {fn}"
+                    else:
+                        status = "lined_up" if abs(iv - nv) <= 2 * (ib + nbnd) else "contradicts"
+                        note = f"{datum}: implied {iv:.6g} vs reported {nv:.6g} in {fn}"
             elif ev.contains_quote(str(rv), fn):
                 status = {"yes": "lined_up", "no": "contradicts"}.get(str(got.get("lines_up", "")).lower(), "unchecked")
                 note = f"{fn}: \"{str(rv)[:120]}\" — {got.get('reason', '')}"
@@ -1306,7 +1339,7 @@ def fit_account(reports):
                  f"{rp['independent_routes']} independent; {rp['agree']} agree within 2σ, {rp['disagree']} disagree; "
                  f"{len(rp['discarded'])} candidate(s) discarded")
         for r in rp["independent"]:
-            L.append(f"  · {'agrees' if r['within_2sigma'] else 'DISAGREES'}: {show(r['value'], r['band'])} ± {r['band']:.2g} [{r['band_kind']}], "
+            L.append(f"  · {'agrees' if r['within_2sigma'] else 'MARGINAL (2σ–4σ: neither; holds the reading)' if r.get('marginal') else 'DISAGREES'}: {show(r['value'], r['band'])} ± {r['band']:.2g} [{r['band_kind']}], "
                      f"gap {abs(r['value'] - cv):.2g} vs 2σ {r['two_sigma']:.2g}" + (" (coarse)" if r.get('coarse') else "") + f" — {r['process']}")
         for cc in rp.get("calculator_cross_checks") or []:
             L.append(f"  · cross-check only (not counted): the engine's own {cc['process'][:90]} → {cc['value']:.6g} {'agrees' if cc['agrees'] else 'DISAGREES'}")
@@ -1343,6 +1376,9 @@ def synthesis_by_rule(reports, judge, ev, neighbours=None, downwind=None, readin
                     reason.append(f"{r['observable']}: {d['process']}" + ("" if r.get("text") else f" → {d['value']:.6g} vs claimed {r['claimed_value']:.6g}"))
         else:
             lock = min(r["agree"] for r in reports)
+            if any(r.get("marginal") for r in reports):
+                lock = min(lock, 1)       # a marginal route keeps the reading from standing until it is resolved
+                reason.append("a route is marginal (between 2σ and 4σ): not a rejection, not agreement; resolve the band or the value")
             strict = min(r.get("strict_agree", r["agree"]) for r in reports)
             fine = min(r.get("fine_agree", 0) for r in reports)
             outcome = "NOT_REJECT" if lock >= 2 else "NO_DATA"
@@ -1485,6 +1521,22 @@ def run(path, model, question, max_claims, out_dir, evidence_dir, research_on=Fa
     # the date the claims are taken as of: 'as of: YYYY-MM-DD' in the document's first lines, else --as-of, else today
     m = re.search(r"(?im)^as of:\s*(\d{4})(?:-\d{2}-\d{2})?", doc[:600])
     AS_OF_YEAR = int(m.group(1)) if m else (int(str(as_of)[:4]) if as_of else datetime.date.today().year)
+    # fetch: directives in the document's head — the evidence a claim needs that lives online, pulled by the script
+    # before extraction, dated, and logged: 'fetch: wayback <url> <YYYYMMDD>', 'fetch: url <url>', 'fetch: search <query>'
+    fetched = []
+    for m in re.finditer(r"(?im)^fetch:\s*(wayback|url|search)\s+(.+)$", doc[:4000]):
+        kind, arg = m.group(1).lower(), m.group(2).strip()
+        try:
+            if kind == "wayback":
+                parts = arg.split(); fn, note = research.wayback_store(parts[0], evidence_dir, parts[1] if len(parts) > 1 else None)
+                fetched.append({"kind": kind, "arg": arg, "file": fn, "note": note})
+            elif kind == "url":
+                fn = research.store(arg, evidence_dir); fetched.append({"kind": kind, "arg": arg, "file": fn, "note": "stored" if fn else "already stored or unreadable"})
+            else:
+                added = research.search_and_store(arg, evidence_dir, max_pages=2); fetched.append({"kind": kind, "arg": arg, "file": added, "note": f"{len(added)} stored"})
+        except Exception as ex:
+            fetched.append({"kind": kind, "arg": arg, "file": None, "note": f"failed: {str(ex)[:160]}"})
+        print(f"fetch {kind} {arg[:70]} → {fetched[-1]['file'] or '-'}: {fetched[-1]['note'][:100]}")
     ev = Evidence(evidence_dir)
     undated = [fn for fn, mt in ev.meta.items() if mt.get("undated_reference")]
     if undated:
@@ -1496,12 +1548,13 @@ def run(path, model, question, max_claims, out_dir, evidence_dir, research_on=Fa
     log = Log(os.path.join(out_dir, f"run-{run_id}.jsonl"))
     mem = process_memory.build()
     log.write(run=run_id, pass_="ENTRY_STATE", input=os.path.basename(path), question=question, model=model,
-              evidence_files=[d[0] for d in ev.docs], evidence_groups=ev.groups,
+              evidence_files=[d[0] for d in ev.docs], evidence_groups=ev.groups, fetched=fetched, as_of=AS_OF_YEAR,
               memory_runs=mem.get("runs"), memory_changes=len(mem.get("changes") or []))
     if len(ev.groups) < 2:
         print(f"WARNING: evidence/ has {len(ev.groups)} source group(s); nothing can stabilize with fewer than 2.")
     t0 = time.time()
 
+    doc = re.sub(r"(?im)^(fetch|as of):.*$", "", doc)
     claims, secs = [], sections(doc)
     total = sum(len(t) for _, t in secs) or 1
     for i, (heading, text) in enumerate(secs):
