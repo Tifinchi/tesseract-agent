@@ -70,7 +70,11 @@ def parse_number(s):
         return float(s)
     if not isinstance(s, str):
         return None
-    m = NUM.search(_norm(s))
+    t = _norm(s)
+    mpi = re.search(r"(-?\d+(?:\.\d+)?)?\s*π", t)
+    if mpi and not re.search(r"\d+(?:\.\d+)?\s*(?:%|m\b|cm\b|in\b|hz\b)", t.split("π")[0]):
+        return (float(mpi.group(1)) if mpi.group(1) else 1.0) * math.pi
+    m = NUM.search(t)
     if m:
         try:
             return float(m.group(0))
@@ -169,6 +173,14 @@ def dims_compatible(expected_units, written):
     if de is None or dw is None:
         return True  # cannot check; the unit-string check still applies
     return de == dw
+
+def single_number(s):
+    """True if the string carries exactly one numeric value (a tolerance like '± 0.1' or 'to 0.05 %' allowed)."""
+    if not isinstance(s, str):
+        return False
+    t = re.sub(r"(±|to)\s*-?\d+(?:\.\d+)?\s*%?", " ", _norm(s))
+    t = re.sub(r"\(\s*-?\d+(?:\.\d+)?\s*[a-z%°]*\s*\)", " ", t)   # a parenthesized conversion, e.g. (146.71 m)
+    return len(NUM.findall(t)) == 1 or ("π" in s and len(NUM.findall(t)) <= 1)
 
 def is_bound(s):
     return bool(isinstance(s, str) and re.search(r"[≥≤<>]|at least|at most|more than|less than", s))
@@ -287,6 +299,8 @@ _CONST = {"pi": math.pi, "e": math.e}
 
 def evaluate(expr, variables):
     expr = expr.replace("^", "**").replace("×", "*").replace("÷", "/").replace("√", "sqrt").replace("·", "*")
+    expr = re.sub(r"(?<![A-Za-z_])(\d+(?:\.\d+)?)\s*(meters?|metres?|m|cm|mm|km|inches|inch|in|ft|feet|s|sec|seconds?|kg|g|hz|pa|v|a|w|j|n|%)(?![A-Za-z_])",
+                  r"\1", expr, flags=re.I)   # '1 meter / 1 meter' -> '1 / 1': unit words after numbers are not variables
     expr = re.sub(r"(\d)\s*([A-Za-z(])", r"\1*\2", expr)      # 4b, 2(…)  -> 4*b, 2*(…)
     expr = re.sub(r"\)\s*\(", ")*(", expr)                      # (a)(b)    -> (a)*(b)
     expr = re.sub(r"\)\s*([A-Za-z\d])", r")*\1", expr)          # (a)b      -> (a)*b
@@ -367,8 +381,9 @@ flux-like), effort (a potential or force, voltage-like), or other; and its field
 fields match by role and dimensions, never by a shared letter.
 Then name the ways this observable's value could be reached from evidence, WITHOUT using the reading's own number.
 1. direct: search phrases (3–6 words each) that would find a passage reporting this observable directly.
-2. relations: arithmetic expressions over named variables (use sqrt, pi, ** for powers; write every
-   multiplication with *) that reach the observable from OTHER measurable quantities (neighbours), with, for
+2. relations: arithmetic expressions over named variables ONLY (use sqrt, pi, ** for powers; write every
+   multiplication with *; no unit words or annotations inside the expression — units go in the variable's
+   "units" field) that reach the observable from OTHER measurable quantities (neighbours), with, for
    each variable, its meaning and search phrases that would find its value in a source. Include unit
    conversion factors as their own variables.
 Return JSON:
@@ -599,6 +614,21 @@ def independent_set(routes, ev=None, strict=False):
             best = chosen
     return best
 
+def shared_among(routes, ev):
+    """What agreeing routes have in common: shared cited inputs and shared source roots (named, for the verdict)."""
+    out, seen = [], set()
+    for i in range(len(routes)):
+        for j in range(i + 1, len(routes)):
+            a, b = routes[i], routes[j]
+            for x in sorted(set(a.get("inputs") or []) & set(b.get("inputs") or [])):
+                if ("input", x) not in seen:
+                    seen.add(("input", x)); out.append(f"input {x}")
+            ra = set(ev.root_of(g.split("/")[0]) for g in a["groups"]); rb = set(ev.root_of(g.split("/")[0]) for g in b["groups"])
+            for g in sorted(ra & rb):
+                if ("root", g) not in seen:
+                    seen.add(("root", g)); out.append(f"source root {g}")
+    return out
+
 def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, run_id):
     """Numeric observable: the script enumerates every route the evidence supports."""
     rel = ask(model, SYSTEM, P_RELATIONS.format(reading=reading, obs=obs, claimed=claimed))
@@ -730,7 +760,9 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
     report = {"observable": obs, "claimed": claimed, "claimed_value": cv, "claimed_band": cb, "claimed_band_kind": cbk,
               "precision_needed": precision_needed, "all_routes": routes, "independent": ind,
               "independent_routes": len(ind), "agree": len(agree), "disagree": len(disagree),
-              "strict_agree": len(strict_agree), "cyclical": len(agree) > len(strict_agree),
+              "strict_agree": len(strict_agree),
+              "cyclical": len([r for r in agree if r.get("type") != "definition"]) > len(strict_agree),
+              "shared": shared_among([r for r in agree if r.get("type") != "definition"], ev),
               "fine_agree": sum(1 for r in agree if not r.get("coarse")), "disagreeing": disagree, "discarded": discarded,
               "turns": turns, "card": rel.get("card") or {},
               "calculator_cross_checks": [{"value": r["value"], "agrees": r["within_2sigma"], "process": r["process"]} for r in calc],
@@ -761,7 +793,7 @@ def find_text_routes(model, ev, cid, reading, log, run_id):
     whole = sum(1 for r in agree if str(r["covers"]).lower().strip() == "whole")
     report = {"observable": "the reading as stated", "claimed": "none", "claimed_value": None, "all_routes": routes, "independent": ind,
               "independent_routes": len(ind), "agree": len(agree), "disagree": len(disagree), "fine_agree": whole,
-              "strict_agree": len(strict_agree), "cyclical": len(agree) > len(strict_agree),
+              "strict_agree": len(strict_agree), "cyclical": len(agree) > len(strict_agree), "shared": shared_among(agree, ev),
               "partial_support": [r["covers"] for r in agree if str(r["covers"]).lower().strip() != "whole"],
               "disagreeing": disagree, "discarded": discarded, "text": True}
     log.write(run=run_id, claim=cid, pass_="ROUTE_STATE", observable="text", input=ctx, model_proposal=got, report=report)
@@ -787,7 +819,9 @@ def check_neighbours(model, ev, cid, reading, anchor, log, run_id):
         status, note = "unchecked", got.get("reason", "")
         if rv and ev.group_of(fn) is not None:
             iv, nv = parse_number(got.get("implied")), parse_number(rv)
-            if iv is not None and nv is not None and ev.contains_number(rv, fn):
+            if iv is not None and not single_number(str(got.get("implied"))):
+                status, note = "unchecked", f"implied value is not a single number ('{str(got.get('implied'))[:60]}…'); not compared"
+            elif iv is not None and nv is not None and ev.contains_number(rv, fn):
                 iu, ru = unit_of(str(got.get("implied"))), unit_of(str(rv))
                 same_kind = (iu == ru) or (not iu and not ru) or (units_ and units_compatible(units_, str(rv)) and units_compatible(units_, str(got.get("implied"))))
                 if not same_kind or not dims_compatible(iu or units_ or "", str(rv)):
@@ -848,7 +882,11 @@ def fit_account(reports):
             L.append(f"  · discarded: {d['what']}: {d['why']}")
     return "\n".join(L) if L else "no observable could be routed"
 
-def synthesis_by_rule(reports, judge, ev, neighbours=None, downwind=None):
+def bears_on(quote, reading, extra=""):
+    cw = lambda t: set(w for w in WORD.findall((t or "").lower()) if len(w) >= 5)
+    return len(cw(reading) & cw(quote)) >= 2 or len(cw(extra) & cw(quote)) >= 2
+
+def synthesis_by_rule(reports, judge, ev, neighbours=None, downwind=None, reading=""):
     outcome, lock, reason = "NO_DATA", 0, []
     neighbours = neighbours or []; downwind = downwind or []
     dw_reject = [d for d in downwind if d["status"] == "verified_mismatch"]
@@ -893,12 +931,16 @@ def synthesis_by_rule(reports, judge, ev, neighbours=None, downwind=None):
             fn = (str(c.get("file") or "")).strip("[] ")
             if v == "REJECT" and not ev.contains_quote(c.get("quote") or "", fn):
                 c["recorded_not_counted"] = "REJECT without a verbatim quote from an evidence file"; v = "NOT_REJECT"
+            elif v == "REJECT" and not bears_on(c.get("quote"), reading, c.get("alternative")):
+                c["recorded_not_counted"] = "REJECT with a verbatim quote that does not bear on the reading"; v = "NOT_REJECT"
             elif v == "NO_DATA":
                 c["note"] = "no competing explanation found in evidence"; v = "NOT_REJECT"
         elif k == "constraint" and v == "REJECT":
             fn = (str(c.get("file") or "")).strip("[] ")
             if not ev.contains_quote(c.get("quote") or "", fn):
                 c["downgraded"] = "REJECT without a verbatim quote from an evidence file"; v = "NO_DATA"
+            elif not bears_on(c.get("quote"), reading, c.get("transformation")):
+                c["downgraded"] = "REJECT with a verbatim quote that does not bear on the reading (recorded, not counted)"; v = "NOT_REJECT"
         c["verdict"] = v; cores[k] = c
     if any(c["verdict"] == "REJECT" for c in cores.values()):
         synth = "REJECTED"
@@ -918,7 +960,9 @@ def synthesis_by_rule(reports, judge, ev, neighbours=None, downwind=None):
     elif provisional_only and synth in ("STABILIZED", "LOCKED"):
         diag = "agreement rests only on provisional (unverified-transcription) sources"
     elif any(r.get("cyclical") for r in reports):
-        diag = "cyclical: some agreeing routes share ancestry or inputs; counted once"
+        sh = sorted(set(x for r in reports for x in (r.get("shared") or [])))
+        diag = ("agreeing routes share " + (", ".join(sh) if sh else "ancestry or inputs") +
+                "; shared routes counted once (partly cyclical: the agreement is weaker than the route count suggests)")
     elif synth in ("STABILIZED", "LOCKED") and neighbours and lined < len(neighbours):
         diag = f"incomplete: {lined} of {len(neighbours)} neighbours lined up"
     elif synth in ("STABILIZED", "LOCKED"):
@@ -993,7 +1037,7 @@ def run(path, model, question, max_claims, out_dir, evidence_dir):
         dw = check_downwind(model, ev, rid, reading, log, run_id)
         ctx = ev.retrieve(reading)
         judge = ask(model, SYSTEM, P_JUDGE.format(cid=rid, reading=reading, routes=json.dumps(brief, ensure_ascii=False), ctx=ctx))
-        synth, cores, lock = synthesis_by_rule(reports, judge, ev, nbs, dw)
+        synth, cores, lock = synthesis_by_rule(reports, judge, ev, nbs, dw, reading)
         settled = [{"observable": rp["observable"], "value": rp["claimed_value"], "band": rp["claimed_band"]}
                    for rp in reports if not rp.get("text") and synth in ("STABILIZED", "LOCKED") and rp["claimed_value"] is not None]
         e = {"quad_core": cores, "lock_level": lock, "synthesis": synth, "fit_account": fit, "neighbours": nbs, "downwind": dw,

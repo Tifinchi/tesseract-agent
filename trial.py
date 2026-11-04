@@ -79,8 +79,9 @@ def main():
     groups = memory.group_claims(entries, threshold=0.55)
     L = [f"# Trial {stamp} — version {ver}, {a.runs} identical runs of {os.path.basename(a.source)}, {a.max_claims} claims each, {(time.time()-t0)/60:.1f} min",
          f"runs: {', '.join(ids)}", ""]
-    n_claims = [sum(1 for e in entries if e['run'] == rid) for rid in ids]
-    L.append(f"readings evaluated per run: {n_claims}  (extraction drift: {'none' if len(set(n_claims)) == 1 else 'yes'})")
+    n_base = [sum(1 for e in entries if e['run'] == rid and not e['cid'].endswith('f')) for rid in ids]
+    n_fold = [sum(1 for e in entries if e['run'] == rid and e['cid'].endswith('f')) for rid in ids]
+    L.append(f"base readings per run: {n_base}  (extraction drift: {'none' if len(set(n_base)) == 1 else 'yes'}); fold children per run: {n_fold}")
     stable, seen_in_all, total = 0, 0, 0
     L.append("\n## Readings matched across runs — verdict per run")
     for g in sorted(groups, key=lambda g: -len(g)):

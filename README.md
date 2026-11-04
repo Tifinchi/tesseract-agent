@@ -111,6 +111,23 @@ measurement route plus a definition, STABILIZED, not LOCKED. v1.7: calculator ro
 reported and compared, never counted; reference-group lookups are definition-class; the H1 title section is
 skipped; a constraint REJECT needs a verbatim quote like the alternative core.
 
+## Trial 3 (v1.7 at ccef203; 3 × 4 claims; 40 min) and v1.8
+
+The v1.7 fixes held: 2π came out STABILIZED, not LOCKED, in two runs (Cole/Lehner 6.2859 and Cole/Petrie
+6.2808 share Cole's perimeter, so strict count 1, plus the seked definition 6.2857), and the engine's prior
+verdicts appeared as cross-checks only. Four failures, all of the parser or of a rule written too narrowly:
+the model wrote a relation with unit words inside it ("… * (1 meter / 1 meter)") and the evaluator threw it
+out as an unknown variable, so one run saw no route and read UNSTABLE; a neighbour's "implied" value came
+back as a sentence with two numbers and the parser took the first one (the perimeter) as the height, a false
+"contradicts"; "approximately 2π" parsed as 2; and the constraint core REJECTED "the chamber stays dry due to
+ventilation" on a verbatim bedrock quote about water flowing downhill — verbatim, from the evidence, and
+about nothing in the reading. Extraction: 6/9/10 readings, but the count mixed fold children with base
+readings. v1.8: unit words after a number inside an expression evaluate as 1 (and the prompt says not to
+write them); a neighbour is compared only when its implied value is a single number, otherwise "unchecked";
+"2π", "π" and "nπ" parse; a constraint or alternative REJECT must bear on the reading (shared content words,
+the same test the down-wind check uses) or it is recorded and not counted; the trial report counts base
+readings and fold children separately; and a "cyclical" verdict names what the routes share.
+
 ## Trial: the same version, three times, before anything changes
 
     python3 trial.py claims/khufu-run.md --runs 3 --max-claims 4
