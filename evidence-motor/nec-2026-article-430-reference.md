@@ -6,7 +6,7 @@ retrieved: 2026-11-04
 group: nec
 watch: NFPA 70 National Electrical Code current edition
 safety: yes
-status: reference summary of the 2026 edition, paraphrased, with table values as published; read against the edition on 2026-11-04
+status: reference summary of the 2026 edition, requirements restated in the compiler's words and table values as published, read against the edition on 2026-11-04
 
 Which current to use (430.6(A)(1), page 70-386). For ordinary motors, the full-load current values in Tables 430.247 through 430.250 are used instead of the current marked on the motor nameplate when determining conductor ampacity, switch current ratings, and the ratings of branch-circuit short-circuit and ground-fault protection. Motors built for low speed (under 1200 rpm), high torque, canned pumps, and multispeed motors are the exceptions. The nameplate current is what the motor draws; the table current is what the code sizes the circuit from.
 
