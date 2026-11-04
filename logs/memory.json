@@ -75,7 +75,7 @@
    "open_cells": []
   },
   {
-   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %.",
+   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %, from the seked of 5½ palms (rise 14 : run 11).",
    "history": [
     {
      "run": "20261102-212827-8cbb01",
@@ -181,9 +181,37 @@
      "verdict": "STABILIZED",
      "reason": "perimeter/height ratio: 2 independent route(s) agree (strict 1)",
      "why": "The claim fits because two independent routes agree within 2σ, and the cross-checks confirm the result."
+    },
+    {
+     "run": "20261103-173647-57e048",
+     "cid": "s2c2r1",
+     "verdict": "UNSTABLE",
+     "reason": "perimeter/height ratio: 1 independent route(s) agree (strict 0)",
+     "why": "The claim fits the available proof, but lacks an independent route to confirm the perimeter/height ratio."
+    },
+    {
+     "run": "20261103-183306-91f012",
+     "cid": "s2c2r1",
+     "verdict": "STABILIZED",
+     "reason": "perimeter/height ratio: 2 independent route(s) agree (strict 1)",
+     "why": "The claim fits because two independent routes agree within 2σ, and the cross-checks confirm the result."
+    },
+    {
+     "run": "20261103-184512-349745",
+     "cid": "s2c1r1",
+     "verdict": "REJECTED",
+     "reason": "perimeter: survey in cole-1925.md: \"The perimeter is therefore 921.455 m.\" → 921.455 vs claimed 921.2; perimeter: computed 4 * side_length from side_length=230.35 [petrie-1883.md, survey] → 921.4 vs claimed 921.2; height: survey in petrie-1883.md: \"The original height, reconstructed from the casing ",
+     "why": "The claim is REJECTED because the ratio does not agree within 2σ with any independent route."
+    },
+    {
+     "run": "20261103-190528-0e1eb8",
+     "cid": "s2c1r1",
+     "verdict": "REJECTED",
+     "reason": "perimeter: survey in cole-1925.md: \"The perimeter is therefore 921.455 m.\" → 921.455 vs claimed 921.2; perimeter: computed 4 * side_length from side_length=230.35 [petrie-1883.md, survey] → 921.4 vs claimed 921.2; height: survey in petrie-1883.md: \"The original height, reconstructed from the casing ",
+     "why": "The claim is REJECTED because the ratio of 6.283 ± 0.0005 does not agree with the independent routes found for the perimeter and height."
     }
    ],
-   "current": "STABILIZED",
+   "current": "REJECTED",
    "settled": [
     {
      "observable": "perimeter/height ratio",
@@ -226,6 +254,13 @@
      "band": 0.0031415,
      "run": "20261103-172309-f26c46",
      "verdict": "STABILIZED"
+    },
+    {
+     "observable": "perimeter/height ratio",
+     "value": 6.283,
+     "band": 0.0031415,
+     "run": "20261103-183306-91f012",
+     "verdict": "STABILIZED"
     }
    ],
    "open_cells": [
@@ -263,6 +298,30 @@
      "run": "20261103-172309-f26c46",
      "observable": "A third independent route for perimeter/height ratio",
      "next_route": "An independent survey or analysis of the Great Pyramid's dimensions",
+     "closed": true
+    },
+    {
+     "run": "20261103-173647-57e048",
+     "observable": "perimeter/height ratio",
+     "next_route": "an independent measurement or survey",
+     "closed": true
+    },
+    {
+     "run": "20261103-183306-91f012",
+     "observable": "The perimeter/height ratio of the Great Pyramid",
+     "next_route": "An independent survey or analysis measuring the perimeter and height of the Great Pyramid.",
+     "closed": false
+    },
+    {
+     "run": "20261103-184512-349745",
+     "observable": "perimeter/height ratio",
+     "next_route": "An independent route that agrees within 2σ",
+     "closed": false
+    },
+    {
+     "run": "20261103-190528-0e1eb8",
+     "observable": "ratio: 6.283 ± 0.0005",
+     "next_route": "survey or published analysis confirming the ratio",
      "closed": false
     }
    ]
@@ -836,6 +895,13 @@
      "verdict": "REJECTED",
      "reason": "salt crust thickness: 0 independent route(s) agree (strict 0); ventilation rate: 0 independent route(s) agree (strict 0)",
      "why": "The claim is rejected because there is no evidence value for humidity_level and volume_flow_rate, which are necessary to calculate salt crust thickness and ventilation rate."
+    },
+    {
+     "run": "20261103-173647-57e048",
+     "cid": "s2c1r1",
+     "verdict": "REJECTED",
+     "reason": "salt crust thickness: 0 independent route(s) agree (strict 0); ventilation rate: 0 independent route(s) agree (strict 0)",
+     "why": "The claim is rejected because there is no evidence for the salt deposition rate and volume flow rate, which are necessary to verify the claim."
     }
    ],
    "current": "REJECTED",
@@ -942,6 +1008,18 @@
      "observable": "volume_flow_rate",
      "next_route": "measure volume_flow_rate",
      "closed": false
+    },
+    {
+     "run": "20261103-173647-57e048",
+     "observable": "salt_deposition_rate",
+     "next_route": "Measure the rate of salt deposition in the King's Chamber.",
+     "closed": false
+    },
+    {
+     "run": "20261103-173647-57e048",
+     "observable": "volume_flow_rate",
+     "next_route": "Measure the volume flow rate of air in the King's Chamber.",
+     "closed": false
     }
    ]
   },
@@ -994,7 +1072,7 @@
    ]
   },
   {
-   "text": "King's Chamber: off-axis ~11 m south, floor at 43.0 m where the horizontal section has exactly half the base area, h = H(1 − 1/√2) = 42.9 m; shafts open to the pole and Orion.",
+   "text": "The King's Chamber is off-axis ~11 m south, floor at 43.0 m where the horizontal section has exactly half the base area.",
    "history": [
     {
      "run": "20261102-214544-94674b",
@@ -1009,9 +1087,23 @@
      "verdict": "STABILIZED",
      "reason": "Prediction matches known_value for floor height",
      "why": ""
+    },
+    {
+     "run": "20261103-184512-349745",
+     "cid": "s2c2r1",
+     "verdict": "REJECTED",
+     "reason": "base area: computed length * width from length=230.33 [lehner-1997.md, published_analysis], width=10.47 [lehner-1997.md, published_analysis] → 2411.56 vs claimed 4305.6",
+     "why": "The claim is REJECTED because there are no independent routes for the horizontal section area, which is critical for verifying the claim."
+    },
+    {
+     "run": "20261103-190528-0e1eb8",
+     "cid": "s2c2r1",
+     "verdict": "REJECTED",
+     "reason": "base area: computed length * width from length=230.33 [lehner-1997.md, published_analysis], width=10.47 [lehner-1997.md, published_analysis] → 2411.56 vs claimed 4305.6",
+     "why": "The claim is rejected because the computed horizontal section area (2411.56 m²) significantly differs from the claimed value (4305.6 m²)."
     }
    ],
-   "current": "STABILIZED",
+   "current": "REJECTED",
    "settled": [],
    "open_cells": [
     {
@@ -1030,6 +1122,18 @@
      "run": "20261102-221054-7a31bb",
      "observable": null,
      "next_route": null,
+     "closed": false
+    },
+    {
+     "run": "20261103-184512-349745",
+     "observable": "horizontal section area",
+     "next_route": "direct measurement or calculation from base area",
+     "closed": false
+    },
+    {
+     "run": "20261103-190528-0e1eb8",
+     "observable": "horizontal section area",
+     "next_route": "Find an independent measurement or survey for the horizontal section area.",
      "closed": false
     }
    ]
@@ -1079,7 +1183,7 @@
    ]
   },
   {
-   "text": "lid lowered from the ceiling (coffer has a sliding groove and pin holes; nine beams all present)",
+   "text": "the lid was lowered from the ceiling due to the presence of a sliding groove and pin holes in the coffer",
    "history": [
     {
      "run": "20261102-214544-94674b",
@@ -1115,6 +1219,13 @@
      "verdict": "UNSTABLE",
      "reason": "number of beams: 1 independent route(s) agree within 2σ",
      "why": "The claim is unstable due to insufficient evidence regarding the lid's movement from the ceiling."
+    },
+    {
+     "run": "20261103-190528-0e1eb8",
+     "cid": "s4c1r1",
+     "verdict": "UNSTABLE",
+     "reason": "neighbour contradicts: the lid's position relative to the ceiling (corner ×) (petrie-1883.md: \"the lid is absent\" — The evidence passage states the lid is absent, which contradicts the implied statement that the lid was lowered into the coffer.)",
+     "why": "The reading fits the available evidence from Petrie's analysis, but lacks details on pin holes and the mechanism of lowering the lid."
     }
    ],
    "current": "UNSTABLE",
@@ -1136,6 +1247,12 @@
      "run": "20261102-230006-ea7914",
      "observable": "number of beams",
      "next_route": "survey or document confirming the exact count of beams",
+     "closed": false
+    },
+    {
+     "run": "20261103-190528-0e1eb8",
+     "observable": "pin holes and mechanism of lowering the lid",
+     "next_route": "additional archaeological survey or document detailing the coffer's construction.",
      "closed": false
     }
    ]
@@ -1431,7 +1548,7 @@
    ]
   },
   {
-   "text": "The King's Chamber is ventilated and stays dry, while the Queen's Chamber, at the same depth and with the same rock and visitors, carries a salt crust up to ~1 cm but the King's Chamber almost none.",
+   "text": "The King's Chamber is ventilated and stays dry, while the Queen's Chamber, despite being in the same pyramid and rock, carries a salt crust up to ~1 cm.",
    "history": [
     {
      "run": "20261102-224342-1990d5",
@@ -1439,6 +1556,13 @@
      "verdict": "UNSTABLE",
      "reason": "salt crust thickness in Queen's Chamber: 0 independent route(s) agree",
      "why": "The claim is unstable due to a lack of data on salt crust thickness in the King's Chamber."
+    },
+    {
+     "run": "20261103-183306-91f012",
+     "cid": "s2c1r1",
+     "verdict": "UNSTABLE",
+     "reason": "salt crust thickness: 0 independent route(s) agree (strict 0); King's Chamber temperature: 0 independent route(s) agree (strict 0)",
+     "why": "The claim is unstable due to lack of evidence for salt deposit rate and initial temperature of the King's Chamber."
     }
    ],
    "current": "UNSTABLE",
@@ -1448,6 +1572,18 @@
      "run": "20261102-224342-1990d5",
      "observable": "salt crust thickness in King's Chamber",
      "next_route": "a measurement of salt crust thickness in the King's Chamber",
+     "closed": false
+    },
+    {
+     "run": "20261103-183306-91f012",
+     "observable": "salt deposit rate",
+     "next_route": "measure the rate of salt deposition in the Queen's Chamber",
+     "closed": false
+    },
+    {
+     "run": "20261103-183306-91f012",
+     "observable": "initial temperature of the King's Chamber",
+     "next_route": "measure the initial temperature of the King's Chamber",
      "closed": false
     }
    ]
@@ -1526,7 +1662,7 @@
    ]
   },
   {
-   "text": "pyramid as pump, flood retainer, or trap (no water above it; gypsum mortar dissolves; no reversible stone mechanism anywhere in Egypt)",
+   "text": "the pyramid cannot function as a pump, flood retainer, or trap due to the absence of water above it, the dissolution of gypsum mortar, and the lack of any reversible stone mechanism in Egypt",
    "history": [
     {
      "run": "20261102-224342-1990d5",
@@ -1534,6 +1670,20 @@
      "verdict": "UNSTABLE",
      "reason": "no numeric observable",
      "why": "The claim is unstable due to insufficient evidence."
+    },
+    {
+     "run": "20261103-183306-91f012",
+     "cid": "s4c1r1",
+     "verdict": "UNSTABLE",
+     "reason": "the reading as stated: 1 independent route(s) agree (strict 1)",
+     "why": "the claim is supported by the observable reality that water does not rise in an open channel without being pushed or pumped"
+    },
+    {
+     "run": "20261103-184512-349745",
+     "cid": "s4c1r1",
+     "verdict": "UNSTABLE",
+     "reason": "the reading as stated: 1 independent route(s) agree (strict 1)",
+     "why": "the reading fits the observable reality that water does not rise in an open channel without being pushed or pumped"
     }
    ],
    "current": "UNSTABLE",
@@ -1555,6 +1705,30 @@
      "run": "20261102-224342-1990d5",
      "observable": "mechanical evidence",
      "next_route": "archaeological excavation for any mechanical devices",
+     "closed": false
+    },
+    {
+     "run": "20261103-183306-91f012",
+     "observable": "dissolution of gypsum mortar",
+     "next_route": "chemical analysis of the mortar samples",
+     "closed": false
+    },
+    {
+     "run": "20261103-183306-91f012",
+     "observable": "reversible stone mechanism",
+     "next_route": "archaeological survey of the pyramid",
+     "closed": false
+    },
+    {
+     "run": "20261103-184512-349745",
+     "observable": "the dissolution of gypsum mortar",
+     "next_route": "a chemical analysis of the mortar samples",
+     "closed": false
+    },
+    {
+     "run": "20261103-184512-349745",
+     "observable": "the lack of any reversible stone mechanism in Egypt",
+     "next_route": "an archaeological survey of ancient Egyptian construction techniques",
      "closed": false
     }
    ]
@@ -1826,7 +2000,7 @@
    ]
   },
   {
-   "text": "The Big Void is a structural feature, similar to other sealed cavities.",
+   "text": "The Big Void is a structural feature, similar to other sealed cavities found in the pyramid.",
    "history": [
     {
      "run": "20261103-141014-1ccdc8",
@@ -1890,6 +2064,41 @@
      "verdict": "UNSTABLE",
      "reason": "dimensions of other sealed cavities: 1 independent route(s) agree (strict 1)",
      "why": "The claim fits the available evidence, but lacks a second independent route to confirm the dimensions of The Big Void."
+    },
+    {
+     "run": "20261103-173647-57e048",
+     "cid": "s3c1r1",
+     "verdict": "UNSTABLE",
+     "reason": "dimensions of other sealed cavities: 1 independent route(s) agree (strict 1)",
+     "why": "The claim fits the available evidence from Reisner's report, but lacks independent verification."
+    },
+    {
+     "run": "20261103-173647-57e048",
+     "cid": "s3c1r2",
+     "verdict": "REJECTED",
+     "reason": "dimensions of other sealed cavities: excavation_report in vyse-1840.md: \"Vyse also had the pit in the floor of the Subterranean Chamber deepened to about 11 m and excavated beneath the coffer in the King's Chamber\" → 11 vs claimed 30",
+     "why": "The dimensions of the Big Void do not agree with the dimensions of other sealed cavities within the acceptable range."
+    },
+    {
+     "run": "20261103-183306-91f012",
+     "cid": "s3c1r1",
+     "verdict": "UNSTABLE",
+     "reason": "size of other sealed cavities: 1 independent route(s) agree (strict 1)",
+     "why": "The claim fits the available evidence from Reisner's report, but lacks independent verification."
+    },
+    {
+     "run": "20261103-184512-349745",
+     "cid": "s3c1r1",
+     "verdict": "REJECTED",
+     "reason": "size of other sealed cavities: excavation_report in vyse-1840.md: \"Vyse also had the pit in the floor of the Subterranean Chamber deepened to about 11 m and excavated beneath the coffer in the King's Chamber\" → 11 vs claimed 30",
+     "why": "The claim is rejected because one of the independent routes disagrees with the proposed size of The Big Void."
+    },
+    {
+     "run": "20261103-190528-0e1eb8",
+     "cid": "s3c1r1",
+     "verdict": "UNSTABLE",
+     "reason": "size of other sealed cavities: 1 independent route(s) agree (strict 1)",
+     "why": "The claim fits the available evidence from Reisner's report, but lacks independent verification."
     }
    ],
    "current": "UNSTABLE",
@@ -1969,6 +2178,36 @@
      "run": "20261103-172309-f26c46",
      "observable": "dimensions of The Big Void",
      "next_route": "an independent survey or measurement of The Big Void",
+     "closed": false
+    },
+    {
+     "run": "20261103-173647-57e048",
+     "observable": "dimensions of The Big Void",
+     "next_route": "new survey or excavation",
+     "closed": false
+    },
+    {
+     "run": "20261103-173647-57e048",
+     "observable": "dimensions of the Big Void",
+     "next_route": "a second independent measurement or survey of the Big Void",
+     "closed": false
+    },
+    {
+     "run": "20261103-183306-91f012",
+     "observable": "size of the Big Void",
+     "next_route": "an excavation report or a different document",
+     "closed": false
+    },
+    {
+     "run": "20261103-184512-349745",
+     "observable": "size of The Big Void",
+     "next_route": "An independent measurement or excavation report confirming the size of The Big Void.",
+     "closed": false
+    },
+    {
+     "run": "20261103-190528-0e1eb8",
+     "observable": "size of the Big Void",
+     "next_route": "an independent excavation report or measurement",
      "closed": false
     }
    ]
@@ -2323,6 +2562,13 @@
      "verdict": "UNSTABLE",
      "reason": "the reading as stated: 1 independent route(s) agree (strict 1)",
      "why": "The reading fits the available evidence, but lacks additional independent routes to confirm the alignment."
+    },
+    {
+     "run": "20261103-173647-57e048",
+     "cid": "s4c1r1",
+     "verdict": "UNSTABLE",
+     "reason": "the reading as stated: 1 independent route(s) agree (strict 1)",
+     "why": "The reading fits if red paint is hematite, but there is only partial support from the excavation report."
     }
    ],
    "current": "UNSTABLE",
@@ -2338,6 +2584,12 @@
      "run": "20261103-172309-f26c46",
      "observable": "red paint as blood",
      "next_route": "an independent source confirming the alignment",
+     "closed": false
+    },
+    {
+     "run": "20261103-173647-57e048",
+     "observable": "red paint as hematite",
+     "next_route": "an independent document or survey confirming the use of hematite for red paint in the context of quarry marks",
      "closed": false
     }
    ]
@@ -2457,11 +2709,475 @@
      "closed": false
     }
    ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-173647-57e048",
+     "cid": "s2c1r1f",
+     "verdict": "STABILIZED",
+     "reason": "the reading as stated: 2 independent route(s) agree (strict 2)",
+     "why": "The claim is supported by two independent published analyses."
+    }
+   ],
+   "current": "STABILIZED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-173647-57e048",
+     "observable": "ventilation rate",
+     "next_route": "specific measurement or survey",
+     "closed": false
+    },
+    {
+     "run": "20261103-173647-57e048",
+     "observable": "salt crust thickness",
+     "next_route": "specific measurement or survey",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-173647-57e048",
+     "cid": "s2c2r1f",
+     "verdict": "UNSTABLE",
+     "reason": "neighbour contradicts: the height of the pyramid (corner -) (the height of the pyramid: implied 921.455 vs reported 146.59 in lehner-1997.md); neighbour contradicts: the ratio perimeter/height (corner ×) (the ratio perimeter/height: implied 2 vs reported 6.2857 in reference-physics.md)",
+     "why": "The claim is based on a single independent route, which is insufficient to stabilize the claim."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-173647-57e048",
+     "observable": "perimeter/height ratio",
+     "next_route": "independent survey or measurement of the perimeter and height",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-173647-57e048",
+     "cid": "s3c1r1f",
+     "verdict": "REJECTED",
+     "reason": "the reading as stated: published_analysis in scanpyramids-2017.md: \"The void is at least 30 m long, with a cross-section similar to that of the Grand Gallery (about 8 m high), located between 50 and 70 m above ground. Its muon signal is comparable to that of the Grand\"; the reading as stated: second",
+     "why": "The claim is rejected because there are more independent routes that contradict the claim than support it."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-173647-57e048",
+     "observable": "The Big Void's consistency with other sealed cavities",
+     "next_route": "An independent route that would support the claim.",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-173647-57e048",
+     "cid": "s3c1r2f",
+     "verdict": "UNSTABLE",
+     "reason": "the reading as stated: 1 independent route(s) agree (strict 1)",
+     "why": "The reading fits the available proof but lacks independent verification."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-173647-57e048",
+     "observable": "dimensions of other sealed cavities",
+     "next_route": "independent verification of dimensions of other sealed cavities",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-173647-57e048",
+     "cid": "s4c1r1f",
+     "verdict": "UNSTABLE",
+     "reason": "the reading as stated: 1 independent route(s) agree (strict 1)",
+     "why": "The reading fits the available evidence from the excavation report, but lacks additional independent routes to confirm the presence of hematite or another form of iron oxide in the red paint."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-173647-57e048",
+     "observable": "the presence of hematite or another form of iron oxide in the red paint",
+     "next_route": "an independent chemical analysis or another excavation report confirming the presence of hematite or another form of iron oxide in the red paint",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-183306-91f012",
+     "cid": "s3c1r1f",
+     "verdict": "STABILIZED",
+     "reason": "the reading as stated: 3 independent route(s) agree (strict 3)",
+     "why": "The claim fits because it is supported by three independent routes covering the whole reading."
+    }
+   ],
+   "current": "STABILIZED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-183306-91f012",
+     "observable": "dimensions of other sealed cavities",
+     "next_route": "vyse-1840.md",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "The Big Void is a borehole, a hypothesis distinct from the structural prior.",
+   "history": [
+    {
+     "run": "20261103-183306-91f012",
+     "cid": "s3c1r2",
+     "verdict": "UNSTABLE",
+     "reason": "the reading as stated: 1 independent route(s) agree (strict 1)",
+     "why": "The claim is supported by one independent statement from a published analysis, but lacks additional independent verification."
+    },
+    {
+     "run": "20261103-190528-0e1eb8",
+     "cid": "s3c1r2",
+     "verdict": "UNSTABLE",
+     "reason": "the reading as stated: 1 independent route(s) agree (strict 1)",
+     "why": "The reading fits the available evidence from the published analysis, but lacks additional independent verification."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-183306-91f012",
+     "observable": "independent muon detection techniques",
+     "next_route": "conduct additional muon detection experiments",
+     "closed": false
+    },
+    {
+     "run": "20261103-190528-0e1eb8",
+     "observable": "Independent verification of the borehole hypothesis",
+     "next_route": "Conduct a new muon detection experiment or other independent verification method.",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-183306-91f012",
+     "cid": "s3c1r2f",
+     "verdict": "REJECTED",
+     "reason": "down-wind mismatch: if true, If the Big Void is a borehole, it should be visible as a vertical shaft or tunnel from the outside or inside of the pyramid. — but scanpyramids-2017.md: \"Muon imaging records only material above the detector positions; the bedrock beneath the pyramid is \"",
+     "why": "The claim is rejected because there is only one independent route supporting the claim, and no contradicting routes, but the evidence is insufficient to stabilize the claim."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-183306-91f012",
+     "observable": "independent routes to support the claim",
+     "next_route": "additional independent studies or evidence",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-183306-91f012",
+     "cid": "s4c1r1f",
+     "verdict": "REJECTED",
+     "reason": "down-wind mismatch: if true, Water would flow downhill and find its own level, meaning that if there were water above the pyramid, it would naturally drain away unless actively retained or pumped. — but reference-observable-reality.md: \"Water flows downhill and finds its own level; it does not rise ",
+     "why": "The claim is rejected because it contradicts observable reality: water does not rise in an open channel without being pushed or pumped."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": []
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-184512-349745",
+     "cid": "s2c1r1f",
+     "verdict": "REJECTED",
+     "reason": "down-wind mismatch: if true, The perimeter/height ratio of the Great Pyramid would be 0.156 to 0.05 %, implying a specific slope and base-to-height ratio. — but lehner-1997.md: \"Khafre's pyramid: base 215 m, height 143.5 m, slope 53° 10', built on ground about 10 m higher than \"",
+     "why": "The claim of a perimeter/height ratio of 0.156 ± 7.8e-05 is rejected because it disagrees with the computed ratio of 6.28593 ± 0.000214 based on independent sources."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-184512-349745",
+     "observable": "perimeter/height ratio",
+     "next_route": "An independent survey or analysis confirming the claimed ratio",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-184512-349745",
+     "cid": "s2c2r1f",
+     "verdict": "UNSTABLE",
+     "reason": "horizontal section area at King's Chamber floor level: 0 independent route(s) agree (strict 0)",
+     "why": "The claim is unstable due to a lack of independent routes to verify the horizontal section area at the King's Chamber floor level."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-184512-349745",
+     "observable": "horizontal section area at King's Chamber floor level",
+     "next_route": "an independent measurement or survey of the horizontal section area at the King's Chamber floor level",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-184512-349745",
+     "cid": "s3c1r1f",
+     "verdict": "UNSTABLE",
+     "reason": "the reading as stated: 3 independent route(s) agree (strict 3); down-wind mismatch with a quote that does not bear on it: The presence of the Big Void would not cause any observable changes in the pyramid's external appearance or stability. (The observable reality line does not provide evidence rele",
+     "why": "The reading fits the available proof, which supports the claim that the Big Void is similar to other sealed cavities in terms of its impact on the surrounding structure."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-184512-349745",
+     "observable": "impact of the Big Void on the surrounding structure",
+     "next_route": "specific measurement or survey detailing the impact of the Big Void",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "The Big Void is a borehole.",
+   "history": [
+    {
+     "run": "20261103-184512-349745",
+     "cid": "s3c1r2",
+     "verdict": "REJECTED",
+     "reason": "down-wind mismatch: if true, A borehole would likely have been filled with debris or sealed off, but it should still be detectable by modern imaging techniques. — but scanpyramids-2017.md: \"Three independent muon detection techniques (nuclear emulsion films placed in the Queen's Chamber, s\"",
+     "why": "The claim is rejected because it lacks sufficient independent support."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-184512-349745",
+     "observable": "The Big Void as a borehole",
+     "next_route": "Additional independent verification or measurement",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-184512-349745",
+     "cid": "s3c1r2f",
+     "verdict": "UNSTABLE",
+     "reason": "the reading as stated: 1 independent route(s) agree (strict 1)",
+     "why": "The reading fits the available evidence from the published analysis, but lacks additional independent verification."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-184512-349745",
+     "observable": "The Big Void's cross-section and location",
+     "next_route": "Additional independent muon detection experiments or other verification methods",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-184512-349745",
+     "cid": "s4c1r1f",
+     "verdict": "UNSTABLE",
+     "reason": "the reading as stated: 5 independent route(s) agree (strict 5); down-wind mismatch with a quote that does not bear on it: Water would need to be present above the pyramid for it to function as a pump, flood retainer, or trap. (The observable reality contradicts the premise that water would naturally",
+     "why": "The reading fits the available proof, but lacks independent routes for the dissolution of gypsum mortar and other mechanisms or conditions."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-184512-349745",
+     "observable": "dissolution of gypsum mortar",
+     "next_route": "additional independent route(s) for the dissolution of gypsum mortar",
+     "closed": false
+    },
+    {
+     "run": "20261103-184512-349745",
+     "observable": "other mechanisms or conditions",
+     "next_route": "additional independent route(s) for other mechanisms or conditions that could enable the pyramid's functionality as a pump, flood retainer, or trap",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-190528-0e1eb8",
+     "cid": "s2c1r1f",
+     "verdict": "UNSTABLE",
+     "reason": "the reading as stated: 0 independent route(s) agree (strict 0)",
+     "why": "The claim is UNSTABLE due to lack of independent verification for the height measurement."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-190528-0e1eb8",
+     "observable": "height",
+     "next_route": "Independent survey or measurement of the original height of the Great Pyramid",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-190528-0e1eb8",
+     "cid": "s2c2r1f",
+     "verdict": "REJECTED",
+     "reason": "down-wind mismatch: if true, If the horizontal section area is not half the base area, then the pyramid's volume and the number of blocks used would not follow a predictable geometric relationship. — but lehner-1997.md: \"The Great Pyramid of Khufu: base 230.33 m, original height 146.59 m, slope 51° ",
+     "why": "The claim is rejected because the provided evidence does not support the assertion that the horizontal section area is half the base area."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-190528-0e1eb8",
+     "observable": "horizontal section area",
+     "next_route": "new survey or excavation report",
+     "closed": false
+    },
+    {
+     "run": "20261103-190528-0e1eb8",
+     "observable": "base area",
+     "next_route": "new survey or excavation report",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-190528-0e1eb8",
+     "cid": "s3c1r1f",
+     "verdict": "LOCKED",
+     "reason": "the reading as stated: 3 independent route(s) agree (strict 3)",
+     "why": "The claim fits because it is supported by three independent routes that cover the whole reading."
+    }
+   ],
+   "current": "LOCKED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-190528-0e1eb8",
+     "observable": "size of the Big Void",
+     "next_route": "direct measurement or report confirming the size and nature of the Big Void.",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-190528-0e1eb8",
+     "cid": "s3c1r2f",
+     "verdict": "UNSTABLE",
+     "reason": "the reading as stated: 1 independent route(s) agree (strict 1)",
+     "why": "The claim fits the available evidence from muon detection techniques, but lacks additional independent verification."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-190528-0e1eb8",
+     "observable": "cross-section similarity",
+     "next_route": "conduct additional muon detection experiments",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-190528-0e1eb8",
+     "cid": "s4c1r1f",
+     "verdict": "REJECTED",
+     "reason": "neighbour contradicts: the coffer's sliding groove and pin holes (corner .) (petrie-1883.md: \"the lid is absent\" — The evidence passage reports the lid is absent, contradicting the claim that the lid is above the ceiling level outside the coffer.); neighbour contradicts: nine beams present (corner -",
+     "why": "The claim is rejected because there is no independent route to support the lid being above the ceiling level outside the coffer."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-190528-0e1eb8",
+     "observable": "the lid's position relative to the ceiling",
+     "next_route": "a survey or document confirming the lid's position",
+     "closed": false
+    }
+   ]
   }
  ],
  "changes": [
   {
-   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %.",
+   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %, from the seked of 5½ palms (rise 14 : run 11).",
    "from": {
     "run": "20261102-215725-39913b",
     "cid": "c7",
@@ -2478,7 +3194,7 @@
    }
   },
   {
-   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %.",
+   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %, from the seked of 5½ palms (rise 14 : run 11).",
    "from": {
     "run": "20261102-224342-1990d5",
     "cid": "s2c2",
@@ -2495,7 +3211,7 @@
    }
   },
   {
-   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %.",
+   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %, from the seked of 5½ palms (rise 14 : run 11).",
    "from": {
     "run": "20261102-230006-ea7914",
     "cid": "s2c5",
@@ -2512,7 +3228,7 @@
    }
   },
   {
-   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %.",
+   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %, from the seked of 5½ palms (rise 14 : run 11).",
    "from": {
     "run": "20261103-080123-9bc5ec",
     "cid": "s2c5",
@@ -2529,7 +3245,7 @@
    }
   },
   {
-   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %.",
+   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %, from the seked of 5½ palms (rise 14 : run 11).",
    "from": {
     "run": "20261103-141014-1ccdc8",
     "cid": "s2c2r1",
@@ -2546,7 +3262,7 @@
    }
   },
   {
-   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %.",
+   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %, from the seked of 5½ palms (rise 14 : run 11).",
    "from": {
     "run": "20261103-142455-bf3d55",
     "cid": "s2c2r1",
@@ -2563,7 +3279,7 @@
    }
   },
   {
-   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %.",
+   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %, from the seked of 5½ palms (rise 14 : run 11).",
    "from": {
     "run": "20261103-143544-326045",
     "cid": "s2c2r1",
@@ -2580,7 +3296,7 @@
    }
   },
   {
-   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %.",
+   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %, from the seked of 5½ palms (rise 14 : run 11).",
    "from": {
     "run": "20261103-165312-246d4e",
     "cid": "s2c2r1",
@@ -2594,6 +3310,57 @@
     "verdict": "STABILIZED",
     "reason": "perimeter/height ratio: 2 independent route(s) agree (strict 1)",
     "why": "The claim fits because two independent routes agree within the stated precision, and the third route is a cross-check."
+   }
+  },
+  {
+   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %, from the seked of 5½ palms (rise 14 : run 11).",
+   "from": {
+    "run": "20261103-172309-f26c46",
+    "cid": "s2c2r1",
+    "verdict": "STABILIZED",
+    "reason": "perimeter/height ratio: 2 independent route(s) agree (strict 1)",
+    "why": "The claim fits because two independent routes agree within 2σ, and the cross-checks confirm the result."
+   },
+   "to": {
+    "run": "20261103-173647-57e048",
+    "cid": "s2c2r1",
+    "verdict": "UNSTABLE",
+    "reason": "perimeter/height ratio: 1 independent route(s) agree (strict 0)",
+    "why": "The claim fits the available proof, but lacks an independent route to confirm the perimeter/height ratio."
+   }
+  },
+  {
+   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %, from the seked of 5½ palms (rise 14 : run 11).",
+   "from": {
+    "run": "20261103-173647-57e048",
+    "cid": "s2c2r1",
+    "verdict": "UNSTABLE",
+    "reason": "perimeter/height ratio: 1 independent route(s) agree (strict 0)",
+    "why": "The claim fits the available proof, but lacks an independent route to confirm the perimeter/height ratio."
+   },
+   "to": {
+    "run": "20261103-183306-91f012",
+    "cid": "s2c2r1",
+    "verdict": "STABILIZED",
+    "reason": "perimeter/height ratio: 2 independent route(s) agree (strict 1)",
+    "why": "The claim fits because two independent routes agree within 2σ, and the cross-checks confirm the result."
+   }
+  },
+  {
+   "text": "The perimeter/height ratio of the Great Pyramid is 2π to 0.05 %, from the seked of 5½ palms (rise 14 : run 11).",
+   "from": {
+    "run": "20261103-183306-91f012",
+    "cid": "s2c2r1",
+    "verdict": "STABILIZED",
+    "reason": "perimeter/height ratio: 2 independent route(s) agree (strict 1)",
+    "why": "The claim fits because two independent routes agree within 2σ, and the cross-checks confirm the result."
+   },
+   "to": {
+    "run": "20261103-184512-349745",
+    "cid": "s2c1r1",
+    "verdict": "REJECTED",
+    "reason": "perimeter: survey in cole-1925.md: \"The perimeter is therefore 921.455 m.\" → 921.455 vs claimed 921.2; perimeter: computed 4 * side_length from side_length=230.35 [petrie-1883.md, survey] → 921.4 vs claimed 921.2; height: survey in petrie-1883.md: \"The original height, reconstructed from the casing ",
+    "why": "The claim is REJECTED because the ratio does not agree within 2σ with any independent route."
    }
   },
   {
@@ -2937,7 +3704,7 @@
    }
   },
   {
-   "text": "King's Chamber: off-axis ~11 m south, floor at 43.0 m where the horizontal section has exactly half the base area, h = H(1 − 1/√2) = 42.9 m; shafts open to the pole and Orion.",
+   "text": "The King's Chamber is off-axis ~11 m south, floor at 43.0 m where the horizontal section has exactly half the base area.",
    "from": {
     "run": "20261102-214544-94674b",
     "cid": "c7",
@@ -2951,6 +3718,23 @@
     "verdict": "STABILIZED",
     "reason": "Prediction matches known_value for floor height",
     "why": ""
+   }
+  },
+  {
+   "text": "The King's Chamber is off-axis ~11 m south, floor at 43.0 m where the horizontal section has exactly half the base area.",
+   "from": {
+    "run": "20261102-221054-7a31bb",
+    "cid": "c7",
+    "verdict": "STABILIZED",
+    "reason": "Prediction matches known_value for floor height",
+    "why": ""
+   },
+   "to": {
+    "run": "20261103-184512-349745",
+    "cid": "s2c2r1",
+    "verdict": "REJECTED",
+    "reason": "base area: computed length * width from length=230.33 [lehner-1997.md, published_analysis], width=10.47 [lehner-1997.md, published_analysis] → 2411.56 vs claimed 4305.6",
+    "why": "The claim is REJECTED because there are no independent routes for the horizontal section area, which is critical for verifying the claim."
    }
   },
   {
@@ -2971,7 +3755,7 @@
    }
   },
   {
-   "text": "lid lowered from the ceiling (coffer has a sliding groove and pin holes; nine beams all present)",
+   "text": "the lid was lowered from the ceiling due to the presence of a sliding groove and pin holes in the coffer",
    "from": {
     "run": "20261102-215725-39913b",
     "cid": "c11",
@@ -2988,7 +3772,7 @@
    }
   },
   {
-   "text": "lid lowered from the ceiling (coffer has a sliding groove and pin holes; nine beams all present)",
+   "text": "the lid was lowered from the ceiling due to the presence of a sliding groove and pin holes in the coffer",
    "from": {
     "run": "20261102-221054-7a31bb",
     "cid": "c13",
@@ -3090,7 +3874,7 @@
    }
   },
   {
-   "text": "The Big Void is a structural feature, similar to other sealed cavities.",
+   "text": "The Big Void is a structural feature, similar to other sealed cavities found in the pyramid.",
    "from": {
     "run": "20261103-141014-1ccdc8",
     "cid": "s3c1r2",
@@ -3107,7 +3891,7 @@
    }
   },
   {
-   "text": "The Big Void is a structural feature, similar to other sealed cavities.",
+   "text": "The Big Void is a structural feature, similar to other sealed cavities found in the pyramid.",
    "from": {
     "run": "20261103-162958-0fe2e2",
     "cid": "s3c1r1",
@@ -3124,7 +3908,7 @@
    }
   },
   {
-   "text": "The Big Void is a structural feature, similar to other sealed cavities.",
+   "text": "The Big Void is a structural feature, similar to other sealed cavities found in the pyramid.",
    "from": {
     "run": "20261103-165312-246d4e",
     "cid": "s3c1r1",
@@ -3141,7 +3925,7 @@
    }
   },
   {
-   "text": "The Big Void is a structural feature, similar to other sealed cavities.",
+   "text": "The Big Void is a structural feature, similar to other sealed cavities found in the pyramid.",
    "from": {
     "run": "20261103-165312-246d4e",
     "cid": "s3c1r2",
@@ -3158,7 +3942,7 @@
    }
   },
   {
-   "text": "The Big Void is a structural feature, similar to other sealed cavities.",
+   "text": "The Big Void is a structural feature, similar to other sealed cavities found in the pyramid.",
    "from": {
     "run": "20261103-171150-2cf9c9",
     "cid": "s3c1r1",
@@ -3172,6 +3956,74 @@
     "verdict": "UNSTABLE",
     "reason": "dimensions of other sealed cavities: 1 independent route(s) agree (strict 1)",
     "why": "The claim fits the available evidence, but lacks an independent route for the Big Void's dimensions."
+   }
+  },
+  {
+   "text": "The Big Void is a structural feature, similar to other sealed cavities found in the pyramid.",
+   "from": {
+    "run": "20261103-173647-57e048",
+    "cid": "s3c1r1",
+    "verdict": "UNSTABLE",
+    "reason": "dimensions of other sealed cavities: 1 independent route(s) agree (strict 1)",
+    "why": "The claim fits the available evidence from Reisner's report, but lacks independent verification."
+   },
+   "to": {
+    "run": "20261103-173647-57e048",
+    "cid": "s3c1r2",
+    "verdict": "REJECTED",
+    "reason": "dimensions of other sealed cavities: excavation_report in vyse-1840.md: \"Vyse also had the pit in the floor of the Subterranean Chamber deepened to about 11 m and excavated beneath the coffer in the King's Chamber\" → 11 vs claimed 30",
+    "why": "The dimensions of the Big Void do not agree with the dimensions of other sealed cavities within the acceptable range."
+   }
+  },
+  {
+   "text": "The Big Void is a structural feature, similar to other sealed cavities found in the pyramid.",
+   "from": {
+    "run": "20261103-173647-57e048",
+    "cid": "s3c1r2",
+    "verdict": "REJECTED",
+    "reason": "dimensions of other sealed cavities: excavation_report in vyse-1840.md: \"Vyse also had the pit in the floor of the Subterranean Chamber deepened to about 11 m and excavated beneath the coffer in the King's Chamber\" → 11 vs claimed 30",
+    "why": "The dimensions of the Big Void do not agree with the dimensions of other sealed cavities within the acceptable range."
+   },
+   "to": {
+    "run": "20261103-183306-91f012",
+    "cid": "s3c1r1",
+    "verdict": "UNSTABLE",
+    "reason": "size of other sealed cavities: 1 independent route(s) agree (strict 1)",
+    "why": "The claim fits the available evidence from Reisner's report, but lacks independent verification."
+   }
+  },
+  {
+   "text": "The Big Void is a structural feature, similar to other sealed cavities found in the pyramid.",
+   "from": {
+    "run": "20261103-183306-91f012",
+    "cid": "s3c1r1",
+    "verdict": "UNSTABLE",
+    "reason": "size of other sealed cavities: 1 independent route(s) agree (strict 1)",
+    "why": "The claim fits the available evidence from Reisner's report, but lacks independent verification."
+   },
+   "to": {
+    "run": "20261103-184512-349745",
+    "cid": "s3c1r1",
+    "verdict": "REJECTED",
+    "reason": "size of other sealed cavities: excavation_report in vyse-1840.md: \"Vyse also had the pit in the floor of the Subterranean Chamber deepened to about 11 m and excavated beneath the coffer in the King's Chamber\" → 11 vs claimed 30",
+    "why": "The claim is rejected because one of the independent routes disagrees with the proposed size of The Big Void."
+   }
+  },
+  {
+   "text": "The Big Void is a structural feature, similar to other sealed cavities found in the pyramid.",
+   "from": {
+    "run": "20261103-184512-349745",
+    "cid": "s3c1r1",
+    "verdict": "REJECTED",
+    "reason": "size of other sealed cavities: excavation_report in vyse-1840.md: \"Vyse also had the pit in the floor of the Subterranean Chamber deepened to about 11 m and excavated beneath the coffer in the King's Chamber\" → 11 vs claimed 30",
+    "why": "The claim is rejected because one of the independent routes disagrees with the proposed size of The Big Void."
+   },
+   "to": {
+    "run": "20261103-190528-0e1eb8",
+    "cid": "s3c1r1",
+    "verdict": "UNSTABLE",
+    "reason": "size of other sealed cavities: 1 independent route(s) agree (strict 1)",
+    "why": "The claim fits the available evidence from Reisner's report, but lacks independent verification."
    }
   }
  ],
@@ -3190,6 +4042,10 @@
   "20261103-164125-5c004b",
   "20261103-165312-246d4e",
   "20261103-171150-2cf9c9",
-  "20261103-172309-f26c46"
+  "20261103-172309-f26c46",
+  "20261103-173647-57e048",
+  "20261103-183306-91f012",
+  "20261103-184512-349745",
+  "20261103-190528-0e1eb8"
  ]
 }
