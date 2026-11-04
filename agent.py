@@ -1538,6 +1538,7 @@ def run(path, model, question, max_claims, out_dir, evidence_dir, research_on=Fa
                         ev.__init__(os.path.join(HERE, "evidence"))
                 except Exception as ex:
                     log.write(run=run_id, claim=rid, pass_="RESEARCH_STATE", query=o["name"], error=str(ex)[:300])
+                    print(f"    research unavailable for '{o['name']}': {str(ex)[:90]} (the run continues on the evidence on file)")
         for o in numeric:
             # priority: a value this engine already LOCKED is not recomputed; it is re-checked against what is near it
             # (neighbours, down-wind, any value now in the evidence that disagrees). A conflict reopens the lock.
