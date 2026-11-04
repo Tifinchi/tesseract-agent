@@ -100,6 +100,17 @@ a contradiction (now named data with units, and the same unit/dimension discipli
 "verified mismatch" needed only that the quote exist, not that it bear on the consequence (now a relevance
 test; otherwise a weak mismatch that holds UNSTABLE); the reflection echoed the summary (prompt reordered).
 
+## Trial 2 (v1.6 at 3be516c; 3 × 4 claims; 34 min) and v1.7
+
+Extraction steadied (7/6/7; 5/5 readings in every run). Neighbours compared like with like; inverse turns
+returned; the reflection answered. And a cyclical-agreement bug of the script's own: 2π came out LOCKED
+on "3, 4, 5 independent routes" because the engine's prior verdicts, drawn from memory as calculator routes,
+carried distinct run ids and were counted as independent, and the seked identity from the reference file
+was labelled "published analysis" by the model and slipped past the definition filter. Honest status: one
+measurement route plus a definition, STABILIZED, not LOCKED. v1.7: calculator routes are cross-checks only,
+reported and compared, never counted; reference-group lookups are definition-class; the H1 title section is
+skipped; a constraint REJECT needs a verbatim quote like the alternative core.
+
 ## Trial: the same version, three times, before anything changes
 
     python3 trial.py claims/khufu-run.md --runs 3 --max-claims 4

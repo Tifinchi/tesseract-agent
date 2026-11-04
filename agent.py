@@ -498,12 +498,13 @@ Evidence passages:
 
 Run the three non-numeric cores, each independent, citing only the passages above. One sentence of reason
 each, naming the number or finding that decided it.
-- constraint: does the reading survive a change of scale, time, cost or causality the evidence lets you test?
+- constraint: does the reading survive a change of scale, time, cost or causality the evidence lets you test? A
+  REJECT must quote the sentence that shows the violation VERBATIM (checked character for character).
 - alternative: is there a competing explanation IN THE EVIDENCE with fewer violations? Name its [file] AND copy
   the sentence that states it VERBATIM into "quote" (a REJECT without a verbatim quote is recorded, not counted).
 - consequence: if the reading is wrong, what propagates, and is any of it irreversible?
 Return JSON:
-{{"constraint": {{"verdict": "NOT_REJECT|REJECT|NO_DATA", "transformation": "...", "file": "... or null", "reason": "..."}},
+{{"constraint": {{"verdict": "NOT_REJECT|REJECT|NO_DATA", "transformation": "...", "file": "... or null", "quote": "verbatim sentence that shows the violation, or null", "reason": "..."}},
   "alternative": {{"verdict": "NOT_REJECT|REJECT|NO_DATA", "alternative": "... or none", "file": "... or null", "quote": "verbatim or null", "reason": "..."}},
   "consequence": {{"verdict": "NOT_REJECT|REJECT|NO_DATA", "if_wrong": "...", "irreversible": false, "reason": "..."}},
   "implication": {{"propagates_to": ["..."], "risk": "low|medium|high"}},
@@ -698,9 +699,15 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
                        "groups": [f"calculator:{prior['run']}"], "inputs": [f"calculator:{prior['run']}:{prior['value']:.6g}"],
                        "provisional": True, "kind": "calculator",
                        "process": f"calculator: {prior['verdict']} in run {prior['run']} for '{prior['text'][:80]}'"})
+    # (b) a lookup from the reference group, or whose process is "definition", is definition-class
+    for r in routes:
+        if r["type"] == "lookup" and (any(g == "reference" for g in r["groups"]) or str(r.get("kind", "")).lower() == "definition"):
+            r["type"] = "definition"; r["groups"] = ["definition:" + r.get("file", "reference")]
     # at most one definition route per observable
     defs = [r for r in routes if r["type"] == "definition"]
-    routes = [r for r in routes if r["type"] != "definition"] + defs[:1]
+    # (a) the engine's own prior verdicts are cross-checks, never routes toward standing or locking
+    calc = [r for r in routes if r["type"] == "calculator"]
+    routes = [r for r in routes if r["type"] not in ("definition", "calculator")] + defs[:1]
     # compare each route with the reading's value at 2σ of the combined band
     cv = parse_number(claimed); cb, cbk = parse_band(claimed, cv)
     need = parse_number(precision_needed) if precision_needed else None
@@ -713,6 +720,9 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
         else:
             r["within_2sigma"] = abs(diff) <= r["two_sigma"]
         r["coarse"] = bool(need_rel is not None and cv and (r["band"] / abs(cv)) > need_rel)
+    for r in calc:
+        diff = r["value"] - cv
+        r["two_sigma"] = 2 * (r["band"] + cb); r["within_2sigma"] = abs(diff) <= r["two_sigma"]; r["cross_check_only"] = True
     ind = independent_set(routes)
     strict = independent_set(routes, ev, strict=True)
     agree = [r for r in ind if r["within_2sigma"]]; disagree = [r for r in ind if not r["within_2sigma"]]
@@ -723,6 +733,7 @@ def find_routes(model, ev, cid, reading, obs, claimed, precision_needed, log, ru
               "strict_agree": len(strict_agree), "cyclical": len(agree) > len(strict_agree),
               "fine_agree": sum(1 for r in agree if not r.get("coarse")), "disagreeing": disagree, "discarded": discarded,
               "turns": turns, "card": rel.get("card") or {},
+              "calculator_cross_checks": [{"value": r["value"], "agrees": r["within_2sigma"], "process": r["process"]} for r in calc],
               "kinds": sorted(set(r.get("kind") or r["type"] for r in ind)),
               "provisional_only": bool(agree) and all(r.get("provisional") for r in agree)}
     log.write(run=run_id, claim=cid, pass_="ROUTE_STATE", observable=obs, relations_proposed=rel, report=report)
@@ -831,6 +842,8 @@ def fit_account(reports):
         for r in rp["independent"]:
             L.append(f"  · {'agrees' if r['within_2sigma'] else 'DISAGREES'}: {r['value']:.6g} ± {r['band']:.3g} [{r['band_kind']}], "
                      f"gap {abs(r['value'] - cv):.3g} vs 2σ {r['two_sigma']:.3g}" + (" (coarse)" if r.get('coarse') else "") + f" — {r['process']}")
+        for cc in rp.get("calculator_cross_checks") or []:
+            L.append(f"  · cross-check only (not counted): the engine's own {cc['process'][:90]} → {cc['value']:.6g} {'agrees' if cc['agrees'] else 'DISAGREES'}")
         for d in rp["discarded"][:4]:
             L.append(f"  · discarded: {d['what']}: {d['why']}")
     return "\n".join(L) if L else "no observable could be routed"
@@ -882,8 +895,10 @@ def synthesis_by_rule(reports, judge, ev, neighbours=None, downwind=None):
                 c["recorded_not_counted"] = "REJECT without a verbatim quote from an evidence file"; v = "NOT_REJECT"
             elif v == "NO_DATA":
                 c["note"] = "no competing explanation found in evidence"; v = "NOT_REJECT"
-        elif k == "constraint" and v == "REJECT" and not c.get("file"):
-            c["downgraded"] = "REJECT without an evidence file"; v = "NO_DATA"
+        elif k == "constraint" and v == "REJECT":
+            fn = (str(c.get("file") or "")).strip("[] ")
+            if not ev.contains_quote(c.get("quote") or "", fn):
+                c["downgraded"] = "REJECT without a verbatim quote from an evidence file"; v = "NO_DATA"
         c["verdict"] = v; cores[k] = c
     if any(c["verdict"] == "REJECT" for c in cores.values()):
         synth = "REJECTED"
@@ -919,7 +934,10 @@ def sections(doc):
     parts = re.split(r"(?m)^(#{1,3} .+)$", doc)
     out = [("(preamble)", parts[0])] if parts[0].strip() else []
     for i in range(1, len(parts), 2):
-        out.append((parts[i].lstrip("# ").strip(), parts[i + 1]))
+        raw = parts[i]
+        level = len(raw) - len(raw.lstrip("#"))
+        heading = raw.lstrip("# ").strip()
+        out.append((("(title) " if level == 1 else "") + heading, parts[i + 1]))
     return [(h, t) for h, t in out if t.strip()]
 
 # ----------------------------------------------------------------------------- run
@@ -944,7 +962,7 @@ def run(path, model, question, max_claims, out_dir, evidence_dir):
     for i, (heading, text) in enumerate(secs):
         if len(claims) >= max_claims:
             break
-        if heading == "(preamble)" or re.search(r"\b(moral|preface|abstract|acknowledg)", heading.lower()):
+        if heading == "(preamble)" or heading.startswith("(title)") or re.search(r"\b(moral|preface|abstract|acknowledg)", heading.lower()):
             log.write(run=run_id, pass_="ENTRY_STATE", skipped_section=heading, why="not a claims section"); continue
         per = max(1, round(max_claims * len(text) / total))
         got = ask(model, SYSTEM, P_EXTRACT.format(heading=heading, doc=text[:12000], question=question or "", prefix=f"s{i+1}c", n=per), temperature=0.0)
