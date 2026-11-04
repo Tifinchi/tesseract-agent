@@ -3775,6 +3775,146 @@
      "closed": false
     }
    ]
+  },
+  {
+   "text": "Motor M1 is a 10 hp, 460 V, three-phase NEMA Design B premium-efficiency motor, plate full-load current 12.4 A, code letter G.",
+   "history": [
+    {
+     "run": "20261104-010432-ba3a19",
+     "cid": "s1c1r1",
+     "verdict": "UNSTABLE",
+     "reason": "neighbour contradicts: the motor's full-load current (corner -) (the motor's full-load current: implied 12.4 vs reported 14 in nec-430.md)",
+     "why": "The full-load current of 12.4 A is supported by the nameplate measurement, but the power calculation route is missing evidence for full-load power P."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261104-010432-ba3a19",
+     "observable": "full-load current: P",
+     "next_route": "find evidence for full-load power P",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261104-010432-ba3a19",
+     "cid": "s1c1r1f",
+     "verdict": "UNSTABLE",
+     "reason": "circuit breaker size: 1 independent route(s) agree (strict 1)",
+     "why": "The claim fits the available proof but lacks a direct measurement or route for the circuit breaker size in amperes."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261104-010432-ba3a19",
+     "observable": "circuit breaker size",
+     "next_route": "NEC 430.52 or another relevant standard for the circuit breaker size in amperes.",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "Under the 2026 NEC, what is the largest inverse-time circuit breaker permitted if a 35 A breaker will not hold the starting current, and what locked-rotor current must that breaker survive?",
+   "history": [
+    {
+     "run": "20261104-010432-ba3a19",
+     "cid": "s1c2r1",
+     "verdict": "UNSTABLE",
+     "reason": "full-load current: 1 independent route(s) agree (strict 1); voltage: 2 independent route(s) agree (strict 1)",
+     "why": "The full-load current and voltage readings are consistent with the available evidence, but the locked-rotor current is not fully specified."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261104-010432-ba3a19",
+     "observable": "Locked-rotor current",
+     "next_route": "measurement in ieee112-test-m1.md: 'Locked-rotor test at reduced volta'",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261104-010432-ba3a19",
+     "cid": "s1c2r1f",
+     "verdict": "STABILIZED",
+     "reason": "maximum rating of an inverse-time circuit breaker: 2 independent route(s) agree (strict 2)",
+     "why": "the claim fits the available proof, as the maximum rating of the breaker is 35 A, which is 250% of the full-load current of 14 A"
+    }
+   ],
+   "current": "STABILIZED",
+   "settled": [
+    {
+     "observable": "maximum rating of an inverse-time circuit breaker",
+     "value": 35.0,
+     "band": 0.5,
+     "run": "20261104-010432-ba3a19",
+     "verdict": "STABILIZED"
+    }
+   ],
+   "open_cells": [
+    {
+     "run": "20261104-010432-ba3a19",
+     "observable": "full-load current in amperes",
+     "next_route": "the exact measurement or document that would supply the full-load current in amperes",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "The Wikipedia article on the NEC described the 2014 edition as the current edition on 1 January 2016.",
+   "history": [
+    {
+     "run": "20261104-011935-81700d",
+     "cid": "s1c1r1",
+     "verdict": "REJECTED",
+     "reason": "down-wind mismatch: if true, The 2014 edition of the NEC would govern communication systems in buildings in 2016, which is incorrect based on the evidence. — but web-nfpa-org-learn-more-about-nfpa-70-national-electrical-cod.md: \"Chapter 8, restructured in the 2026 edition of the NEC, now governs com",
+     "why": "The claim that the 2014 edition is the current edition as of 1 January 2016 is rejected because the most current version of the NEC is the 2026 edition."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261104-011935-81700d",
+     "observable": "Publication date of the 2014 edition of the NEC",
+     "next_route": "Find the official publication date of the 2014 edition of the NEC.",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261104-011935-81700d",
+     "cid": "s1c1r1f",
+     "verdict": "REJECTED",
+     "reason": "down-wind mismatch: if true, The current edition of the NEC as of the given date is the one in force on that date. — but web-nfpa-org-learn-more-about-nfpa-70-national-electrical-cod.md: \"In some capacity, the NEC is utilized and enforced in all 50 states in the U.S. It should be noted t\"",
+     "why": "The claim was rejected because the provided value (2026) is a year and not a unitless value as expected."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261104-011935-81700d",
+     "observable": "current edition of the NEC",
+     "next_route": "Find the exact edition of the NEC that was in force on the given date.",
+     "closed": false
+    }
+   ]
   }
  ],
  "changes": [
@@ -4701,6 +4841,8 @@
   "20261103-184512-349745",
   "20261103-190528-0e1eb8",
   "20261103-215601-0f75df",
-  "20261103-231504-8cf80c"
+  "20261103-231504-8cf80c",
+  "20261104-010432-ba3a19",
+  "20261104-011935-81700d"
  ]
 }
