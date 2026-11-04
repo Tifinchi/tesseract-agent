@@ -101,7 +101,7 @@ def main():
                         L.append(f"- web search '{q}': failed ({str(ex)[:120]})")
             elif searches:
                 L.append(f"- web search skipped (every engine has refused non-browser clients; pass --web to try): {', '.join(map(str, searches))[:200]}")
-            print("\n".join(L[-(len(searches) + len(wb) + 1):]))
+            print("\n".join(L[-(len(searches) + len(wk) + 3):]))
             ev = agent.Evidence("all")
             files = ", ".join(f"{fn} ({(ev.meta[fn].get('year') or 'undated')})" for fn in sorted(ev.meta))[:3000]
             if not added:
