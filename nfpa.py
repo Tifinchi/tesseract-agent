@@ -102,9 +102,19 @@ def main():
             if "free-access" in a.url and page.url != a.url:
                 page.goto(a.url, wait_until="domcontentloaded", timeout=90000)
             time.sleep(a.wait)
+            def dismiss_popups():
+                for sel in ("[aria-label*=lose i]", "button:has-text('×')", "button:has-text('Close')", "text=×", ".close", "[class*=close i]"):
+                    try:
+                        loc = page.locator(sel)
+                        if loc.count():
+                            loc.first.click(timeout=2000); time.sleep(1)
+                    except Exception:
+                        pass
+            dismiss_popups()
             if a.path:
                 os.makedirs(OUT, exist_ok=True)
                 for step in a.path:
+                    dismiss_popups()
                     clicked = False
                     for loc in (page.get_by_role("link", name=re.compile(re.escape(step), re.I)),
                                 page.get_by_role("button", name=re.compile(re.escape(step), re.I)),
@@ -120,9 +130,14 @@ def main():
                         page.screenshot(path=shot, full_page=False)
                         print(f"  could not find '{step}' on the page; screenshot saved: {shot} — send it and the step can be named by what is there")
                         break
-                # scroll the content so sections that render on demand are loaded
-                for _ in range(12):
-                    page.mouse.wheel(0, 1600); time.sleep(0.7)
+                # scroll the content until it stops growing, so sections that render on demand are all loaded
+                last, same = -1, 0
+                for _ in range(400):
+                    page.mouse.wheel(0, 1800); time.sleep(0.5)
+                    h = page.evaluate("() => Math.max(document.body.scrollHeight, ...[...document.querySelectorAll('*')].slice(0,400).map(e => e.scrollHeight||0))")
+                    same = same + 1 if h == last else 0; last = h
+                    if same >= 6:
+                        break
                 time.sleep(3)
             if a.find:
                 for sel in ("input[type=search]", "input[placeholder*=earch]", "input[aria-label*=earch]"):
@@ -138,6 +153,8 @@ def main():
     words = len(re.findall(r"[A-Za-z0-9]+", text))
     if words < 80 or text.strip().lower() in ("loading...", "loading…"):
         sys.exit(f"the viewer did not show readable text ({words} words). Try --manual, a longer --wait, or navigate to the section first.")
+    if a.path and not re.search(re.escape(a.path[-1].split()[-1]), text):
+        print(f"note: the text saved does not contain '{a.path[-1]}' — the viewer may render that part as an image, or the step landed elsewhere; check the file")
     path = save(url_now, title, text, edition, a.find or (a.path[-1] if a.path else None))
     print(f"saved {path}  ({words} words; edition {edition}; retrieved {now()})")
     print("check it: open the file and confirm the section you need is there and verbatim; the engine cites only what is in it.")
