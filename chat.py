@@ -11,7 +11,7 @@
 Type a line and press Enter; `/save` writes the transcript; `/quit` or an empty line ends.
 `/history <words of a claim>` prints that claim's EXACT verdict history from the logs (the record, not the model's
 recollection) and hands it to the model; `/where <file.md>` prints where a datum lives (source, url, retrieved).
-`/search <query>`, `/web <url>`, `/wayback <url> [YYYYMMDD]` fetch pages into evidence/ (url, retrieval time,
+`/search <query>`, `/web <url>`, `/wiki <title> [YYYY-MM-DD]`, `/wayback <url> [YYYYMMDD]` fetch pages into evidence/ (url, retrieval time,
 archive date) and hand them to the model for this conversation. The model never browses; the script fetches,
 stores, and dates every page, and the model may only cite what is on file.
 Transcripts are saved to logs/chat-<stamp>.md. Nothing said here is evidence of anything; it is a conversation.
@@ -56,8 +56,8 @@ def main():
                      "reconstruct a sequence of verdicts from recollection. About ambiguity: when a word in a question has no "
                      "reference ('big', 'similar', 'near'), say so and name the reference that would fix it before answering. "
                      "About citations: name the file and quote it verbatim, or say you have no file for it. "
-                     "You may ask the script to find data: put a line 'SEARCH: <3-8 word phrase>' or 'WAYBACK: <url> <YYYYMMDD>' "
-                     "(for what a page said at a date) at the END of your reply; the script fetches, stores and dates the pages "
+                     "You may ask the script to find data: put a line 'WIKI: <article title> [YYYY-MM-DD]' (Wikipedia, as it stands or "
+                     "as it stood on a date — never refused) or 'SEARCH: <3-8 word phrase>' (the web) at the END of your reply; the script fetches, stores and dates the pages "
                      "and hands them back, and you answer again from what is on file. Use it whenever the evidence on file does "
                      "not settle the question, rather than answering from training.\n\n" + method_text())
     else:
@@ -99,11 +99,15 @@ def main():
             print(f"\n[record]\n{rec}")
             messages.append({"role": "system", "content": "EXACT RECORD (from the logs; quote it, do not reconstruct it):\n" + rec})
             lines += [f"\n**you:** {q}\n", f"**record:**\n```\n{rec}\n```\n"]; continue
-        if q.startswith(("/search ", "/web ", "/wayback ")):
+        if q.startswith(("/search ", "/web ", "/wayback ", "/wiki ")):
             sys.path.insert(0, HERE); import research
             evd = os.path.join(HERE, "evidence")
             try:
-                if q.startswith("/search "):
+                if q.startswith("/wiki "):
+                    import wiki
+                    mt = re.match(r"(.+?)(?:\s+(\d{4}-\d{2}-\d{2}))?\s*$", q[6:].strip()); fn, note = wiki.fetch(mt.group(1).strip(), evd, mt.group(2))
+                    print(f"[wiki] {note}"); added = [fn] if fn else []
+                elif q.startswith("/search "):
                     added = research.search_and_store(q[8:].strip(), evd, max_pages=3)
                 elif q.startswith("/web "):
                     fn = research.store(q[5:].strip(), evd); added = [fn] if fn else []
@@ -139,7 +143,7 @@ def main():
             print(f"(model error: {ex})"); messages.pop(); continue
         # the model may ask for data itself: a line 'SEARCH: <phrase>' or 'WAYBACK: <url> <YYYYMMDD>' is run by the
         # script, the pages stored and dated in evidence/, and the result handed back for a second answer (one round)
-        reqs = re.findall(r"(?im)^(SEARCH|WAYBACK):\s*(.+)$", ans)
+        reqs = re.findall(r"(?im)^(SEARCH|WIKI|WAYBACK):\s*(.+)$", ans)
         if reqs and not a.no_method:
             sys.path.insert(0, HERE); import research
             evd = os.path.join(HERE, "evidence"); notes = []
@@ -147,6 +151,9 @@ def main():
                 try:
                     if kind.upper() == "SEARCH":
                         added = research.search_and_store(arg.strip(), evd, max_pages=2)
+                    elif kind.upper() == "WIKI":
+                        import wiki
+                        mt = re.match(r"(.+?)(?:\s+(\d{4}-\d{2}-\d{2}))?\s*$", arg.strip()); fn, note = wiki.fetch(mt.group(1).strip(), evd, mt.group(2)); added = [fn] if fn else []
                     else:
                         parts = arg.split(); fn, note = research.wayback_store(parts[0], evd, parts[1] if len(parts) > 1 else None); added = [fn] if fn else []
                     for fn in added:

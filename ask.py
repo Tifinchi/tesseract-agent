@@ -6,9 +6,10 @@
     python3 ask.py "…" --rounds 3             # how many search rounds the model may request (default 2)
 
 What happens, in order, all logged under logs/run-<id>:
-  1. RESEARCH. The model turns the question into search phrases and, where a date matters, Wayback requests
-     ('wayback <url> <YYYYMMDD>'). The script runs them (DuckDuckGo → pages → evidence/web-*.md with url and
-     retrieval time; Wayback snapshots with their archive date), then runs the echo check so copies count once.
+  1. RESEARCH. The model names the Wikipedia articles that bear on the question (with a date when the question is
+     about what was true or said at a date: the article as it stood then is fetched, by revision) and search
+     phrases; the script fetches through Wikipedia's API (never refused; every file dated by its revision) and
+     the web (DuckDuckGo/Bing → pages → evidence/web-*.md with url and retrieval time), then runs the echo check.
      The model sees what was found and may ask for one more round. The model never browses; it asks, the script
      fetches, and only what is on file can be cited.
   2. CLAIM. The model writes the question as a claims document: the answer it expects as a claim with its
@@ -26,15 +27,16 @@ import requests
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import agent, research, memory, review
+import agent, research, memory, review, wiki
 
 P_PLAN = """Question from the author: {question}
 
 Today is {today}. You may ask the script to find data online before answering. Return JSON with:
  "searches": up to 4 web search phrases (3–8 words each) that would find the primary records for this question
              (standards bodies, manufacturers, surveys, papers — not forums), or [] if the evidence on file suffices;
- "wayback": up to 2 items {{"url": "...", "date": "YYYYMMDD"}} when the question is about what a page or an
-            edition said AT A DATE (the Wayback Machine holds dated snapshots), else [];
+ "wikipedia": up to 3 items {{"title": "<exact article title>", "date": "YYYY-MM-DD" or null}} — the Wikipedia
+            articles whose text (or whose cited primary sources) would bear on the question; give a date when the
+            question is about what was true or was said AT A DATE (the article as it stood then is fetched);
  "needs": one sentence: what datum, from what kind of source, would settle the question.
 Already on file (filenames): {files}"""
 
@@ -67,23 +69,33 @@ def main():
     if not a.no_research:
         for rnd in range(a.rounds):
             plan = agent.ask(a.model, agent.SYSTEM, P_PLAN.format(question=a.question, today=today, files=files))
-            searches, wb = (plan.get("searches") or [])[:4], (plan.get("wayback") or [])[:2]
-            L.append(f"## research round {rnd + 1}: {len(searches)} search(es), {len(wb)} wayback; needs: {plan.get('needs', '')}")
-            if not searches and not wb:
+            searches, wk = (plan.get("searches") or [])[:4], (plan.get("wikipedia") or [])[:3]
+            L.append(f"## research round {rnd + 1}: {len(searches)} search(es), {len(wk)} wikipedia; needs: {plan.get('needs', '')}")
+            if not searches and not wk:
                 break
             added = []
+            for w in wk:
+                try:
+                    fn, note = wiki.fetch(str(w.get("title")), web_dir, (str(w.get("date"))[:10] if w.get("date") and str(w.get("date")).lower() != "null" else None))
+                    L.append(f"- wikipedia '{w.get('title')}'{' @ ' + str(w.get('date')) if w.get('date') and str(w.get('date')).lower() != 'null' else ''}: {fn or '-'} ({note})"); added += [fn] if fn else []
+                except Exception as ex:
+                    L.append(f"- wikipedia '{w.get('title')}': failed ({str(ex)[:120]})")
+            for q in searches:
+                # Wikipedia's own search first (never refused), then the web
+                try:
+                    hits = wiki.search(str(q), n=2)
+                    for t, u in hits:
+                        fn, note = wiki.fetch(t, web_dir); added += [fn] if fn else []
+                    if hits:
+                        L.append(f"- wikipedia search '{q}': {', '.join(t for t, _ in hits)}")
+                except Exception as ex:
+                    L.append(f"- wikipedia search '{q}': failed ({str(ex)[:100]})")
             for q in searches:
                 try:
                     got = research.search_and_store(str(q), web_dir, max_pages=2); added += got
                     L.append(f"- search '{q}': {', '.join(got) or 'nothing stored'}")
                 except Exception as ex:
                     L.append(f"- search '{q}': failed ({str(ex)[:120]})")
-            for w in wb:
-                try:
-                    fn, note = research.wayback_store(str(w.get("url")), web_dir, str(w.get("date") or "") or None)
-                    L.append(f"- wayback {w.get('url')} @ {w.get('date')}: {fn or '-'} ({note})"); added += [fn] if fn else []
-                except Exception as ex:
-                    L.append(f"- wayback {w.get('url')}: failed ({str(ex)[:120]})")
             print("\n".join(L[-(len(searches) + len(wb) + 1):]))
             ev = agent.Evidence("all")
             files = ", ".join(f"{fn} ({(ev.meta[fn].get('year') or 'undated')})" for fn in sorted(ev.meta))[:3000]

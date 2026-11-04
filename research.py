@@ -44,6 +44,16 @@ def domain(url):
     parts = host.split(".")
     return ".".join(parts[-2:]) if len(parts) >= 2 else host
 
+def _debug(url, text):
+    """Keep the first part of a page that yielded no results, so the refusal can be read (consent wall, captcha, layout change)."""
+    try:
+        d = os.path.join(HERE, "logs"); os.makedirs(d, exist_ok=True)
+        p = os.path.join(d, "search-debug.txt")
+        with open(p, "a", encoding="utf-8") as f:
+            f.write(f"\n\n==== {now()} {url}\n" + re.sub(r"\s+", " ", re.sub(r"<(script|style)[^>]*>.*?</\1>", " ", text, flags=re.S))[:1500])
+    except Exception:
+        pass
+
 def _parse_results(page, n):
     out = []
     for m in re.finditer(r'<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)</a>', page, re.S):
@@ -78,6 +88,7 @@ def search(query, n=5):
             if out:
                 return out
             errors.append(f"{url.split('/')[2]}: no results parsed")
+            _debug(url, r.text)
         except Exception as ex:
             errors.append(f"{url.split('/')[2]}: {str(ex)[:60]}")
     # Bing's HTML results, a different host with its own limits

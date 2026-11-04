@@ -1,9 +1,8 @@
 # Motor M1, second pass: three questions on the motor, two that live only in dated pages
 as of: 2026-11-04
-fetch: wayback https://en.wikipedia.org/wiki/National_Electrical_Code 20160101
-fetch: wayback https://en.wikipedia.org/wiki/National_Electrical_Code 20210601
-fetch: wayback https://www.nfpa.org/nec 20160101
-fetch: wayback https://www.nfpa.org/nec 20210601
+fetch: wiki National Electrical Code 2016-01-01
+fetch: wiki National Electrical Code 2021-06-01
+fetch: wiki National Electrical Code
 
 ## Given
 
@@ -19,4 +18,4 @@ The full-load efficiency is 91.7 %, reached by three independent routes: the pla
 
 ## Two statements that live only in dated pages
 
-In January 2016 the current edition of the National Electrical Code was the 2014 edition. By June 2021 the current edition was the 2020 edition.
+On 1 January 2016 the Wikipedia article on the National Electrical Code described the 2014 edition as the current edition. On 1 June 2021 the same article described the 2020 edition as the current edition.

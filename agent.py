@@ -23,7 +23,7 @@ Every pass writes one immutable JSON line to logs/run-<stamp>.jsonl; a summary g
 import argparse, ast, datetime, json, math, operator, os, re, sys, time, uuid
 import requests
 import memory as process_memory
-import research
+import research, wiki
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 METHOD = "\n\n".join(open(os.path.join(HERE, "method", f), encoding="utf-8").read()
@@ -204,6 +204,12 @@ _UNIT_DIM = {"m": {"L": 1}, "in": {"L": 1}, "ft": {"L": 1}, "km": {"L": 1}, "cm"
              "times": {}, "poles": {}, "x": {}}
 ROLES = {"amount", "flow", "momentum", "effort", "other"}
 AS_OF_YEAR = None   # set by run(): the year the claims are taken as of; references dated after it cannot govern them
+CLAIM_YEAR = None   # set per reading: the year the reading itself speaks of ("on 1 January 2016"); evidence dated after it cannot govern it
+
+def year_of_reading(text):
+    """The year a reading speaks of, if it names one ('in 2016', 'on 1 January 2016', 'as of mid-2021'); else None."""
+    ys = [int(y) for y in re.findall(r"\b(1[6-9]\d{2}|20\d{2})\b", text or "") if 1600 <= int(y) <= 2100]
+    return max(ys) if ys else None
 
 def dimension_of(units):
     """'m/s' -> {L:1,T:-1}; 'kg·m/s²' -> {M:1,L:1,T:-2}. Unknown tokens -> None (cannot check)."""
@@ -834,11 +840,14 @@ def gather_values(model, ev, meaning, units, searches, log, run_id, cid, tag, ex
             bad.append({"what": tag, "why": f"file '{fn}' not in evidence", "raw": v}); continue
         if not v.get("reduced_from") and not ev.contains_number(val, fn):
             bad.append({"what": tag, "why": f"{val} not found in {fn}", "raw": v}); continue
+        if v.get("quote") and len(str(v["quote"])) >= 12 and not ev.contains_quote(str(v["quote"]), fn):
+            bad.append({"what": tag, "why": f"quote not verbatim in {fn} (the number is there, the sentence is the model's): '{str(v['quote'])[:70]}'", "raw": v}); continue
         if (ev.meta.get(fn) or {}).get("superseded_by"):
             v = dict(v, process=(v.get("process") or "reported") + f"; SUPERSEDED by {ev.meta[fn]['superseded_by']} — the current edition is not on file; provisional")
         fy = (ev.meta.get(fn) or {}).get("year")
-        if AS_OF_YEAR and fy and fy > AS_OF_YEAR:
-            bad.append({"what": tag, "why": f"chronology: {fn} is dated {fy}, after the date the claims are taken as of ({AS_OF_YEAR}); a later edition cannot govern an earlier claim", "raw": v}); continue
+        gate = CLAIM_YEAR or AS_OF_YEAR
+        if gate and fy and fy > gate:
+            bad.append({"what": tag, "why": f"chronology: {fn} is dated {fy}, after the date the claim speaks of ({gate}); what was true later cannot govern what was true then", "raw": v}); continue
         if expected_unit is not None and not units_compatible(expected_unit, str(val)):
             e_u = UNIT_SYN.get(expected_unit.lower().strip(), expected_unit.lower().strip())
             conv, note = convert_unit(num, unit_of(str(val)), e_u)
@@ -1270,9 +1279,11 @@ def check_downwind(model, ev, cid, reading, log, run_id):
         lu = str(c.get("lines_up", "unknown")).lower()
         note = ""
         if lu == "no" and verified:
-            # the words beside the quoted number must name the same quantity the consequence names
+            fy = (ev.meta.get(fn) or {}).get("year"); gate = CLAIM_YEAR or AS_OF_YEAR
             qm = qualifier_mismatch(c.get("if_true") or "", q, q)
-            if qm:
+            if gate and fy and fy > gate:
+                relevant = False; note = f"{fn} is dated {fy}, after the year the reading speaks of ({gate}); what is true now does not decide what was true then"
+            elif qm:
                 relevant = False; note = f"the quote's number is for a differently-qualified quantity ({qm}); not a verified mismatch"
             else:
                 # a numeric consequence is compared by script: if the implied and quoted numbers agree, the model's 'no' is overruled
@@ -1537,10 +1548,13 @@ def run(path, model, question, max_claims, out_dir, evidence_dir, research_on=Fa
     # before extraction, dated, and logged: 'fetch: wayback <url> <YYYYMMDD>', 'fetch: url <url>', 'fetch: search <query>'
     fetched = []
     web_dir = os.path.join(HERE, "evidence") if evidence_dir in ("all", "", None) else evidence_folders(evidence_dir)[0]
-    for m in re.finditer(r"(?im)^fetch:\s*(wayback|url|search)\s+(.+)$", doc[:4000]):
+    for m in re.finditer(r"(?im)^fetch:\s*(wayback|url|search|wiki)\s+(.+)$", doc[:4000]):
         kind, arg = m.group(1).lower(), m.group(2).strip()
         try:
-            if kind == "wayback":
+            if kind == "wiki":
+                mt = re.match(r"(.+?)(?:\s+(\d{4}-\d{2}-\d{2}))?\s*$", arg); fn, note = wiki.fetch(mt.group(1).strip(), web_dir, mt.group(2))
+                fetched.append({"kind": kind, "arg": arg, "file": fn, "note": note})
+            elif kind == "wayback":
                 parts = arg.split(); fn, note = research.wayback_store(parts[0], web_dir, parts[1] if len(parts) > 1 else None)
                 fetched.append({"kind": kind, "arg": arg, "file": fn, "note": note})
             elif kind == "url":
@@ -1588,8 +1602,12 @@ def run(path, model, question, max_claims, out_dir, evidence_dir, research_on=Fa
     print(f"[{run_id}] {len(claims)} claims from {len(secs)} sections; evidence groups: {', '.join(ev.groups) or 'NONE'}")
 
     def evaluate_reading(c, rid, reading, observables, depth=0, parent=None):
+        global CLAIM_YEAR
         t = time.time(); reports = []
         as_stated = reading
+        CLAIM_YEAR = year_of_reading(reading)
+        if CLAIM_YEAR and CLAIM_YEAR < AS_OF_YEAR:
+            print(f"    the reading speaks of {CLAIM_YEAR}: evidence dated after {CLAIM_YEAR} cannot govern it")
         reading, calib = calibrate(model, ev, rid, reading, log, run_id)
         if calib["changed"]:
             print(f"    calibrated → {reading}")

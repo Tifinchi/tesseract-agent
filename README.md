@@ -228,6 +228,24 @@ fault, not the data).
 python3 trial.py claims/motor-m1.md --max-claims 8 --evidence evidence-motor
 ```
 
+## v2.7: Wikipedia by API instead of the Wayback Machine; a claim's own date gates its evidence
+
+The first two live `ask.py` runs (logs/ask-20261104-0104*, -0118*): every web search was refused on the author's
+box as on the reviewer's (the raw pages are now kept in `logs/search-debug.txt` to read why), the Wayback lookup
+reported no snapshot, and the engine then REJECTED "the 2014 edition was current on 1 January 2016" on NFPA's
+2026 page — judging 2016 by 2026. Three changes:
+- `wiki.py`: Wikipedia through its own API — never refused, paced, and every revision kept, so "the article as it
+  stood on a date" is one call (`python3 wiki.py "National Electrical Code" --at 2016-01-01` → revision 680715351 of
+  2015-09-12: "The 2014 NEC is the current edition"). Files carry the permanent revision url, `published:` = the
+  revision date, group `wiki:<title>` (two dates of one article are one root), status encyclopedia (secondary;
+  its citations name the primaries). `ask.py` plans Wikipedia articles (with dates) first and uses Wikipedia's
+  search before the web; chat has `/wiki <title> [date]` and the model may request `WIKI: <title> [date]`;
+  claims documents take `fetch: wiki <title> [date]`. Wayback remains available but is no longer the default.
+- **A reading that names a date is judged by evidence that speaks for that date**: files dated after the year the
+  reading speaks of cannot be routes against it and cannot verify a down-wind mismatch against it.
+- Lookup quotes must be verbatim, not merely contain the number ("Full-load amps 14 A." was attributed to a file
+  that says 12.4 A; the 14 was there, the sentence was the model's).
+
 ## v2.6: set loose — ask, and it researches, stores, verifies
 
 ```
