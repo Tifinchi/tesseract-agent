@@ -175,9 +175,11 @@ python3 trial.py claims/khufu-run.md --runs 3       # the old sampling check, wh
   to govern; among several editions of one code the latest in force at the as-of date governs and earlier
   ones are discarded as superseded. Retrieval passages are marked `(dated 1925)` / `(UNDATED)` so the model
   sees the chronology. The NEC and NEMA excerpts in `evidence-motor/` now say plainly that their edition was
-  not verified — which is the truth of how they were compiled, and the engine treats them accordingly. To
-  make them count, replace each with an excerpt from the edition in force (e.g. `nec-2023.md` with
-  `edition: 2023`; if your jurisdiction has adopted a different edition, that one).
+  not verified — which is the truth of how they were compiled, and the engine treats them accordingly. The NEC
+  excerpt has since been replaced by `evidence-motor/nec-2026-article-430-reference.md`: a paraphrased reference
+  summary of the 2026 edition's Article 430 (requirements in the compiler's words, table values as published,
+  page references), prepared from the author's reading of the 2026 edition on NFPA free access on 2026-11-04 —
+  dated, so the engine counts it; paraphrased, so the code's own text is not redistributed here.
 - **Currency check (v2.3, `currency.py`)**: an evidence file with a `watch:` query (and `safety: yes` for anything
   safety-related) is re-checked online once per calendar year, or on `--research`: the edition year the web
   names is compared with the edition on file; same year → keep; later → the file is marked `superseded_by:`,
