@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+"""NFPA LiNK free access → dated evidence, through your own Chrome, with your own login.
+
+NFPA LiNK (https://link.nfpa.org) is a JavaScript viewer behind a sign-in; a plain fetch returns "Loading...".
+This script drives the Chrome already installed on this machine (via Playwright) with YOUR NFPA account, opens
+the free-access edition you point it at, and saves the text it shows as evidence with the edition year, the url
+and the retrieval time — so the engine can cite the 2026 code verbatim and the chronology rule can see 2026.
+
+One-time:
+    pip3 install --break-system-packages playwright      # uses your installed Chrome; no browser download
+    export NFPA_USER='you@example.com'  NFPA_PASS='…'     # in the shell, never in a file in the repo
+
+Use:
+    python3 nfpa.py https://link.nfpa.org/free-access/publications/70/2026
+        → signs in, opens the page, saves what the viewer shows to evidence-private/nfpa-70-2026-<slug>.md
+    python3 nfpa.py <url> --manual
+        → opens a visible Chrome window; YOU sign in and navigate to the section you want (e.g. Table 430.250),
+          then press Enter in this terminal and the script saves what is on screen. Use this if the automatic
+          sign-in does not find the form (the site's layout is not known to this script).
+    python3 nfpa.py <url> --find "430.250"
+        → after opening, types the term into the viewer's search box if one is found, then saves.
+
+The saved files go in evidence-private/, which .gitignore keeps out of the public repository: the NEC text is
+NFPA's copyright and free access is for your own viewing. Point a run at it with
+    python3 trial.py claims/motor-m1.md --evidence evidence-private
+(copy the other motor evidence files in beside it, or symlink them).
+"""
+import argparse, datetime, os, re, sys, time
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+OUT = os.path.join(HERE, "evidence-private")
+
+def now():
+    return datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M %Z (UTC%z)")
+
+def slug(s):
+    return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")[:48] or "page"
+
+def save(url, title, text, edition, find=None):
+    os.makedirs(OUT, exist_ok=True)
+    fn = f"nfpa-70-{edition}-{slug(find or title)}.md"
+    body = (f"source: NFPA 70, National Electrical Code, {edition} edition — NFPA LiNK free access ({title})\n"
+            f"edition: {edition}\nurl: {url}\nretrieved: {now()}\ngroup: nec\nwatch: NFPA 70 National Electrical Code current edition\nsafety: yes\n"
+            f"status: text as shown by the NFPA LiNK viewer on the retrieval date; personal-use excerpt, not for redistribution\n\n"
+            + text.strip() + "\n")
+    p = os.path.join(OUT, fn)
+    open(p, "w", encoding="utf-8").write(body)
+    return p
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("url")
+    ap.add_argument("--manual", action="store_true", help="you sign in and navigate; the script saves what is on screen when you press Enter")
+    ap.add_argument("--find", default=None, help="a term to type into the viewer's search box after opening (e.g. 430.250)")
+    ap.add_argument("--edition", default=None, help="edition year (default: the last number in the url)")
+    ap.add_argument("--wait", type=int, default=20, help="seconds to let the viewer load")
+    a = ap.parse_args()
+    edition = a.edition or (re.findall(r"\b(20\d{2})\b", a.url) or ["unknown"])[-1]
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        sys.exit("playwright is not installed: pip3 install --break-system-packages playwright")
+    user, pw = os.environ.get("NFPA_USER"), os.environ.get("NFPA_PASS")
+    if not a.manual and not (user and pw):
+        sys.exit("set NFPA_USER and NFPA_PASS in the environment, or use --manual")
+    with sync_playwright() as p:
+        browser = p.chromium.launch(channel="chrome", headless=not a.manual)
+        ctx = browser.new_context(viewport={"width": 1400, "height": 1000})
+        page = ctx.new_page()
+        page.goto(a.url, wait_until="domcontentloaded", timeout=90000)
+        time.sleep(5)
+        if a.manual:
+            print("Chrome is open. Sign in and navigate to the section you want. When the text you need is on screen, press Enter here.")
+            try:
+                input()
+            except EOFError:
+                pass
+        else:
+            # try the common sign-in shapes; the site's exact layout is not known to this script
+            signed = False
+            for sel_user, sel_pass in (("input[type=email]", "input[type=password]"), ("input[name*=user i]", "input[type=password]"),
+                                       ("input[name*=email i]", "input[type=password]"), ("#username", "#password")):
+                try:
+                    if page.locator(sel_user).count() == 0:
+                        # a sign-in link may need clicking first
+                        for link in ("text=Sign in", "text=Log in", "text=Sign In", "text=Login"):
+                            if page.locator(link).count():
+                                page.locator(link).first.click(); time.sleep(3); break
+                    if page.locator(sel_user).count():
+                        page.locator(sel_user).first.fill(user); page.locator(sel_pass).first.fill(pw)
+                        page.keyboard.press("Enter"); time.sleep(8); signed = True; break
+                except Exception:
+                    continue
+            if not signed:
+                print("could not find a sign-in form automatically; re-run with --manual")
+            if "free-access" in a.url and page.url != a.url:
+                page.goto(a.url, wait_until="domcontentloaded", timeout=90000)
+            time.sleep(a.wait)
+            if a.find:
+                for sel in ("input[type=search]", "input[placeholder*=earch]", "input[aria-label*=earch]"):
+                    try:
+                        if page.locator(sel).count():
+                            page.locator(sel).first.fill(a.find); page.keyboard.press("Enter"); time.sleep(8); break
+                    except Exception:
+                        continue
+        title = page.title() or "NFPA LiNK"
+        text = page.evaluate("() => document.body.innerText") or ""
+        url_now = page.url
+        browser.close()
+    words = len(re.findall(r"[A-Za-z0-9]+", text))
+    if words < 80 or text.strip().lower() in ("loading...", "loading…"):
+        sys.exit(f"the viewer did not show readable text ({words} words). Try --manual, a longer --wait, or navigate to the section first.")
+    path = save(url_now, title, text, edition, a.find)
+    print(f"saved {path}  ({words} words; edition {edition}; retrieved {now()})")
+    print("check it: open the file and confirm the section you need is there and verbatim; the engine cites only what is in it.")
+
+if __name__ == "__main__":
+    main()

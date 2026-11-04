@@ -202,6 +202,11 @@ python3 trial.py claims/khufu-run.md --runs 3       # the old sampling check, wh
   snapshot nearest that date as evidence with `archived:` (the date the page speaks for) beside `retrieved:`;
   repeat `--at` to store two dates of one page for a comparison across time (same group, so never counted as
   independent — two dated readings of one source). In chat.py: `/search`, `/web`, `/wayback`.
+- **NFPA LiNK (`nfpa.py`)**: the NEC's free-access viewer is a sign-in JavaScript app, so `nfpa.py` drives your
+  installed Chrome with your own NFPA login (from `NFPA_USER` / `NFPA_PASS` in the shell, never a file) or
+  `--manual` (you sign in and navigate; the script saves what is on screen), and writes the text as evidence
+  with `edition: 2026`, url and retrieval time into `evidence-private/` — git-ignored, because the code text
+  is NFPA's copyright and free access is for your own viewing. Run against it with `--evidence evidence-private`.
 - **Chrome**: research.py falls back to headless Chrome on the box (`--dump-dom`) for pages a plain GET cannot
   read (scripts, consent walls, bot checks).
 - **From the phone**: remote in rather than a bot. A terminal on the box (SSH over Tailscale, or any SSH app on
