@@ -116,7 +116,8 @@ def parse_band(s, value):
         return (0.5 * 10 ** trailing, "half last digit")
     return (abs(value) * 0.1, "assumed 10 %")
 
-UNIT_SYN = {"inches": "in", "inch": "in", "metres": "m", "meters": "m", "metre": "m", "meter": "m", "feet": "ft", "foot": "ft",
+UNIT_SYN = {"nm": "n·m", "n-m": "n·m", "newton-metres": "n·m", "newton-meters": "n·m", "amps": "a", "amperes": "a", "amp": "a", "volts": "v", "watts": "w",
+            "kilowatts": "kw", "ohms": "ω", "ohm": "ω", "rev/min": "rpm", "r/min": "rpm", "inches": "in", "inch": "in", "metres": "m", "meters": "m", "metre": "m", "meter": "m", "feet": "ft", "foot": "ft",
             "square meters": "m²", "square metres": "m²", "sq m": "m²", "m2": "m²", "cubic meters": "m³", "cubic metres": "m³", "m3": "m³",
             "square feet": "ft²", "sq ft": "ft²", "ft2": "ft²", "square inches": "in²", "in2": "in²",
             "percent": "%", "degrees": "°", "deg": "°", "tonnes": "t", "tons": "t", "ratio": "", "dimensionless": "", "none": ""}
@@ -132,11 +133,29 @@ def unit_of(s):
     if not ms:
         return ""
     rest = t[ms[-1].end():].strip()
-    m2 = re.match(r"([A-Za-zµ°%/²³]+)", rest)
-    u = (m2.group(1) if m2 else "").lower().rstrip(".,;")
+    m2 = re.match(r"([A-Za-zµ°%/²³·⋅Ω]+)", rest)
+    u = (m2.group(1) if m2 else "").lower().rstrip(".,;").replace("⋅", "·")
     if u in STOP:
         return ""
     return UNIT_SYN.get(u, u)
+
+_PREFIX = {"k": 1e3, "m": 1e6, "g": 1e9}          # upper-case M (mega) and G are lower-cased by unit_of; 'm' alone is metres, so prefixes apply only to a known base
+_BASES = ("w", "a", "v", "hz", "ω", "ohm", "j", "pa", "n·m", "wb")
+
+def convert_unit(num, from_u, to_u):
+    """SI prefix conversion between the same base (kW -> W: ×1000). Returns (num, note) or (None, None) if not convertible."""
+    def split(u):
+        for b in _BASES:
+            if u == b: return (1.0, b)
+            if u.endswith(b) and u[:-len(b)] in _PREFIX: return (_PREFIX[u[:-len(b)]], b)
+        if u == "mw": return (1e-3, "w")
+        if u == "ma": return (1e-3, "a")
+        if u == "mv": return (1e-3, "v")
+        return (None, u)
+    (fa, ba), (fb, bb) = split(from_u), split(to_u)
+    if fa is None or fb is None or ba != bb or from_u == to_u:
+        return None, None
+    return num * fa / fb, f"converted {from_u} → {to_u} (×{fa / fb:g}; the value as written kept on record)"
 
 def units_compatible(expected, written):
     e, w = (UNIT_SYN.get((expected or "").lower().strip(), (expected or "").lower().strip())), unit_of(written)
@@ -150,7 +169,9 @@ _UNIT_DIM = {"m": {"L": 1}, "in": {"L": 1}, "ft": {"L": 1}, "km": {"L": 1}, "cm"
              "a": {"I": 1}, "k": {"Θ": 1}, "°c": {"Θ": 1}, "c": {"Θ": 1}, "hz": {"T": -1}, "rpm": {"T": -1}, "n": {"M": 1, "L": 1, "T": -2},
              "pa": {"M": 1, "L": -1, "T": -2}, "j": {"M": 1, "L": 2, "T": -2}, "w": {"M": 1, "L": 2, "T": -3}, "v": {"M": 1, "L": 2, "T": -3, "I": -1},
              "ω": {"M": 1, "L": 2, "T": -3, "I": -2}, "ohm": {"M": 1, "L": 2, "T": -3, "I": -2}, "wb": {"M": 1, "L": 2, "T": -2, "I": -1}, "f": {"M": -1, "L": -2, "T": 4, "I": 2},
-             "%": {}, "°": {}, "deg": {}, "rad": {}, "": {}, "ratio": {}, "hp": {"M": 1, "L": 2, "T": -3}, "kw": {"M": 1, "L": 2, "T": -3}, "db": {}}
+             "%": {}, "°": {}, "deg": {}, "rad": {}, "": {}, "ratio": {}, "hp": {"M": 1, "L": 2, "T": -3}, "kw": {"M": 1, "L": 2, "T": -3}, "db": {},
+             "n·m": {"M": 1, "L": 2, "T": -2}, "ka": {"I": 1}, "kv": {"M": 1, "L": 2, "T": -3, "I": -1}, "khz": {"T": -1}, "mw": {"M": 1, "L": 2, "T": -3},
+             "times": {}, "poles": {}, "x": {}}
 ROLES = {"amount", "flow", "momentum", "effort", "other"}
 
 def dimension_of(units):
@@ -669,14 +690,21 @@ def gather_values(model, ev, meaning, units, searches, log, run_id, cid, tag, ex
         if not v.get("reduced_from") and not ev.contains_number(val, fn):
             bad.append({"what": tag, "why": f"{val} not found in {fn}", "raw": v}); continue
         if expected_unit is not None and not units_compatible(expected_unit, str(val)):
-            bad.append({"what": tag, "why": f"unit mismatch: wanted '{expected_unit or 'unitless'}', got '{unit_of(str(val)) or 'none'}' in {val}", "raw": v}); continue
+            e_u = UNIT_SYN.get(expected_unit.lower().strip(), expected_unit.lower().strip())
+            conv, note = convert_unit(num, unit_of(str(val)), e_u)
+            if conv is None:
+                bad.append({"what": tag, "why": f"unit mismatch: wanted '{expected_unit or 'unitless'}', got '{unit_of(str(val)) or 'none'}' in {val}", "raw": v}); continue
+            v = dict(v, as_written_before_conversion=val, process=(v.get("process") or "reported") + "; " + note)
+            num, val = conv, f"{conv:.6g} {e_u}"
         if expected_unit and not dims_compatible(expected_unit, str(val)):
             bad.append({"what": tag, "why": f"dimension mismatch: '{expected_unit}' vs '{unit_of(str(val))}' — not the same kind of quantity", "raw": v}); continue
         vrole = str(v.get("role") or "other").lower()
         if role and role != "other" and vrole in ROLES and vrole != "other" and vrole != role:
             bad.append({"what": tag, "why": f"role mismatch: wanted {role}, passage's quantity is {vrole} (a shared name is not a shared quantity)", "raw": v}); continue
-        b, bk = parse_band(str(val), num)
-        ok.append({"value": num, "band": b, "band_kind": bk, "as_written": val, "file": fn, "group": ev.group_of(fn),
+        src = v.get("as_written_before_conversion") or str(val)
+        b0, bk = parse_band(src, parse_number(src) or num)
+        b = b0 * (abs(num) / abs(parse_number(src))) if v.get("as_written_before_conversion") and parse_number(src) else b0
+        ok.append({"value": num, "band": b, "band_kind": bk, "as_written": v.get("as_written_before_conversion") or val, "file": fn, "group": ev.group_of(fn),
                    "provisional": ev.is_provisional(fn), "role": vrole,
                    "process": v.get("process") or "reported", "quote": (v.get("quote") or "")[:200]})
     log.write(run=run_id, claim=cid, pass_="VALUE_STATE", quantity=tag, input=ctx, model_proposal=got, verified=ok, discarded=bad)

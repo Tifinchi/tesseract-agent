@@ -13,3 +13,5 @@ Shaft torque in newton-metres: T = P_out / ω, with ω = 2 π n / 60 and n in rp
 Locked-rotor current from the code letter: I_lr = (kVA/HP) × HP × 1000 / (√3 × V_line).
 
 No-load current of a standard induction motor is typically 25 to 50 percent of full-load current; it is almost entirely magnetizing current.
+
+Insulation classes (IEC 60085 / NEMA MG 1): class B 130 °C, class F 155 °C, class H 180 °C maximum total winding temperature. The allowable temperature rise for a class F winding at 1.0 service factor is 105 °C over a 40 °C ambient (by resistance); a motor is "running hot" when its winding temperature approaches the class limit, and the plate states no winding temperature — only a thermometer or a resistance measurement under load gives it.

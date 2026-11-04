@@ -168,6 +168,9 @@ python3 trial.py claims/khufu-run.md --runs 3       # the old sampling check, wh
   area, both factors must be in the file, and the factors stay on record. Unit synonyms for square/cubic units.
 - **Card-unit sanity**: a length-named observable whose quantity card declares area or volume units (trial 4:
   "height" wanted square meters, 22 discards) falls back to the reading's own unit; the card is recorded.
+- **Electrical units** (for the motor trial): N·m / N⋅m / Nm, amps/volts/watts/ohms synonyms, and SI-prefix
+  conversion between the same base (8135 W cited where kW is wanted → 8.135 kW, the value as written kept on
+  record and the band scaled with it). No conversion across bases: 12.4 A is never "compatible" with watts.
 - **Chrome**: research.py falls back to headless Chrome on the box (`--dump-dom`) for pages a plain GET cannot
   read (scripts, consent walls, bot checks).
 - **From the phone**: remote in rather than a bot. A terminal on the box (SSH over Tailscale, or any SSH app on
