@@ -3183,6 +3183,13 @@
      "verdict": "REJECTED",
      "reason": "voltage: measurement in ieee112-test-m1.md: \"Locked-rotor test at reduced voltage: voltage 91.0 V, current 12.29 A, input power 507 W.\" → 91 vs claimed 460",
      "why": "The voltage is provisionally accepted based on the nameplate and the computed voltage, but the locked-rotor test at reduced voltage shows a significant discrepancy."
+    },
+    {
+     "run": "20261103-231504-8cf80c",
+     "cid": "s2c1r1",
+     "verdict": "REJECTED",
+     "reason": "full-load current: published_analysis in nec-430.md: \"10 HP at 460 V: 14 A.\" → 14 vs claimed 12.4; full-load current: published_analysis in engine-run-m1.md: \"rated operating point from the solved circuit: efficiency 91.63 %, line current 12.29 A, power factor 0.832, slip 1.42 % (rotor speed 1774 r\"",
+     "why": "The full-load current and speed have independent routes that agree within the stated precision."
     }
    ],
    "current": "REJECTED",
@@ -3192,6 +3199,12 @@
      "run": "20261103-215601-0f75df",
      "observable": "Locked-rotor test voltage",
      "next_route": "ieee112-test-m1.md: 'Locked-rotor test at reduced voltage: voltage 91.0 V, current 12.29 A, input power 507 W.'",
+     "closed": false
+    },
+    {
+     "run": "20261103-231504-8cf80c",
+     "observable": "efficiency",
+     "next_route": "an independent measurement or calculation of efficiency",
      "closed": false
     }
    ]
@@ -3415,7 +3428,7 @@
    ]
   },
   {
-   "text": "The no-load current is about 5 A.",
+   "text": "The full-load slip is 5 %.",
    "history": [
     {
      "run": "20261103-215601-0f75df",
@@ -3444,6 +3457,27 @@
      "verdict": "REJECTED",
      "reason": "down-wind mismatch: if true, The no-load current is 14.5 A, which implies a higher than typical full-load current and thus higher conductor and breaker sizing requirements. — but nec-430.md: \"Table 430.250 (full-load current, three-phase AC motors, induction type, for sizing conductors and o\"",
      "why": "The claim is REJECTED because there is only one independent route to confirm the no-load current, which is insufficient for stabilization."
+    },
+    {
+     "run": "20261103-231504-8cf80c",
+     "cid": "s3c1r1",
+     "verdict": "UNSTABLE",
+     "reason": "neighbour contradicts: full-load slip (corner ×) (full-load slip: implied 1.42 vs reported 5 in nema-mg1.md)",
+     "why": "The full-load slip fits the typical range for full-load slip as defined in reference-motor.md"
+    },
+    {
+     "run": "20261103-231504-8cf80c",
+     "cid": "s3c2r1",
+     "verdict": "UNSTABLE",
+     "reason": "input power: 0 independent route(s) agree (strict 0); input power at full load: 0 independent route(s) agree (strict 0)",
+     "why": "The claim does not fit the available evidence for input power at full load."
+    },
+    {
+     "run": "20261103-231504-8cf80c",
+     "cid": "s4c1r1",
+     "verdict": "REJECTED",
+     "reason": "full-load slip: published_analysis in engine-run-m1.md: \"Rated operating point from the solved circuit: efficiency 91.63 %, line current 12.29 A, power factor 0.832, slip 1.42 % (rotor speed 1774 r\" → 1.42 vs claimed 5",
+     "why": "The claim that the full-load slip is 5 ± 0.5 % is rejected because it disagrees with the measured value of 1.42 ± 0.005 % from the solved circuit analysis."
     }
    ],
    "current": "REJECTED",
@@ -3465,6 +3499,18 @@
      "run": "20261103-215601-0f75df",
      "observable": "full-load power factor",
      "next_route": "an independent measurement or analysis of the power factor at full load",
+     "closed": false
+    },
+    {
+     "run": "20261103-231504-8cf80c",
+     "observable": "full-load slip",
+     "next_route": "A detailed measurement or analysis that confirms the full-load slip within the specified precision",
+     "closed": false
+    },
+    {
+     "run": "20261103-231504-8cf80c",
+     "observable": "input power at full load",
+     "next_route": "A direct measurement or calculation for the input power at full load.",
      "closed": false
     }
    ]
@@ -3566,15 +3612,28 @@
      "verdict": "REJECTED",
      "reason": "down-wind mismatch: if true, The locked-rotor current is 77.9 A, which is significantly higher than the full-load current of 12.29 A. — but ieee112-test-m1.md: \"Motor M1, 10 HP, 4-pole, 460 V. No-load test at rated voltage: current 5.40 A, input power 296 W. Lo\"; down-wind mismatch: if true, The loc",
      "why": "The claim of 77.9 A for the locked-rotor current is rejected because it disagrees with the measurement of 12.29 A from the IEEE 112 test."
+    },
+    {
+     "run": "20261103-231504-8cf80c",
+     "cid": "s3c3r1",
+     "verdict": "UNSTABLE",
+     "reason": "locked-rotor current: 0 independent route(s) agree (strict 0); Locked-rotor current: 0 independent route(s) agree (strict 0)",
+     "why": "The reading fits if you mean the locked-rotor current as stated in the published analysis."
     }
    ],
-   "current": "REJECTED",
+   "current": "UNSTABLE",
    "settled": [],
    "open_cells": [
     {
      "run": "20261103-215601-0f75df",
      "observable": "locked-rotor current",
      "next_route": "Find an independent measurement or calculation that confirms the value of 77.9 A.",
+     "closed": false
+    },
+    {
+     "run": "20261103-231504-8cf80c",
+     "observable": "Locked-rotor current",
+     "next_route": "Find an independent route to verify the locked-rotor current.",
      "closed": false
     }
    ]
@@ -3625,6 +3684,94 @@
      "run": "20261103-215601-0f75df",
      "observable": "no-load current from NEC Table 430.250",
      "next_route": "conduct a no-load test to confirm the current",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-231504-8cf80c",
+     "cid": "s2c1r1f",
+     "verdict": "REJECTED",
+     "reason": "full-load current: published_analysis in nec-430.md: \"Table 430.250 (full-load current, three-phase AC motors, induction type, for sizing conductors and overcurrent devices): 10 HP at 460 V: 14 \" → 14 vs claimed 12.4; full-load current: published_analysis in engine-run-m1.md: \"Rated operating point ",
+     "why": "The full-load current and speed readings are consistent with the nameplate and other independent sources, but the efficiency lacks independent verification."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-231504-8cf80c",
+     "observable": "efficiency",
+     "next_route": "Find an independent measurement or calculation of the full-load efficiency.",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-231504-8cf80c",
+     "cid": "s3c1r1f",
+     "verdict": "UNSTABLE",
+     "reason": "synchronous speed: 2 independent route(s) agree (strict 1); rotor speed: 0 independent route(s) agree (strict 0); full-load slip: 1 independent route(s) agree (strict 1)",
+     "why": "The available proof supports the full-load slip and rotor speed as stated, but lacks independent verification for synchronous speed."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-231504-8cf80c",
+     "observable": "rotor speed",
+     "next_route": "Independent measurement of the motor's rotor speed under full load.",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-231504-8cf80c",
+     "cid": "s3c3r1f",
+     "verdict": "REJECTED",
+     "reason": "down-wind mismatch: if true, The locked-rotor current is 77.9 A, which is 6.34 times the full-load current of 12.29 A. — but ieee112-test-m1.md: \"Locked-rotor test at reduced voltage: voltage 91.0 V, current 12.29 A, input power 507 W.\"",
+     "why": "The claim fits the computed value but lacks independent verification at rated voltage."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-231504-8cf80c",
+     "observable": "Locked-rotor current at rated voltage",
+     "next_route": "IEEE 112 test results or equivalent circuit analysis at rated voltage.",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261103-231504-8cf80c",
+     "cid": "s4c1r1f",
+     "verdict": "UNSTABLE",
+     "reason": "neighbour contradicts: efficiency (corner +) (efficiency: implied 1.42 vs reported 5 in nema-mg1.md); neighbour contradicts: full-load current (corner -) (full-load current: implied 12.29 vs reported 14 in nec-430.md)",
+     "why": "The claim fits if 'full-load slip' is understood as the typical range for full-load slip, but does not fit if it is interpreted as the maximum full-load slip."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261103-231504-8cf80c",
+     "observable": "full-load slip: synchronous_speed",
+     "next_route": "A document or experiment that provides the synchronous speed for the full-load slip.",
      "closed": false
     }
    ]
@@ -4480,6 +4627,57 @@
     "reason": "size of other sealed cavities: 1 independent route(s) agree (strict 1)",
     "why": "The claim fits the available evidence from Reisner's report, but lacks independent verification."
    }
+  },
+  {
+   "text": "The full-load slip is 5 %.",
+   "from": {
+    "run": "20261103-215601-0f75df",
+    "cid": "s2c7r1",
+    "verdict": "REJECTED",
+    "reason": "down-wind mismatch: if true, The no-load current is 14.5 A, which implies a higher than typical full-load current and thus higher conductor and breaker sizing requirements. — but nec-430.md: \"Table 430.250 (full-load current, three-phase AC motors, induction type, for sizing conductors and o\"",
+    "why": "The claim is REJECTED because there is only one independent route to confirm the no-load current, which is insufficient for stabilization."
+   },
+   "to": {
+    "run": "20261103-231504-8cf80c",
+    "cid": "s3c1r1",
+    "verdict": "UNSTABLE",
+    "reason": "neighbour contradicts: full-load slip (corner ×) (full-load slip: implied 1.42 vs reported 5 in nema-mg1.md)",
+    "why": "The full-load slip fits the typical range for full-load slip as defined in reference-motor.md"
+   }
+  },
+  {
+   "text": "The full-load slip is 5 %.",
+   "from": {
+    "run": "20261103-231504-8cf80c",
+    "cid": "s3c2r1",
+    "verdict": "UNSTABLE",
+    "reason": "input power: 0 independent route(s) agree (strict 0); input power at full load: 0 independent route(s) agree (strict 0)",
+    "why": "The claim does not fit the available evidence for input power at full load."
+   },
+   "to": {
+    "run": "20261103-231504-8cf80c",
+    "cid": "s4c1r1",
+    "verdict": "REJECTED",
+    "reason": "full-load slip: published_analysis in engine-run-m1.md: \"Rated operating point from the solved circuit: efficiency 91.63 %, line current 12.29 A, power factor 0.832, slip 1.42 % (rotor speed 1774 r\" → 1.42 vs claimed 5",
+    "why": "The claim that the full-load slip is 5 ± 0.5 % is rejected because it disagrees with the measured value of 1.42 ± 0.005 % from the solved circuit analysis."
+   }
+  },
+  {
+   "text": "The locked-rotor current is between 70 A and 79 A.",
+   "from": {
+    "run": "20261103-215601-0f75df",
+    "cid": "s2c6r1",
+    "verdict": "REJECTED",
+    "reason": "down-wind mismatch: if true, The locked-rotor current is 77.9 A, which is significantly higher than the full-load current of 12.29 A. — but ieee112-test-m1.md: \"Motor M1, 10 HP, 4-pole, 460 V. No-load test at rated voltage: current 5.40 A, input power 296 W. Lo\"; down-wind mismatch: if true, The loc",
+    "why": "The claim of 77.9 A for the locked-rotor current is rejected because it disagrees with the measurement of 12.29 A from the IEEE 112 test."
+   },
+   "to": {
+    "run": "20261103-231504-8cf80c",
+    "cid": "s3c3r1",
+    "verdict": "UNSTABLE",
+    "reason": "locked-rotor current: 0 independent route(s) agree (strict 0); Locked-rotor current: 0 independent route(s) agree (strict 0)",
+    "why": "The reading fits if you mean the locked-rotor current as stated in the published analysis."
+   }
   }
  ],
  "runs": [
@@ -4502,6 +4700,7 @@
   "20261103-183306-91f012",
   "20261103-184512-349745",
   "20261103-190528-0e1eb8",
-  "20261103-215601-0f75df"
+  "20261103-215601-0f75df",
+  "20261103-231504-8cf80c"
  ]
 }

@@ -1,0 +1,36 @@
+{
+ "nec-430.md": {
+  "query": "NFPA 70 National Electrical Code current edition",
+  "year_on_file": null,
+  "year_found": 2026,
+  "checked_at": "2026-11-03T23:14-07:00",
+  "titles": [
+   "NFPA 70 (NEC) Code Development",
+   "NFPA 70-2026 - NFPA 70 National Electrical Code, 2026 edition",
+   "Learn More About NFPA 70, National Electrical Code (NEC)",
+   "NFPA 70®: National Electrical Code® (NEC®), 2026 Edition",
+   "NFPA 70®: National Electrical Code® (NEC®) Handbook, 2026 Edition",
+   "NFPA 70, National Electrical Code NEC 2026 Softbound - amazon.com",
+   "NFPA 70 Code Book 2026 | National Electrical Code",
+   "NEC Code Guide: Current Edition by State (2026) | SparkShift"
+  ],
+  "safety": true
+ },
+ "nema-mg1.md": {
+  "query": "NEMA MG 1 Motors and Generators latest revision",
+  "year_on_file": null,
+  "year_found": 2024,
+  "checked_at": "2026-11-03T23:14-07:00",
+  "titles": [
+   "ANSI/NEMA MG 00001-2024 - Motors and Generators",
+   "PDF ANSI NEMA MG 00001-2024 AsPublished",
+   "ANSI/NEMA MG 00001-2024: Motors and Generators Standard",
+   "ANSI/NEMA MG 1-2021 Motors and Generators - PdMA",
+   "ANSI/NEMA MG 1-2021 Motors and Generators",
+   "ANSI/NEMA MG 1-2021 Motors and Generators Standard",
+   "ANSI/NEMA MG 1-2021: Motors and Generators - ANSI Blog",
+   "What's New in NEMA MG 00001-2024 Besides the Title"
+  ],
+  "safety": true
+ }
+}
