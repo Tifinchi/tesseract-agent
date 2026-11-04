@@ -67,8 +67,13 @@ FRAC = {"½": ".5", "¼": ".25", "¾": ".75", "⅓": ".333", "⅔": ".667", "⅛
 WORDS = {"zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
          "ten": 10, "eleven": 11, "twelve": 12, "fifteen": 15, "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "hundred": 100}
 
+_SUP = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹⁻", "0123456789-")
+
 def _norm(s):
     s = s.replace("−", "-").replace("–", "-").replace(",", "")
+    # scientific notation written out: 1.2 × 10^3, 1.2 x 10^-3, 1.2·10³  ->  1.2e3, 1.2e-3
+    s = re.sub(r"(-?\d+(?:\.\d+)?)\s*[×x·*]\s*10\s*(?:\^|\*\*)?\s*([⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+|-?\d+)",
+               lambda m: f"{m.group(1)}e{m.group(2).translate(_SUP)}", s)
     for k, v in FRAC.items():
         s = re.sub(r"(\d)" + k, r"\1" + v, s).replace(k, "0" + v)
     return s
@@ -109,11 +114,18 @@ def parse_band(s, value):
         return (abs(value) * 0.10, "hedged (~): ±10 %")
     m = NUM.search(t)
     digits = m.group(0) if m else ""
-    if "." in digits:
-        return (0.5 * 10 ** (-(len(digits.split(".")[1]))), "half last digit")
+    mant, _, exp = digits.lower().partition("e")
+    exp = int(exp) if exp else 0
+    if "." in mant:
+        return (0.5 * 10 ** (exp - len(mant.split(".")[1])), "half last digit" + (f" (scientific notation, exponent {exp})" if exp else ""))
+    if exp:
+        return (0.5 * 10 ** exp, f"half last digit (scientific notation, exponent {exp})")
+    digits = mant
     if digits:
         trailing = len(digits) - len(digits.rstrip("0"))
-        return (0.5 * 10 ** trailing, "half last digit")
+        if trailing:
+            return (0.5 * 10 ** trailing, f"half last digit (trailing zeros: '{digits}' may be exact or rounded; band taken at the coarser reading)")
+        return (0.5, "half last digit")
     return (abs(value) * 0.1, "assumed 10 %")
 
 UNIT_SYN = {"nm": "n·m", "n-m": "n·m", "newton-metres": "n·m", "newton-meters": "n·m", "amps": "a", "amperes": "a", "amp": "a", "volts": "v", "watts": "w",
@@ -292,6 +304,11 @@ class Evidence:
             if year is None and (is_code or declared_unknown):
                 meta["undated_reference"] = True
                 self.provisional = getattr(self, "provisional", set()); self.provisional.add(fn)
+            if meta.get("superseded_by"):
+                self.provisional = getattr(self, "provisional", set()); self.provisional.add(fn)
+            for key in ("watch", "safety"):
+                m = re.search(rf"(?im)^{key}:\s*(.+)$", text[:1200])
+                if m: meta[key] = m.group(1).strip()
             self.meta = getattr(self, "meta", {}); self.meta[fn] = meta | {"source": source, "status": status}
             self.provisional = getattr(self, "provisional", set())
             if any(w in status for w in ("compiled", "from memory", "unverified", "paraphrase", "tertiary", "web")):
@@ -723,6 +740,8 @@ def gather_values(model, ev, meaning, units, searches, log, run_id, cid, tag, ex
             bad.append({"what": tag, "why": f"file '{fn}' not in evidence", "raw": v}); continue
         if not v.get("reduced_from") and not ev.contains_number(val, fn):
             bad.append({"what": tag, "why": f"{val} not found in {fn}", "raw": v}); continue
+        if (ev.meta.get(fn) or {}).get("superseded_by"):
+            v = dict(v, process=(v.get("process") or "reported") + f"; SUPERSEDED by {ev.meta[fn]['superseded_by']} — the current edition is not on file; provisional")
         fy = (ev.meta.get(fn) or {}).get("year")
         if AS_OF_YEAR and fy and fy > AS_OF_YEAR:
             bad.append({"what": tag, "why": f"chronology: {fn} is dated {fy}, after the date the claims are taken as of ({AS_OF_YEAR}); a later edition cannot govern an earlier claim", "raw": v}); continue
@@ -1108,6 +1127,41 @@ def check_downwind(model, ev, cid, reading, log, run_id):
     log.write(run=run_id, claim=cid, pass_="IMPLICATION_STATE", downwind=out)
     return out
 
+def show(value, band=None):
+    """Print a value to the precision its band supports — never more digits than the measurement has (91 is not
+       91.0), never fewer than the band needs. The full-precision number stays in the JSON log."""
+    if value is None:
+        return "none"
+    if not band or band <= 0:
+        return f"{value:.6g}"
+    digits = max(0, -math.floor(math.log10(2 * band)))        # band 0.05 -> 1 decimal; band 0.5 -> 0; band 0.00025 -> 4
+    if abs(value) >= 1e6 or (abs(value) < 1e-3 and value != 0):
+        sig = max(1, int(math.floor(math.log10(abs(value))) - math.floor(math.log10(2 * band))))   # significant digits the band supports
+        return f"{value:.{sig}e}"
+    return f"{value:.{digits}f}"
+
+def show_written(value, band, written):
+    """A claimed value is shown as written when that is more precise than its band implies (a hedge widens the band
+       but does not erase the digits the author wrote; 'approximately 921.2 m' still shows 921.2; '2π' shows 6.283)."""
+    if value is None:
+        return "none"
+    sf = sig_figs(written) or 1
+    if isinstance(written, str) and ("π" in written or "√" in written):
+        sf = max(sf, 4)
+    by_band = show(value, band)
+    by_sig = f"{value:.{sf}g}"
+    return by_sig if len(by_sig.replace("-", "").replace(".", "").lstrip("0")) > len(by_band.replace("-", "").replace(".", "").lstrip("0")) else by_band
+
+def sig_figs(s):
+    """Significant figures as written: '91' -> 2, '91.0' -> 3, '1800' -> 2 (trailing zeros ambiguous), '0.0254' -> 3."""
+    m = NUM.search(_norm(str(s)))
+    if not m:
+        return None
+    d = m.group(0).lstrip("-").split("e")[0]
+    if "." in d:
+        return len(d.replace(".", "").lstrip("0")) or 1
+    return len(d.rstrip("0")) or 1
+
 def fit_account_ledger(rp):
     return (f"{rp['observable']}: HELD from the locked ledger — {rp['claimed_value']:.6g} ± {rp['claimed_band']:.3g} [{rp['claimed_band_kind']}]; "
             f"{len(rp['ledger_routes'])} route(s) locked it; re-checked against {len(rp['rechecked'])} value(s) now in the evidence, none conflict\n"
@@ -1127,12 +1181,13 @@ def fit_account(reports):
                 L.append(f"  · {r['stance']} [{r['covers']}] — {r['process']}")
             continue
         cv, cb = rp["claimed_value"], rp["claimed_band"]
-        L.append(f"{rp['observable']}: claimed {cv:.6g} ± {cb:.3g} [{rp['claimed_band_kind']}]; {len(rp['all_routes'])} route(s) found, "
+        L.append(f"{rp['observable']}: claimed {show_written(cv, cb, rp.get('claimed'))} ± {cb:.2g} [{rp['claimed_band_kind']}; {sig_figs(rp.get('claimed')) or '?'} significant figure(s) as written"
+                 + (f"; precision needed {rp['precision_needed']}" if rp.get('precision_needed') else "") + f"]; {len(rp['all_routes'])} route(s) found, "
                  f"{rp['independent_routes']} independent; {rp['agree']} agree within 2σ, {rp['disagree']} disagree; "
                  f"{len(rp['discarded'])} candidate(s) discarded")
         for r in rp["independent"]:
-            L.append(f"  · {'agrees' if r['within_2sigma'] else 'DISAGREES'}: {r['value']:.6g} ± {r['band']:.3g} [{r['band_kind']}], "
-                     f"gap {abs(r['value'] - cv):.3g} vs 2σ {r['two_sigma']:.3g}" + (" (coarse)" if r.get('coarse') else "") + f" — {r['process']}")
+            L.append(f"  · {'agrees' if r['within_2sigma'] else 'DISAGREES'}: {show(r['value'], r['band'])} ± {r['band']:.2g} [{r['band_kind']}], "
+                     f"gap {abs(r['value'] - cv):.2g} vs 2σ {r['two_sigma']:.2g}" + (" (coarse)" if r.get('coarse') else "") + f" — {r['process']}")
         for cc in rp.get("calculator_cross_checks") or []:
             L.append(f"  · cross-check only (not counted): the engine's own {cc['process'][:90]} → {cc['value']:.6g} {'agrees' if cc['agrees'] else 'DISAGREES'}")
         for d in rp["discarded"][:4]:

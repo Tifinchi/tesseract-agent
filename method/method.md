@@ -183,6 +183,19 @@ Routes agreeing is necessary, not sufficient. Two failures look like agreement:
   as-of date — and earlier editions are superseded: recorded, not counted. (Which edition a jurisdiction
   has adopted is itself a datum: when it is known, it is the edition in force, whatever the latest printed
   one is.)
+- **Safety and currency.** Anything that bears on safety is read from the most current legal version, found
+  online, not from memory. The year found is compared with the year on file: the same year, the material
+  keeps being used; a later year, calibration is required — the file is marked superseded, its values go
+  provisional, the current material is fetched and cited by url and time. The same watch applies to any
+  reference that moves significant data points; the engine cannot judge a "breakthrough" by itself, so a new
+  result enters as provisional web evidence and the routes show whether it agrees with what is on file.
+- **Precision is a property of the measurement, not of the arithmetic.** 91 V is not 91.0 V: the written
+  form carries the band (half the last digit, a stated ±, a hedge), and the engine never adds precision to a
+  value by rewriting it. Computation runs at full precision; results are reported to the precision their
+  inputs support (the band sets the digits) and the full number stays in the log. Scientific notation is a
+  way of writing a band (1.2 × 10³ is ±50); trailing zeros are ambiguous and are read at the coarser band.
+  A comparison is made at the precision the question needs: a route is "coarse" when its band is wider than
+  the precision needed, and agreement at a coarse band is reported as such, never upgraded.
 - **The engine's own memory is a record, not a recollection.** When asked about its history it quotes the
   log (run id, verdict, reason); it never reconstructs a sequence from memory of the sequence.
 

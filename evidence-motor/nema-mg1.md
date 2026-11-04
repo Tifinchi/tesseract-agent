@@ -1,4 +1,6 @@
 source: NEMA MG 1, Motors and Generators (Table 12-12 NEMA Premium efficiency; Table 10-5 locked-rotor kVA code letters; Part 12 Design B torques)
+watch: NEMA MG 1 Motors and Generators latest revision
+safety: yes
 edition: not stated — the compiler did not verify which revision of MG 1 these tables are from
 group: nema
 status: compiled excerpt from memory of the standard; verify every number against the current edition before citing

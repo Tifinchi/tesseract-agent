@@ -65,6 +65,14 @@ def main():
     ver = version(); stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     print(f"TRIAL at version {ver}: {a.runs} runs of {a.source}, {a.max_claims} claims each")
     ids, t0 = [], time.time()
+    # currency: watched reference material (safety: always the current legal version) is re-checked online once per
+    # calendar year, or now with --research; a changed edition marks the file superseded before the run reads it
+    try:
+        import currency
+        for line in currency.check(a.evidence, force=a.research):
+            print("currency:", line)
+    except Exception as ex:
+        print(f"currency check skipped: {str(ex)[:120]}")
     # Strictly one run at a time: each call below blocks until that run has written its summary and reflection
     # and returned. Nothing is threaded or backgrounded, so two runs never share the model. Ctrl+C stops the
     # trial at the end of the current model call and the report covers the runs that finished.

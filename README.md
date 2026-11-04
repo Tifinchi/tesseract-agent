@@ -178,6 +178,16 @@ python3 trial.py claims/khufu-run.md --runs 3       # the old sampling check, wh
   not verified — which is the truth of how they were compiled, and the engine treats them accordingly. To
   make them count, replace each with an excerpt from the edition in force (e.g. `nec-2023.md` with
   `edition: 2023`; if your jurisdiction has adopted a different edition, that one).
+- **Currency check (v2.3, `currency.py`)**: an evidence file with a `watch:` query (and `safety: yes` for anything
+  safety-related) is re-checked online once per calendar year, or on `--research`: the edition year the web
+  names is compared with the edition on file; same year → keep; later → the file is marked `superseded_by:`,
+  its values go provisional, and the pages found are stored as web evidence for the next run. Runs via trial.py
+  before the model reads anything. The NEC and NEMA excerpts carry watch lines now.
+- **Precision (v2.3)**: values are printed to the precision their band supports (91 stays 91, 91.0 stays 91.0;
+  a computed 6.285933 with band 0.00025 prints 6.2859) with full precision in the log; significant figures as
+  written are reported beside every claimed value; scientific notation (`1.2 × 10^3`, `6.674 x 10^-11`,
+  `2.5·10³`) parses and its band is half the last digit of the mantissa at the exponent; trailing zeros are
+  labelled ambiguous and read at the coarser band.
 - **Electrical units** (for the motor trial): N·m / N⋅m / Nm, amps/volts/watts/ohms synonyms, and SI-prefix
   conversion between the same base (8135 W cited where kW is wanted → 8.135 kW, the value as written kept on
   record and the band scaled with it). No conversion across bases: 12.4 A is never "compatible" with watts.
