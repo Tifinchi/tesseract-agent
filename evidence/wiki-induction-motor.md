@@ -2,7 +2,7 @@ source: Wikipedia, "Induction motor" — revision 1383065711 of 2026-10-31 20:21
 url: https://en.wikipedia.org/w/index.php?title=Induction_motor&oldid=1383065711
 revision: 1383065711
 published: 2026-10-31
-retrieved: 2026-11-04 07:03 MST (UTC-0700)
+retrieved: 2026-11-04 14:44 MST (UTC-0700)
 group: wiki:induction-motor
 status: encyclopedia article, secondary (its own citations name the primary sources); dated by its revision
 

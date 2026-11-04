@@ -1,8 +1,8 @@
-source: Wikipedia, "National Electrical Code" — revision 680715351 of 2015-09-12 18:27 UTC (the article as it stood on 2016-01-01)
+source: Wikipedia, "National Electrical Code" — revision 680715351 of 2015-09-12 18:27 UTC (the article as it stood on 2015-09-12)
 url: https://en.wikipedia.org/w/index.php?title=National_Electrical_Code&oldid=680715351
 revision: 680715351
 published: 2015-09-12
-retrieved: 2026-11-04 07:01 MST (UTC-0700)
+retrieved: 2026-11-04 14:43 MST (UTC-0700)
 group: wiki:national-electrical-code
 status: encyclopedia article, secondary (its own citations name the primary sources); dated by its revision
 

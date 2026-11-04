@@ -2,7 +2,7 @@ source: Wikipedia, "National Electrical Code" — revision 1382225768 of 2026-10
 url: https://en.wikipedia.org/w/index.php?title=National_Electrical_Code&oldid=1382225768
 revision: 1382225768
 published: 2026-10-27
-retrieved: 2026-11-04 07:03 MST (UTC-0700)
+retrieved: 2026-11-04 14:44 MST (UTC-0700)
 group: wiki:national-electrical-code
 status: encyclopedia article, secondary (its own citations name the primary sources); dated by its revision
 

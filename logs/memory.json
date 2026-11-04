@@ -3785,6 +3785,13 @@
      "verdict": "UNSTABLE",
      "reason": "neighbour contradicts: the motor's full-load current (corner -) (the motor's full-load current: implied 12.4 vs reported 14 in nec-430.md)",
      "why": "The full-load current of 12.4 A is supported by the nameplate measurement, but the power calculation route is missing evidence for full-load power P."
+    },
+    {
+     "run": "20261104-144415-6c0648",
+     "cid": "s1c1r1",
+     "verdict": "UNSTABLE",
+     "reason": "voltage: 3 independent route(s) agree (strict 2); power: 2 independent route(s) agree (strict 2); full-load current: 1 independent route(s) agree (strict 1)",
+     "why": "The available proof favors the reading that the motor's full-load current is 12.4 A and its power is 10 hp, but independent verification is needed."
     }
    ],
    "current": "UNSTABLE",
@@ -3794,6 +3801,18 @@
      "run": "20261104-010432-ba3a19",
      "observable": "full-load current: P",
      "next_route": "find evidence for full-load power P",
+     "closed": false
+    },
+    {
+     "run": "20261104-144415-6c0648",
+     "observable": "full-load current",
+     "next_route": "An independent measurement or additional published analysis confirming the full-load current of 12.4 A.",
+     "closed": false
+    },
+    {
+     "run": "20261104-144415-6c0648",
+     "observable": "power",
+     "next_route": "An independent measurement or additional published analysis confirming the power of 10 hp.",
      "closed": false
     }
    ]
@@ -3829,6 +3848,13 @@
      "verdict": "UNSTABLE",
      "reason": "full-load current: 1 independent route(s) agree (strict 1); voltage: 2 independent route(s) agree (strict 1)",
      "why": "The full-load current and voltage readings are consistent with the available evidence, but the locked-rotor current is not fully specified."
+    },
+    {
+     "run": "20261104-144415-6c0648",
+     "cid": "s1c2r1",
+     "verdict": "UNSTABLE",
+     "reason": "inverse turn does not return: from the reading's 10 and I=12.29, pf=0.832, P = (sqrt(3) * V * I * pf) / 1000 implies V=564.63; ieee112-test-m1.md gives 460; inverse turn does not return: from the reading's 10 and V=460, pf=0.832, P = (sqrt(3) * V * I * pf) / 1000 implies I=15.0854; engine-run-m1.md ",
+     "why": "The voltage claim is not verified by a precise route, and the largest inverse-time breaker is not clearly defined."
     }
    ],
    "current": "UNSTABLE",
@@ -3838,6 +3864,12 @@
      "run": "20261104-010432-ba3a19",
      "observable": "Locked-rotor current",
      "next_route": "measurement in ieee112-test-m1.md: 'Locked-rotor test at reduced volta'",
+     "closed": false
+    },
+    {
+     "run": "20261104-144415-6c0648",
+     "observable": "voltage",
+     "next_route": "A precise measurement or document confirming the voltage.",
      "closed": false
     }
    ]
@@ -3873,7 +3905,7 @@
    ]
   },
   {
-   "text": "The Wikipedia article on the NEC described the 2014 edition as the current edition on 1 January 2016.",
+   "text": "The Wikipedia article on the National Electrical Code described the 2014 edition as the current edition on 1 January 2016.",
    "history": [
     {
      "run": "20261104-011935-81700d",
@@ -3881,6 +3913,13 @@
      "verdict": "REJECTED",
      "reason": "down-wind mismatch: if true, The 2014 edition of the NEC would govern communication systems in buildings in 2016, which is incorrect based on the evidence. — but web-nfpa-org-learn-more-about-nfpa-70-national-electrical-cod.md: \"Chapter 8, restructured in the 2026 edition of the NEC, now governs com",
      "why": "The claim that the 2014 edition is the current edition as of 1 January 2016 is rejected because the most current version of the NEC is the 2026 edition."
+    },
+    {
+     "run": "20261104-143434-274e78",
+     "cid": "s1c1r1",
+     "verdict": "REJECTED",
+     "reason": "current edition: 0 independent route(s) agree (strict 0); date of current edition: 0 independent route(s) agree (strict 0); current edition of NEC: 0 independent route(s) agree (strict 0)",
+     "why": "The claim is rejected because the evidence provided is dated after 2016, and what was true later cannot govern what was true then."
     }
    ],
    "current": "REJECTED",
@@ -3890,6 +3929,12 @@
      "run": "20261104-011935-81700d",
      "observable": "Publication date of the 2014 edition of the NEC",
      "next_route": "Find the official publication date of the 2014 edition of the NEC.",
+     "closed": false
+    },
+    {
+     "run": "20261104-143434-274e78",
+     "observable": "current edition of NEC on 1 January 2016",
+     "next_route": "a document or webpage dated before 2016 that specifies the current NEC edition",
      "closed": false
     }
    ]
@@ -3912,6 +3957,78 @@
      "run": "20261104-011935-81700d",
      "observable": "current edition of the NEC",
      "next_route": "Find the exact edition of the NEC that was in force on the given date.",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261104-143434-274e78",
+     "cid": "s1c1r1f",
+     "verdict": "REJECTED",
+     "reason": "Publication date of NEC 2014: 1 independent route(s) agree (strict 1); Effective date of NEC 2014: 0 independent route(s) agree (strict 0); current edition of NEC: 0 independent route(s) agree (strict 0)",
+     "why": "The claim that the current edition of the NEC on 1 January 2016 was the 2026 edition is rejected because the 2026 edition was published after 2016."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261104-143434-274e78",
+     "observable": "Effective date of NEC 2014",
+     "next_route": "Find the exact effective date of the NEC 2014.",
+     "closed": false
+    },
+    {
+     "run": "20261104-143434-274e78",
+     "observable": "Publication date of NEC 2026",
+     "next_route": "Find the exact date when the 2026 edition of the NEC was published and became effective.",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261104-144415-6c0648",
+     "cid": "s1c1r1f",
+     "verdict": "UNSTABLE",
+     "reason": "full-load current: 1 independent route(s) agree (strict 1); rated power: 1 independent route(s) agree (strict 1); rated voltage: 2 independent route(s) agree (strict 1)",
+     "why": "The full-load current of 12.4 A is supported by the nameplate data, but lacks independent verification from NEC Table 430.250 and NEMA MG 1 Table 12-12."
+    }
+   ],
+   "current": "UNSTABLE",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261104-144415-6c0648",
+     "observable": "full-load current",
+     "next_route": "Verification from NEC Table 430.250 and NEMA MG 1 Table 12-12.",
+     "closed": false
+    }
+   ]
+  },
+  {
+   "text": "",
+   "history": [
+    {
+     "run": "20261104-144415-6c0648",
+     "cid": "s1c2r1f",
+     "verdict": "REJECTED",
+     "reason": "starting current: computed breaker_rating = full_load_current * breaker_ratio from full_load_current=14 [nec-2026-article-430-reference.md, published_analysis], breaker_ratio=250 [nec-2026-article-430-reference.md, definition] → 3500 vs claimed 35",
+     "why": "The claim is REJECTED because there are no independent routes found for the largest inverse-time circuit breaker value. The full-load current and starting current have independent routes, but the largest inverse-time circuit breaker value is missing."
+    }
+   ],
+   "current": "REJECTED",
+   "settled": [],
+   "open_cells": [
+    {
+     "run": "20261104-144415-6c0648",
+     "observable": "largest inverse-time circuit breaker",
+     "next_route": "Find an independent source that specifies the largest inverse-time circuit breaker value for a full-load current of 100 A or less.",
      "closed": false
     }
    ]
@@ -4843,6 +4960,8 @@
   "20261103-215601-0f75df",
   "20261103-231504-8cf80c",
   "20261104-010432-ba3a19",
-  "20261104-011935-81700d"
+  "20261104-011935-81700d",
+  "20261104-143434-274e78",
+  "20261104-144415-6c0648"
  ]
 }
