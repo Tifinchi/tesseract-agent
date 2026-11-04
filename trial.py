@@ -60,6 +60,7 @@ def main():
     ap.add_argument("--max-claims", type=int, default=4)
     ap.add_argument("--model", default=os.environ.get("MODEL", "qwen2.5:14b"))
     ap.add_argument("--question", default="")
+    ap.add_argument("--evidence", default=os.path.join(HERE, "evidence"), help="evidence folder (e.g. evidence-motor for claims/motor-m1.md)")
     a = ap.parse_args()
     ver = version(); stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     print(f"TRIAL at version {ver}: {a.runs} runs of {a.source}, {a.max_claims} claims each")
@@ -70,7 +71,7 @@ def main():
     try:
         for i in range(a.runs):
             print(f"\n================ run {i+1} of {a.runs} (sequential; the next starts only after this one returns) ================")
-            rid = agent.run(a.source, a.model, a.question, a.max_claims, os.path.join(HERE, "logs"), os.path.join(HERE, "evidence"), research_on=a.research)
+            rid = agent.run(a.source, a.model, a.question, a.max_claims, os.path.join(HERE, "logs"), a.evidence, research_on=a.research)
             ids.append(rid)
             settle(a.model)
             print(f"================ run {i+1} finished and settled: {rid} ================")

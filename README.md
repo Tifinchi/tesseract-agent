@@ -166,9 +166,24 @@ python3 trial.py claims/khufu-run.md --runs 3       # the old sampling check, wh
   conflict and troubleshot, not counted as a rejection; directly reported values still reject on their own.
 - **Chrome**: research.py falls back to headless Chrome on the box (`--dump-dom`) for pages a plain GET cannot
   read (scripts, consent walls, bot checks).
-- **bot.py**: the engine from a phone over Telegram — `/pass`, `/trial`, `/research`, `/review`, `/history`,
-  `/where`, `/status`, `/memory`, `/pull`, `/push`, `/stop`, and plain chat. Setup is at the top of the file
-  (a bot token from @BotFather and your chat id; the bot answers only that id).
+- **From the phone**: remote in rather than a bot. A terminal on the box (SSH over Tailscale, or any SSH app on
+  the phone) with `tmux` gives every command and `chat.py` with nothing new to run or expose; a run started in
+  tmux keeps going after the phone disconnects (`tmux new -s agent`, later `tmux attach -t agent`).
+
+## Motor trial: from the given to the unknown
+
+`claims/motor-m1.md` with `evidence-motor/`: a plate, the NEC and NEMA tables, the reference relations, an IEEE 112
+test record and the engine's solved circuit (the default motor of `examples/motor`, so every number is checkable
+against `engine.js`). The document states the given, then the unknowns that follow from it — synchronous speed,
+poles, slip, input power, power factor, torque, locked-rotor current, conductor and breaker, no-load current,
+efficiency by three routes — each with its "because", and two statements that should fall or stay open (5 %
+slip; "runs cool"). The summary's **Propagation** section lists, for every standing unknown, the given values it
+rests on, and for every rejected one, whether its givens still stand (then the derivation or the statement is at
+fault, not the data).
+
+```
+python3 trial.py claims/motor-m1.md --max-claims 8 --evidence evidence-motor
+```
 
 ## Trial 4 (v1.8.1 at a11cecd; 3 × 4 claims; 52 min) and v1.9: calibration as a standing pass
 

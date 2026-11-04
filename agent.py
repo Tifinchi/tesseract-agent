@@ -1450,6 +1450,20 @@ def render_summary(run_id, path, question, model, ev, results, elapsed):
         L.append("")
     n_disc = sum(len(rp["discarded"]) for _, rs in results for *_, reports, _ in rs for rp in reports)
     L.append(f"## Discards: {n_disc} candidate citation(s) the script threw out (proposed by the model, not in the evidence as cited)")
+    L.append("\n## Propagation: what each verdict rests on (if the given is correct, what follows is correct too — and what fell with its givens standing)")
+    for c, rs in results:
+        for rid, reading, s, e, r, reports, fit in rs:
+            rests = sorted(set(i for rp in reports for rt in (rp.get("independent") or []) if rt.get("within_2sigma") for i in (rt.get("inputs") or [])))
+            fell_on = sorted(set(i for rp in reports for rt in (rp.get("disagreeing") or []) for i in (rt.get("inputs") or [])))
+            if not rests and not fell_on:
+                continue
+            if s in ("STABILIZED", "LOCKED"):
+                L.append(f"- [{s}] {reading[:110]}\n    stands on: {', '.join(rests)[:300]}")
+            elif s == "REJECTED" and fell_on:
+                L.append(f"- [{s}] {reading[:110]}\n    fell against: {', '.join(fell_on)[:300]}" +
+                         ("\n    the inputs it rests on also carry the standing readings above: the derivation or the statement is at fault, not the data" if set(fell_on) & set(x for c2, rs2 in results for *_, e2, r2, reps2, _ in rs2 for rp2 in reps2 for rt2 in (rp2.get("independent") or []) if rt2.get("within_2sigma") for x in (rt2.get("inputs") or [])) else ""))
+            else:
+                L.append(f"- [{s}] {reading[:110]}\n    routes reached: {', '.join(rests or fell_on)[:300]}")
     L.append("\n## Where the data lives (every file cited above; url and retrieval time where it came from the web)")
     cited = sorted(set(re.findall(r"[\w\-]+\.md", "\n".join(L))))
     for fn in cited:
