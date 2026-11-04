@@ -56,6 +56,7 @@ def main():
     ap.add_argument("--model", default=os.environ.get("MODEL", "qwen2.5:14b"))
     ap.add_argument("--no-research", action="store_true")
     ap.add_argument("--rounds", type=int, default=2)
+    ap.add_argument("--web", action="store_true", help="also try the web search engines (refused on every box so far; Wikipedia and direct urls are the default)")
     ap.add_argument("--max-claims", type=int, default=3)
     a = ap.parse_args()
     today = datetime.date.today().isoformat()
@@ -80,28 +81,40 @@ def main():
                     L.append(f"- wikipedia '{w.get('title')}'{' @ ' + str(w.get('date')) if w.get('date') and str(w.get('date')).lower() != 'null' else ''}: {fn or '-'} ({note})"); added += [fn] if fn else []
                 except Exception as ex:
                     L.append(f"- wikipedia '{w.get('title')}': failed ({str(ex)[:120]})")
-            for q in searches:
-                # Wikipedia's own search first (never refused), then the web
+            # Wikipedia's own search, on the question itself; a hit is kept only if its title shares a content word
+            # with the question (a search for "NEC …" otherwise returns NEC Corporation, the NEC supertower, …)
+            qwords = set(w.lower() for w in re.findall(r"[A-Za-z]{4,}", a.question))
+            if rnd == 0:
                 try:
-                    hits = wiki.search(str(q), n=2)
+                    hits = [(t, u) for t, u in wiki.search(a.question, n=5) if set(w.lower() for w in re.findall(r"[A-Za-z]{4,}", t)) & qwords][:2]
                     for t, u in hits:
                         fn, note = wiki.fetch(t, web_dir); added += [fn] if fn else []
-                    if hits:
-                        L.append(f"- wikipedia search '{q}': {', '.join(t for t, _ in hits)}")
+                    L.append(f"- wikipedia search on the question: {', '.join(t for t, _ in hits) or 'no relevant title'}")
                 except Exception as ex:
-                    L.append(f"- wikipedia search '{q}': failed ({str(ex)[:100]})")
-            for q in searches:
-                try:
-                    got = research.search_and_store(str(q), web_dir, max_pages=2); added += got
-                    L.append(f"- search '{q}': {', '.join(got) or 'nothing stored'}")
-                except Exception as ex:
-                    L.append(f"- search '{q}': failed ({str(ex)[:120]})")
+                    L.append(f"- wikipedia search: failed ({str(ex)[:100]})")
+            if a.web:
+                for q in searches:
+                    try:
+                        got = research.search_and_store(str(q), web_dir, max_pages=2); added += got
+                        L.append(f"- web search '{q}': {', '.join(got) or 'nothing stored'}")
+                    except Exception as ex:
+                        L.append(f"- web search '{q}': failed ({str(ex)[:120]})")
+            elif searches:
+                L.append(f"- web search skipped (every engine has refused non-browser clients; pass --web to try): {', '.join(map(str, searches))[:200]}")
             print("\n".join(L[-(len(searches) + len(wb) + 1):]))
             ev = agent.Evidence("all")
             files = ", ".join(f"{fn} ({(ev.meta[fn].get('year') or 'undated')})" for fn in sorted(ev.meta))[:3000]
             if not added:
                 break
-    got = agent.ask(a.model, agent.SYSTEM, P_CLAIM.format(question=a.question, today=today, files=files))
+    def fail(stage, ex):
+        import traceback
+        L.append(f"\n## FAILED at {stage}\n```\n{traceback.format_exc()[-2500:]}\n```")
+        open(qlog, "w", encoding="utf-8").write("\n".join(L))
+        print(f"\nFAILED at {stage}: {str(ex)[:200]}\nask log: {qlog}"); sys.exit(1)
+    try:
+        got = agent.ask(a.model, agent.SYSTEM, P_CLAIM.format(question=a.question, today=today, files=files))
+    except Exception as ex:
+        fail("writing the claim document", ex)
     doc = str(got.get("document") or f"# {a.question}\nas of: {today}\n\n{a.question}")
     if not doc.lstrip().startswith("#"):
         doc = f"# {a.question}\nas of: {today}\n\n" + doc
@@ -111,9 +124,15 @@ def main():
     qdoc = os.path.join(HERE, "claims", f"ask-{stamp}.md"); open(qdoc, "w", encoding="utf-8").write(doc + "\n")
     L += ["", "## claim document", "```", doc, "```", ""]
     print(f"\nclaim document: {qdoc}\n{doc}\n")
-    run_id = agent.run(qdoc, a.model, a.question, a.max_claims, os.path.join(HERE, "logs"), "all", research_on=False)
-    memory.build()
-    rev = review.report([os.path.join(HERE, "logs", f"run-{run_id}.jsonl")])
+    try:
+        run_id = agent.run(qdoc, a.model, a.question, a.max_claims, os.path.join(HERE, "logs"), "all", research_on=False)
+    except Exception as ex:
+        fail("the evaluation run", ex)
+    try:
+        memory.build()
+        rev = review.report([os.path.join(HERE, "logs", f"run-{run_id}.jsonl")])
+    except Exception as ex:
+        rev = f"(review failed: {str(ex)[:200]})"
     summary = open(os.path.join(HERE, "logs", f"run-{run_id}-summary.md"), encoding="utf-8").read()
     L += ["## answer (the run summary)", summary, "", "## self-review", rev]
     open(qlog, "w", encoding="utf-8").write("\n".join(L))
